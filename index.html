@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Puntuación Dinámico</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div id="login-screen" class="container">
+        <h1>Acceso al Juego</h1>
+        <input type="text" id="user-name-input" placeholder="Tu nombre...">
+        <button class="btn-main" onclick="entrarAlJuego()">Entrar</button>
+    </div>
+
+    <div id="main-game" class="container" style="display: none;">
+        <div class="header">
+            <span>Hola, <b id="current-user-display"></b></span>
+            <button onclick="cerrarSesion()" class="btn-secondary">Salir</button>
+        </div>
+
+        <div id="panel-admin" class="admin-box" style="display: none;">
+            <h3>Panel de Control</h3>
+            <input type="text" id="nueva-opcion-texto" placeholder="Nueva tarea/acción...">
+            <select id="nueva-opcion-puntos">
+                <option value="2">+2 Puntos</option>
+                <option value="3">+3 Puntos</option>
+            </select>
+            <button class="btn-main" onclick="crearOpcion()">Publicar Opción</button>
+        </div>
+
+        <div class="user-view">
+            <h2>Acciones Disponibles</h2>
+            <div id="contenedor-opciones-activas" class="grid-buttons">
+                </div>
+        </div>
+
+        <div class="ranking-section">
+            <h3>🏆 Ranking Global</h3>
+            <div id="tabla-ranking"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

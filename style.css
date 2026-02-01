@@ -1,0 +1,92 @@
+:root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --text: #c9d1d9;
+    --accent: #58a6ff;
+    --green: #238636;
+    --red: #da3633;
+}
+
+body {
+    font-family: sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.btn-main {
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-secondary { background: #30363d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+.admin-box {
+    border: 2px solid var(--accent);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.grid-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.btn-option {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: var(--accent);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+}
+
+.btn-delete-opt {
+    background: var(--red);
+    color: white;
+    border: none;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #21262d;
+}
