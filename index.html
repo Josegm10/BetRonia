@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detronia de Yugoslavia - Sistema de Puntos</title>
+    <title>Detronia de Yugoslavia</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -11,32 +11,31 @@
 
     <div id="login-screen" class="container">
         <div class="logo-container">
-            <img src="https://i.ibb.co/VWB8zX4F/Captura-de-pantalla-2026-02-02-001132.png" alt="Detronia Logo" class="club-logo">
+            <img src="https://i.postimg.cc/pT4By4m4/detronia-logo.png" alt="Detronia Logo" class="club-logo" onerror="this.src='https://via.placeholder.com/150?text=Detronia'">
         </div>
         <h1>Acceso Detronia</h1>
-        <input type="text" id="user-name-input" placeholder="Tu nombre de Instagram...">
+        <input type="text" id="user-name-input" placeholder="Nombre de Instagram...">
         <button class="btn-main" onclick="entrarAlJuego()">Entrar</button>
     </div>
 
     <div id="main-game" class="container" style="display: none;">
         <div class="header">
-            <img src="https://i.ibb.co/VWB8zX4F/Captura-de-pantalla-2026-02-02-001132.png" alt="Mini Logo" class="mini-logo">
             <span>Hola, <b id="current-user-display"></b></span>
             <button onclick="cerrarSesion()" class="btn-secondary">Salir</button>
         </div>
 
         <div id="panel-admin" class="admin-box" style="display: none;">
-            <h3>Panel de Control (ADMIN)</h3>
-            <input type="text" id="nueva-opcion-texto" placeholder="Nueva tarea o pregunta...">
+            <h3>Panel Admin</h3>
+            <input type="text" id="nueva-opcion-texto" placeholder="Nueva opción...">
             <select id="nueva-opcion-puntos">
-                <option value="2">Categoría: 2 Puntos</option>
-                <option value="3">Categoría: 3 Puntos</option>
+                <option value="2">2 Puntos</option>
+                <option value="3">3 Puntos</option>
             </select>
-            <button class="btn-main" onclick="crearOpcion()">Publicar Opción</button>
+            <button class="btn-main" onclick="crearOpcion()">Publicar</button>
         </div>
 
         <div class="user-view">
-            <h2>Acciones Disponibles</h2>
+            <h2>Opciones Activas</h2>
             <div id="contenedor-opciones-activas" class="grid-buttons"></div>
         </div>
 
@@ -49,7 +48,7 @@
     <div id="modal-feedback" class="modal">
         <div class="modal-content">
             <h2 id="feedback-titulo"></h2>
-            <img id="feedback-gif" src="" alt="Resultado">
+            <img id="feedback-gif" src="" alt="Resultado" style="width:100%; border-radius:8px; margin: 15px 0;">
             <button class="btn-main" onclick="cerrarModal()">Continuar</button>
         </div>
     </div>
