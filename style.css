@@ -7,72 +7,27 @@
     --red: #da3633;
 }
 
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-
-.container {
-    width: 100%;
-    max-width: 500px;
-    background: var(--card);
-    padding: 20px;
-    border-radius: 12px;
-}
-
+body { font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; }
+.container { width: 100%; max-width: 450px; background: var(--card); padding: 20px; border-radius: 12px; }
 .logo-container { text-align: center; margin-bottom: 20px; }
-.club-logo { width: 140px; border-radius: 10px; }
-.mini-logo { width: 35px; vertical-align: middle; margin-right: 8px; }
+.club-logo { width: 120px; border-radius: 10px; }
 
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
-input, select {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    background: #0d1117;
-    border: 1px solid #30363d;
-    color: white;
-    border-radius: 6px;
-    box-sizing: border-box;
-}
-
+input, select { width: 100%; padding: 12px; margin: 10px 0; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; }
 .btn-main { background: var(--green); color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; }
 .btn-secondary { background: #30363d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
-.btn-option {
-    background: #21262d;
-    border: 1px solid #30363d;
-    padding: 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
+.admin-box { border: 2px solid var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+
+.btn-option { background: #21262d; border: 1px solid #30363d; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .btn-option.elegida { border: 2px solid var(--accent); }
-.btn-option.bloqueada { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
 
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.9);
-}
-.modal-content {
-    background-color: var(--card);
-    margin: 15% auto;
-    padding: 20px;
-    border-radius: 12px;
-    width: 85%;
-    max-width: 350px;
-    text-align: center;
-}
-#feedback-gif { width: 100%; border-radius: 8px; }
+.admin-actions { display: flex; gap: 10px; margin-top: 10px; }
+.btn-correct { background: var(--green); flex: 1; border: none; color: white; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-incorrect { background: var(--red); flex: 1; border: none; color: white; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-.ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #21262d; }
-.btn-delete-opt { background: var(--red); color: white; border: none; padding: 5px; border-radius: 4px; margin-top: 10px; cursor: pointer; width: 100%; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
+.modal-content { background: var(--card); margin: 15% auto; padding: 20px; border-radius: 12px; width: 85%; max-width: 400px; text-align: center; border: 1px solid var(--accent); }
+
+.ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #30363d; }
