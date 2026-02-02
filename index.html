@@ -8,27 +8,29 @@
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
         body { font-family: 'Arial', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 450px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 480px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .logo { width: 100%; border-radius: 10px; margin-bottom: 15px; }
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; display: block; height: 200px; object-fit: cover; }
-        h2, h3 { color: var(--primary); font-weight: 900; }
+        h2, h3, h4 { color: var(--primary); font-weight: 900; }
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { transform: scale(1.02); }
+        button:hover { transform: scale(1.01); filter: brightness(1.2); }
         .hidden { display: none; }
         
         /* Estilos Tablas Admin */
-        .admin-section { background: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #cbd5e1; text-align: left; }
-        table { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 5px; }
-        th, td { padding: 6px; border: 1px solid #ddd; text-align: left; }
-        .btn-mini { width: auto; padding: 3px 6px; font-size: 10px; margin: 1px; }
-        .btn-del { background: #ef4444; }
-        .btn-edit { background: #22c55e; }
+        .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #cbd5e1; text-align: left; }
+        .table-admin { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 5px; }
+        .table-admin th, .table-admin td { padding: 6px; border: 1px solid #ddd; }
+        .btn-mini { width: auto; padding: 4px 8px; font-size: 11px; margin: 2px; }
 
-        /* Estilos Juego */
-        .info-box { background: #fffde7; border: 2px dashed #fbc02d; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        label { display: block; background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: left; }
+        /* Estilos Tabla Jugador (Apoyo) */
+        .info-box { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .info-table-user { width: 100%; border-collapse: collapse; background: white; font-size: 13px; border-radius: 8px; overflow: hidden; }
+        .info-table-user th { background: #fbc02d; color: #453505; padding: 10px; text-align: left; }
+        .info-table-user td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+
+        /* Ranking */
+        .ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -36,51 +38,67 @@
     <div id="auth-ui" class="card">
         <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" class="logo">
         <input type="text" id="username" placeholder="@tu_instagram">
-        <button onclick="entrar()">JUGAR</button>
-        <button onclick="accesoAdmin()" style="background: #64748b; font-size: 11px;">ADMIN</button>
+        <button onclick="entrar()">ENTRAR A JUGAR</button>
+        <button onclick="accesoAdmin()" style="background: #64748b; font-size: 11px;">MODO ADMIN</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>🛠️ PANEL CONTROL</h3>
+        <h3>🛠️ PANEL DE CONTROL</h3>
         
         <div class="admin-section">
-            <h4>📊 Tabla de Apoyo</h4>
+            <h4>📊 Configurar Tabla de Apoyo</h4>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="title-d1" placeholder="Título Dato 1 (ej: Goles)">
+                <input type="text" id="title-d2" placeholder="Título Dato 2 (ej: Racha)">
+            </div>
+            <hr>
             <input type="text" id="info-sujeto" placeholder="Nombre (Ej: Benzema)">
-            <input type="text" id="info-d1" placeholder="Dato 1">
-            <input type="text" id="info-d2" placeholder="Dato 2">
-            <button onclick="guardarEst()" style="background:#22c55e">Añadir/Actualizar</button>
-            <table>
-                <thead><tr><th>Sujeto</th><th>Info</th><th>Acción</th></tr></thead>
+            <input type="text" id="info-val1" placeholder="Valor Dato 1">
+            <input type="text" id="info-val2" placeholder="Valor Dato 2">
+            <button onclick="guardarFila()" style="background:#22c55e">Añadir/Editar Fila</button>
+            
+            <table class="table-admin">
+                <thead><tr><th>Sujeto</th><th>Acciones</th></tr></thead>
                 <tbody id="adm-list-stats"></tbody>
             </table>
         </div>
 
         <div class="admin-section">
             <h4>👥 Jugadores</h4>
-            <table>
-                <thead><tr><th>User</th><th>Pts</th><th>Acción</th></tr></thead>
+            <table class="table-admin">
                 <tbody id="adm-list-players"></tbody>
             </table>
-            <button onclick="resetTotal()" style="background:#000; font-size:10px; margin-top:5px;">RESET TORNEO</button>
+            <button onclick="resetTotal()" style="background:#000; font-size:10px;">RESET TOTAL</button>
         </div>
 
-        <hr>
-        <textarea id="adm-o2" placeholder="Opciones 2pts..."></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3pts..."></textarea>
-        <button onclick="lanzar()">Lanzar Ronda</button>
-        <input type="text" id="win2" placeholder="Ganador 2pts">
-        <input type="text" id="win3" placeholder="Ganador 3pts">
-        <button onclick="puntuar()" style="background:#f59e0b">Sumar Puntos</button>
+        <div class="admin-section">
+            <h4>🚀 Control de Ronda</h4>
+            <textarea id="adm-o2" placeholder="Opciones separadas por comas"></textarea>
+            <button onclick="lanzar()">Lanzar Nueva Ronda</button>
+            <input type="text" id="win2" placeholder="Resultado Ganador">
+            <button onclick="puntuar()" style="background:#f59e0b">Validar Puntos</button>
+        </div>
     </div>
 
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
+        
         <div id="info-user-view" class="info-box hidden">
-            <h4 style="margin:0">📊 DATOS DE APOYO</h4>
-            <div id="info-content-user"></div>
+            <h4 style="margin:0 0 10px 0;">📊 DATOS DE APOYO</h4>
+            <table class="info-table-user">
+                <thead>
+                    <tr>
+                        <th>Sujeto</th>
+                        <th id="h-d1">Dato 1</th>
+                        <th id="h-d2">Dato 2</th>
+                    </tr>
+                </thead>
+                <tbody id="info-content-user"></tbody>
+            </table>
         </div>
-        <div id="options-container">Esperando ronda...</div>
+
+        <div id="options-container">Esperando...</div>
         <button id="btn-votar" onclick="votar()" class="hidden">ENVIAR VOTO</button>
     </div>
 
@@ -102,39 +120,36 @@
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
         };
 
-        // --- ADMIN: ESTADISTICAS ---
-        async function guardarEst() {
+        // --- FUNCIONES ADMIN ---
+        async function guardarFila() {
             const s = document.getElementById('info-sujeto').value;
-            const d1 = document.getElementById('info-d1').value;
-            const d2 = document.getElementById('info-d2').value;
-            if(!s) return;
-            await sb.from('estadisticas').upsert({ sujeto: s, dato1: d1, dato2: d2 }, { onConflict: 'sujeto' });
-            document.getElementById('info-sujeto').value = ""; document.getElementById('info-d1').value = ""; document.getElementById('info-d2').value = "";
+            const v1 = document.getElementById('info-val1').value;
+            const v2 = document.getElementById('info-val2').value;
+            const t1 = document.getElementById('title-d1').value || "Dato 1";
+            const t2 = document.getElementById('title-d2').value || "Dato 2";
+
+            if(!s) return alert("Pon un nombre");
+            // Guardamos el dato y aprovechamos para actualizar los títulos en el estado del juego
+            await sb.from('estadisticas').upsert({ sujeto: s, dato1: v1, dato2: v2 }, { onConflict: 'sujeto' });
+            await sb.from('estado_juego').update({ correcta2: t1, correcta3: t2 }).eq('id', 1); // Usamos estas columnas para guardar los nombres de los encabezados temporalmente
         }
 
-        async function borrarEst(sujeto) {
-            if(confirm(`¿Borrar ${sujeto}?`)) await sb.from('estadisticas').delete().eq('sujeto', sujeto);
-        }
-
+        async function borrarEst(s) { if(confirm("¿Borrar?")) await sb.from('estadisticas').delete().eq('sujeto', s); }
+        
         function editarEst(s, d1, d2) {
             document.getElementById('info-sujeto').value = s;
-            document.getElementById('info-d1').value = d1;
-            document.getElementById('info-d2').value = d2;
+            document.getElementById('info-val1').value = d1;
+            document.getElementById('info-val2').value = d2;
         }
 
-        // --- ADMIN: JUGADORES ---
         async function editPts(n, p) {
-            const pts = prompt(`Puntos para @${n}:`, p);
+            const pts = prompt("Puntos:", p);
             if(pts) await sb.from('jugadores').update({ puntos: parseInt(pts) }).eq('nombre', n);
         }
 
-        async function delJug(id, n) {
-            if(confirm(`¿Borrar a @${n}?`)) await sb.from('jugadores').delete().eq('id', id);
-        }
+        async function delJug(id) { if(confirm("¿Borrar?")) await sb.from('jugadores').delete().eq('id', id); }
 
-        async function resetTotal() {
-            if(confirm("¿Borrar todo?")) await sb.from('jugadores').delete().neq('nombre','');
-        }
+        async function resetTotal() { if(confirm("¿Borrar todo?")) await sb.from('jugadores').delete().neq('nombre',''); }
 
         // --- CORE ---
         async function entrar() {
@@ -163,22 +178,26 @@
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
             if(esAdmin) {
-                document.getElementById('adm-list-stats').innerHTML = stats.map(s => `<tr><td>${s.sujeto}</td><td>${s.dato1}</td><td><button class="btn-mini btn-edit" onclick="editarEst('${s.sujeto}','${s.dato1}','${s.dato2}')">✎</button><button class="btn-mini btn-del" onclick="borrarEst('${s.sujeto}')">X</button></td></tr>`).join('');
-                document.getElementById('adm-list-players').innerHTML = jugs.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button class="btn-mini btn-edit" onclick="editPts('${j.nombre}',${j.puntos})">Pts</button><button class="btn-mini btn-del" onclick="delJug('${j.id}','${j.nombre}')">X</button></td></tr>`).join('');
+                document.getElementById('adm-list-stats').innerHTML = stats.map(s => `<tr><td>${s.sujeto}</td><td><button class="btn-mini btn-edit" onclick="editarEst('${s.sujeto}','${s.dato1}','${s.dato2}')">✎</button><button class="btn-mini btn-del" onclick="borrarEst('${s.sujeto}')">X</button></td></tr>`).join('');
+                document.getElementById('adm-list-players').innerHTML = jugs.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button class="btn-mini btn-edit" onclick="editPts('${j.nombre}',${j.puntos})">Pts</button><button class="btn-mini btn-del" onclick="delJug('${j.id}')">X</button></td></tr>`).join('');
             }
 
+            // Actualizar Tabla Jugador
             const infoBox = document.getElementById('info-user-view');
             if(stats.length > 0) {
                 infoBox.classList.remove('hidden');
-                document.getElementById('info-content-user').innerHTML = stats.map(s => `<div><b>${s.sujeto}:</b> ${s.dato1} | ${s.dato2}</div>`).join('');
+                document.getElementById('h-d1').innerText = juego.correcta2 || "Dato 1";
+                document.getElementById('h-d2').innerText = juego.correcta3 || "Dato 2";
+                document.getElementById('info-content-user').innerHTML = stats.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1}</td><td>${s.dato2}</td></tr>`).join('');
             } else { infoBox.classList.add('hidden'); }
 
+            // Lógica Gifs y Votos
             const gif = document.getElementById('display-gif');
             const cont = document.getElementById('options-container');
             const btn = document.getElementById('btn-votar');
 
-            if(juego.correcta2) {
-                const gano = (juego.correcta2).toLowerCase().includes((yo?.seleccion2 || "---").toLowerCase());
+            if(juego.ronda_id === 1) { // Usamos ronda_id = 1 para indicar que ya se puntuó
+                const gano = (juego.correcta2 || "").toLowerCase().includes((yo?.seleccion2 || "---").toLowerCase());
                 gif.src = gano ? GIFS.acierta : GIFS.falla;
                 cont.innerHTML = `Resultado: <b>${juego.correcta2}</b>`;
                 btn.classList.add('hidden');
@@ -191,13 +210,12 @@
                     cont.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
                 }
             }
-
             document.getElementById('ranking-list').innerHTML = jugs.map(j => `<div class="ranking-item"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
         }
 
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
-            await sb.from('estado_juego').update({ opciones2: o2, correcta2: null }).eq('id', 1);
+            await sb.from('estado_juego').update({ opciones2: o2, correcta2: null, ronda_id: 0 }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null }).neq('nombre','');
         }
 
@@ -207,8 +225,9 @@
         }
 
         async function puntuar() {
-            const win = document.getElementById('win2').value.split(',').map(x=>x.trim());
-            await sb.rpc('validar_y_puntuar', { c2: win, c3: [] });
+            const win = document.getElementById('win2').value.trim();
+            await sb.rpc('validar_y_puntuar', { c2: [win], c3: [] });
+            await sb.from('estado_juego').update({ ronda_id: 1, correcta2: win }).eq('id', 1);
         }
 
         function iniciar() {
@@ -218,4 +237,3 @@
     </script>
 </body>
 </html>
-
