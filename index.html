@@ -3,47 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego Express Realtime</title>
+    <title>Juego de Puntos Realtime</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #10b981; --admin: #4f46e5; --bg: #f9fafb; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-bottom: 20px; box-sizing: border-box; }
-        h2, h3 { margin-top: 0; color: #1f2937; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-        button:disabled { background: #d1d5db; cursor: not-allowed; }
-        .admin-btn { background: var(--admin); }
+        :root { --primary: #10b981; --admin: #6366f1; --bg: #f3f4f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 20px; box-sizing: border-box; }
+        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-admin { background: var(--admin); }
         .hidden { display: none; }
-        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f3f4f6; }
-        .res-box { background: #ecfdf5; border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .res-highlight { background: #d1fae5; padding: 10px; border-radius: 8px; border: 1px solid #10b981; color: #065f46; }
     </style>
 </head>
 <body>
 
     <div id="auth-ui" class="card">
-        <h2>Bienvenido</h2>
-        <input type="text" id="username" placeholder="Tu nombre o Nick">
-        <button onclick="entrarComoUsuario()">Entrar a Jugar</button>
-        <button class="admin-btn" onclick="activarAdmin()">Panel Control</button>
+        <h2>Ingresar Nombre</h2>
+        <input type="text" id="username" placeholder="Tu apodo">
+        <button onclick="entrarAlJuego()">Entrar a Jugar</button>
+        <button class="btn-admin" onclick="activarAdmin()">Soy Admin</button>
     </div>
 
     <div id="game-ui" class="card hidden">
-        <h3 id="user-title">Hola</h3>
-        <div id="options-container">Cargando partida...</div>
-        <button id="btn-votar" onclick="votar()" style="display:none">Enviar Elección</button>
+        <h3 id="user-display"></h3>
+        <div id="options-container">Esperando que el admin cree una ronda...</div>
+        <button id="btn-votar" onclick="enviarVoto()" class="hidden" style="margin-top:15px;">Enviar mi elección</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
         <h3>Panel Admin</h3>
-        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)" style="width:100%; height:60px; border-radius:8px; border:1px solid #ddd; padding:10px;"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)" style="width:100%; height:60px; border-radius:8px; border:1px solid #ddd; padding:10px; margin-top:10px;"></textarea>
-        <button class="admin-btn" onclick="crearRonda()">Lanzar Ronda Nueva</button>
+        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)"></textarea>
+        <button onclick="lanzarRonda()">Lanzar Opciones</button>
         <hr>
-        <input type="text" id="win2" placeholder="Correctas 2pts (comas si hay varias)">
-        <input type="text" id="win3" placeholder="Correctas 3pts (comas si hay varias)">
-        <button onclick="finalizarRonda()" style="background:#f59e0b">Validar y Puntuar</button>
-        <button onclick="resetearPuntosTodo()" style="background:#ef4444; margin-top:20px;">Reiniciar Todo el Torneo</button>
+        <input type="text" id="win2" placeholder="Correctas 2pts">
+        <input type="text" id="win3" placeholder="Correctas 3pts">
+        <button onclick="validarResultados()" style="background:#f59e0b">Dar Puntos y Mostrar Ganadores</button>
     </div>
 
     <div class="card">
@@ -52,124 +49,99 @@
     </div>
 
     <script>
+        // --- PEGA AQUÍ TUS LLAVES ---
         const SB_URL = 'https://ebonrglgwhketorwnous.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVib25yZ2xnd2hrZXRvcndub3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5OTI1MzEsImV4cCI6MjA4NTU2ODUzMX0.-vMRzQ7fwvfcjyTVVJKy2SuTnuQkWSxtsfMyyXmGp0w';
-        const supabase = supabase.createClient(SB_URL, SB_KEY);
+        const sb = supabase.createClient(SB_URL, SB_KEY);
 
         let miNombre = "";
         let esAdmin = false;
 
-        // --- ACCESO ---
-        async function entrarComoUsuario() {
+        async function entrarAlJuego() {
             miNombre = document.getElementById('username').value.trim();
-            if(!miNombre) return alert("Escribe tu nombre");
+            if(!miNombre) return alert("Escribe un nombre");
+
+            const { error } = await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
             
-            const { data, error } = await supabase.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' }).select().single();
-            if(error) return alert("Error al entrar");
-            
+            if(error) return alert("Error al entrar: " + error.message);
+
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
-            document.getElementById('user-title').innerText = "Jugador: " + miNombre;
-            escucharCambios();
-            renderPantalla();
+            document.getElementById('user-display').innerText = "Jugador: " + miNombre;
+            suscribirseYActualizar();
         }
 
         function activarAdmin() {
-            if(prompt("Contraseña:") === "1234") {
+            if(prompt("Clave:") === "1234") {
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
-                escucharCambios();
+                suscribirseYActualizar();
             }
         }
 
-        // --- ACCIONES ADMIN ---
-        async function crearRonda() {
+        async function lanzarRonda() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(s => s.trim()).filter(s => s);
             const o3 = document.getElementById('adm-o3').value.split(',').map(s => s.trim()).filter(s => s);
-            await supabase.rpc('iniciar_nueva_ronda', { o2, o3 });
-            alert("Ronda Iniciada");
+            // Limpiar ganadores anteriores y poner opciones nuevas
+            await sb.from('estado_juego').update({ 
+                opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: Math.random() 
+            }).eq('id', 1);
+            // Resetear elecciones de los jugadores
+            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre', '');
         }
 
-        async function finalizarRonda() {
-            const c2 = document.getElementById('win2').value.split(',').map(s => s.trim()).filter(s => s);
-            const c3 = document.getElementById('win3').value.split(',').map(s => s.trim()).filter(s => s);
-            await supabase.rpc('validar_y_puntuar', { c2, c3 });
-            alert("Puntuado");
-        }
-
-        async function resetearPuntosTodo() {
-            if(confirm("¿Borrar todos los jugadores y puntos?")) {
-                await supabase.from('jugadores').delete().neq('nombre', 'borrar');
-                location.reload();
-            }
-        }
-
-        // --- ACCIONES USUARIO ---
-        async function votar() {
+        async function enviarVoto() {
             const s2 = document.querySelector('input[name="c2"]:checked')?.value;
             const s3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!s2 || !s3) return alert("Elige una opción de cada categoría");
+            if(!s2 || !s3) return alert("Debes elegir una opción de cada categoría");
 
-            await supabase.from('jugadores').update({ seleccion2: s2, seleccion3: s3 }).eq('nombre', miNombre);
-            alert("¡Enviado!");
-            document.getElementById('btn-votar').style.display = 'none';
-            document.getElementById('options-container').innerHTML = "<b>Recibido.</b> Esperando resultados del admin...";
+            await sb.from('jugadores').update({ seleccion2: s2, seleccion3: s3 }).eq('nombre', miNombre);
+            document.getElementById('btn-votar').classList.add('hidden');
+            document.getElementById('options-container').innerHTML = "<b>¡Elección enviada!</b> Esperando al administrador...";
         }
 
-        // --- RENDERIZADO Y TIEMPO REAL ---
-        async function renderPantalla() {
-            const { data: estado } = await supabase.from('estado_juego').select('*').single();
-            const container = document.getElementById('options-container');
-            const btnVotar = document.getElementById('btn-votar');
+        async function validarResultados() {
+            const c2 = document.getElementById('win2').value.split(',').map(s => s.trim()).filter(s => s);
+            const c3 = document.getElementById('win3').value.split(',').map(s => s.trim()).filter(s => s);
+            await sb.rpc('validar_y_puntuar', { c2, c3 });
+        }
 
-            if(estado.correcta2 || estado.correcta3) {
-                container.innerHTML = `<div class="res-box">
-                    <p><b>Resultados de la ronda:</b></p>
-                    <p>⭐ Cat 2: ${estado.correcta2 || 'Ninguna'}</p>
-                    <p>⭐ Cat 3: ${estado.correcta3 || 'Ninguna'}</p>
-                </div><p>Espera a la siguiente ronda...</p>`;
-                btnVotar.style.display = 'none';
-            } else if(estado.opciones2.length > 0) {
-                btnVotar.style.display = 'block';
+        async function sincronizarTodo() {
+            const { data: estado } = await sb.from('estado_juego').select('*').single();
+            const container = document.getElementById('options-container');
+            const btn = document.getElementById('btn-votar');
+
+            if (estado.correcta2 || estado.correcta3) {
+                container.innerHTML = `<div class="res-highlight">
+                    <b>Ganadores de esta ronda:</b><br>
+                    ✅ 2 Puntos: ${estado.correcta2 || 'Ninguna'}<br>
+                    ✅ 3 Puntos: ${estado.correcta3 || 'Ninguna'}
+                </div>`;
+                btn.classList.add('hidden');
+            } else if (estado.opciones2.length > 0) {
+                btn.classList.remove('hidden');
                 container.innerHTML = `
                     <p><b>Categoría 2 Puntos:</b></p>
                     ${estado.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('')}
-                    <p><b>Categoría 3 Puntos:</b></p>
-                    ${estado.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('')}
+                    <p style="margin-top:15px;"><b>Categoría 3 Puntos:</b></p>
+                    ${estado.opciones3.map(o => `<input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('')}
                 `;
             } else {
-                container.innerHTML = "Esperando que el admin inicie la ronda...";
-                btnVotar.style.display = 'none';
+                container.innerHTML = "Esperando inicio de ronda...";
+                btn.classList.add('hidden');
             }
-        }
 
-        async function actualizarRanking() {
-            const { data } = await supabase.from('jugadores').select('*').order('puntos', { ascending: false });
-            document.getElementById('ranking-list').innerHTML = data.map(j => `
-                <div class="ranking-item">
-                    <span>${j.nombre}</span>
-                    <span>
-                        <b>${j.puntos} pts</b>
-                        ${esAdmin ? `<button onclick="editP('${j.nombre}')" style="width:auto; margin-left:10px; padding:2px 5px">✏️</button>` : ''}
-                    </span>
-                </div>
+            const { data: lista } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+            document.getElementById('ranking-list').innerHTML = lista.map(j => `
+                <div class="ranking-item"><span>${j.nombre}</span><b>${j.puntos} pts</b></div>
             `).join('');
         }
 
-        async function editP(nom) {
-            const p = prompt("Nuevo puntaje para " + nom);
-            if(p !== null) await supabase.from('jugadores').update({ puntos: parseInt(p) }).eq('nombre', nom);
+        function suscribirseYActualizar() {
+            sb.channel('db_track').on('postgres_changes', { event: '*', schema: 'public' }, () => sincronizarTodo()).subscribe();
+            sinconizarTodo();
         }
-
-        function escucharCambios() {
-            supabase.channel('room1').on('postgres_changes', { event: '*', schema: 'public' }, () => {
-                renderPantalla();
-                actualizarRanking();
-            }).subscribe();
-        }
-
-        actualizarRanking();
     </script>
 </body>
 </html>
