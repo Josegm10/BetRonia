@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Live Stats</title>
+    <title>Djokovic Challenge - Football Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
@@ -32,6 +32,7 @@
         /* ADMIN */
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: left; border: 1px solid #cbd5e1; margin-bottom: 15px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .edit-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -44,30 +45,33 @@
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>🛠️ ADMIN CONTROL</h3>
+        <h3>🛠️ PANEL DE ADMINISTRADOR</h3>
+        
         <div class="admin-section">
-            <h4>Actualizar Tabla de Jugadores</h4>
-            <input type="text" id="in-jug" placeholder="Nombre Jugador">
-            <input type="text" id="in-pos" placeholder="Posición">
+            <h4>Gestionar Jugadores y Estadísticas</h4>
+            <input type="text" id="in-jug" placeholder="Nombre del Jugador">
+            <input type="text" id="in-pos" placeholder="Posición (DEL, MED, DEF)">
             <div class="grid-3">
                 <input type="number" id="in-gol" placeholder="Goles">
-                <input type="number" id="in-ama" placeholder="AM">
-                <input type="number" id="in-roj" placeholder="RO">
+                <input type="number" id="in-ama" placeholder="Amarillas">
+                <input type="number" id="in-roj" placeholder="Rojas">
             </div>
-            <button onclick="guardarJugador()" style="background:#22c55e">GUARDAR EN TABLA</button>
-            <div id="admin-list-edit" style="margin-top:10px; max-height:100px; overflow-y:auto; font-size:11px;"></div>
+            <button onclick="guardarJugador()" style="background:#22c55e">AÑADIR / ACTUALIZAR DATOS</button>
+            <div id="admin-list-edit" style="margin-top:10px; max-height:120px; overflow-y:auto;">
+                </div>
         </div>
+
         <div class="admin-section">
-            <h4>Lanzar Ronda</h4>
-            <textarea id="adm-o2" placeholder="Opciones 2 pts (comas)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3 pts (comas)"></textarea>
+            <h4>Opciones de Juego</h4>
+            <textarea id="adm-o2" placeholder="Opciones 2 pts (separadas por comas)"></textarea>
+            <textarea id="adm-o3" placeholder="Opciones 3 pts (separadas por comas)"></textarea>
             <button onclick="lanzarOpciones()">LANZAR VOTACIÓN</button>
             <hr>
             <input type="text" id="win2" placeholder="Ganador 2pts">
             <input type="text" id="win3" placeholder="Ganador 3pts">
-            <button onclick="validarPuntos()" style="background:#f59e0b">SUMAR PUNTOS Y VALIDAR</button>
+            <button onclick="validarPuntos()" style="background:#f59e0b">VALIDAR Y SUMAR PUNTOS</button>
         </div>
-        <button onclick="location.reload()" style="background:#000;">SALIR</button>
+        <button onclick="location.reload()" style="background:#000;">CERRAR SESIÓN ADMIN</button>
     </div>
 
     <div id="game-ui" class="card hidden">
@@ -75,14 +79,13 @@
         <h3 id="display-name"></h3>
 
         <div class="info-box">
-            <h4>📊 ESTADÍSTICAS JUGADORES</h4>
+            <h4>📊 ESTADÍSTICAS OFICIALES</h4>
             <table class="stats-table">
                 <thead>
                     <tr><th rowspan="2">JUGADOR</th><th rowspan="2">POS.</th><th rowspan="2">GOLES</th><th colspan="2">TARJETAS</th></tr>
                     <tr><th>AM</th><th>RO</th></tr>
                 </thead>
-                <tbody id="stats-body">
-                    </tbody>
+                <tbody id="stats-body"></tbody>
             </table>
         </div>
 
@@ -97,7 +100,7 @@
         </div>
 
         <div style="margin-top:20px;">
-            <h4>🏆 RANKING</h4>
+            <h4>🏆 RANKING ACTUAL</h4>
             <div id="ranking-list"></div>
         </div>
     </div>
@@ -115,9 +118,10 @@
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
         };
 
+        // --- ACCESO ---
         async function entrar() {
             userInsta = document.getElementById('username').value.trim().toLowerCase().replace('@','');
-            if(!userInsta) return alert("Pon tu usuario");
+            if(!userInsta) return alert("Ingresa tu Instagram");
             await sb.from('jugadores').upsert({ nombre: userInsta }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
@@ -126,7 +130,7 @@
         }
 
         function accesoAdmin() {
-            if(prompt("Clave:") === "1234") {
+            if(prompt("Clave Admin:") === "1234") {
                 soyAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
@@ -134,65 +138,80 @@
             }
         }
 
+        // --- GESTIÓN DE TABLA (SOLO ADMIN) ---
         async function guardarJugador() {
             const j = document.getElementById('in-jug').value;
             const p = document.getElementById('in-pos').value;
             const g = document.getElementById('in-gol').value || 0;
             const a = document.getElementById('in-ama').value || 0;
             const r = document.getElementById('in-roj').value || 0;
-            if(!j) return;
-            await sb.from('estadisticas').upsert({ sujeto: j, dato1: p, dato2: g, dato3: a, dato4: r }, { onConflict: 'sujeto' });
+            if(!j) return alert("Nombre de jugador necesario");
+            
+            await sb.from('estadisticas').upsert({ 
+                sujeto: j, dato1: p, dato2: g, dato3: a, dato4: r 
+            }, { onConflict: 'sujeto' });
+            
+            // Limpiar campos tras guardar
             document.getElementById('in-jug').value = "";
+            document.getElementById('in-pos').value = "";
+            document.getElementById('in-gol').value = "";
+            document.getElementById('in-ama').value = "";
+            document.getElementById('in-roj').value = "";
         }
 
-        async function eliminar(j) { await sb.from('estadisticas').delete().eq('sujeto', j); }
+        async function eliminar(j) { 
+            if(confirm(`¿Eliminar a ${j}?`)) await sb.from('estadisticas').delete().eq('sujeto', j); 
+        }
 
+        // --- LANZAR Y VALIDAR (SOLO ADMIN) ---
         async function lanzarOpciones() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim());
             await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre','');
+            alert("Votación enviada a los jugadores");
         }
 
         async function validarPuntos() {
             const w2 = document.getElementById('win2').value.trim();
             const w3 = document.getElementById('win3').value.trim();
+            if(!w2 || !w3) return alert("Ingresa los ganadores");
             await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
             await sb.from('estado_juego').update({ correcta2: w2, correcta3: w3 }).eq('id', 1);
+            alert("Puntos sumados correctamente");
         }
 
+        // --- SINCRONIZACIÓN EN TIEMPO REAL ---
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: jg } = await sb.from('estado_juego').select('*').single();
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', userInsta).single();
             const { data: rank } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
 
-            // Actualizar tabla para todos
+            // Actualizar Tabla para Usuario y Admin
             const tbody = document.getElementById('stats-body');
-            if(tbody) {
-                tbody.innerHTML = st.map(s => `
-                    <tr><td>${s.sujeto}</td><td>${s.dato1}</td><td><b>${s.dato2}</b></td>
-                    <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
-            }
+            tbody.innerHTML = st.map(s => `
+                <tr><td>${s.sujeto}</td><td>${s.dato1}</td><td><b>${s.dato2}</b></td>
+                <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
 
-            // Lista Admin
+            // Lista de Edición solo visible en Panel Admin
             if(soyAdmin) {
                 document.getElementById('admin-list-edit').innerHTML = st.map(s => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${s.sujeto}</span><button onclick="eliminar('${s.sujeto}')" style="width:auto; padding:2px 5px; background:red;">X</button></div>`).join('');
+                <div class="edit-item"><span>${s.sujeto}</span><button onclick="eliminar('${s.sujeto}')" style="width:auto; padding:2px 8px; background:red;">ELIMINAR</button></div>`).join('');
             }
 
-            // GIFs
+            // Actualizar GIF de Djokovic
             const gif = document.getElementById('status-gif');
-            if(gif) {
-                if(jg.correcta2 || jg.correcta3) {
-                    let aciertos = 0;
-                    if(yo?.seleccion2 === jg.correcta2 && jg.correcta2) aciertos++;
-                    if(yo?.seleccion3 === jg.correcta3 && jg.correcta3) aciertos++;
-                    gif.src = aciertos > 0 ? GIFS.acierta : GIFS.falla;
-                } else { gif.src = GIFS.espera; }
+            if(yo && (jg.correcta2 || jg.correcta3)) {
+                let aciertos = 0;
+                if(yo.seleccion2 === jg.correcta2 && jg.correcta2) aciertos++;
+                if(yo.seleccion3 === jg.correcta3 && jg.correcta3) aciertos++;
+                gif.src = aciertos > 0 ? GIFS.acierta : GIFS.falla;
+            } else {
+                gif.src = GIFS.espera;
             }
 
-            // Opciones
+            // Opciones para el Usuario
             if(!soyAdmin) {
                 const r2 = document.getElementById('render-o2');
                 const r3 = document.getElementById('render-o3');
@@ -203,20 +222,20 @@
                     r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('');
                 } else {
                     btn.classList.add('hidden');
-                    r2.innerHTML = yo?.seleccion2 ? "Voto registrado ✅" : "Esperando ronda...";
+                    r2.innerHTML = yo?.seleccion2 ? "Pronóstico registrado ✅" : "Esperando nuevas opciones...";
                     r3.innerHTML = "";
                 }
             }
 
             // Ranking
             document.getElementById('ranking-list').innerHTML = rank.map(r => `
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px;"><span>@${r.nombre}</span><b>${r.puntos} pts</b></div>`).join('');
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:8px; font-size:14px;"><span>@${r.nombre}</span><b>${r.puntos} pts</b></div>`).join('');
         }
 
         async function enviarVoto() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Elige ambas");
+            if(!v2 || !v3) return alert("Debes seleccionar ambas opciones");
             await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', userInsta);
         }
 
