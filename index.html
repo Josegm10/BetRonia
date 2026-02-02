@@ -19,6 +19,12 @@
         .hidden { display: none; }
         .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         label { display: block; background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: left; }
+        
+        /* Estilos de la tabla de información */
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        .info-table th { background: var(--primary); color: white; padding: 8px; }
+        .info-table td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        .info-section { background: #fffde7; border: 2px dashed #fbc02d; border-radius: 10px; padding: 10px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -34,6 +40,15 @@
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
+
+        <div id="info-display-section" class="info-section">
+            <h4 style="margin:0; color:#856404;">📊 DATOS DE APOYO</h4>
+            <table class="info-table">
+                <thead><tr><th>Sujeto</th><th>Dato 1</th><th>Dato 2</th></tr></thead>
+                <tbody id="info-body-user"></tbody>
+            </table>
+        </div>
+
         <div id="options-container">Esperando ronda...</div>
         <button id="btn-votar" onclick="votar()" class="hidden">ENVIAR VOTO</button>
         <button onclick="location.reload()" style="background:#eee; color: #333; font-size: 11px; margin-top: 15px;">Cerrar Sesión</button>
@@ -41,9 +56,18 @@
 
     <div id="admin-ui" class="card hidden">
         <h3>Panel Admin</h3>
-        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)"></textarea>
+        <textarea id="adm-o2" placeholder="Opciones 2 pts"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 pts"></textarea>
         <button onclick="lanzar()">Lanzar Ronda</button>
+        <hr>
+        <div style="background: #f0f0f0; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
+            <h4>Añadir Info de Jugador</h4>
+            <input type="text" id="info-sujeto" placeholder="Nombre (ej: Benzema)">
+            <input type="text" id="info-d1" placeholder="Dato 1 (ej: Goles: 5)">
+            <input type="text" id="info-d2" placeholder="Dato 2 (ej: Partidos: 2)">
+            <button onclick="guardarInfo()" style="background:#28a745">Actualizar Tabla</button>
+            <button onclick="borrarInfo()" style="background:#dc3545; font-size:10px;">Limpiar Tabla Info</button>
+        </div>
         <hr>
         <input type="text" id="win2" placeholder="Ganadora(s) 2pts">
         <input type="text" id="win3" placeholder="Ganadora(s) 3pts">
@@ -71,6 +95,23 @@
             aciertaTodo: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
         };
 
+        // --- FUNCIONES DE INFORMACIÓN ---
+        async function guardarInfo() {
+            const s = document.getElementById('info-sujeto').value;
+            const d1 = document.getElementById('info-d1').value;
+            const d2 = document.getElementById('info-d2').value;
+            if(!s) return alert("Pon un nombre");
+            await sb.from('estadisticas').upsert({ sujeto: s, dato1: d1, dato2: d2 }, { onConflict: 'sujeto' });
+            alert("Info actualizada");
+        }
+
+        async function borrarInfo() {
+            if(confirm("¿Borrar toda la tabla informativa?")) {
+                await sb.from('estadisticas').delete().neq('sujeto', '');
+            }
+        }
+
+        // --- FUNCIONES CORE ---
         async function entrar() {
             let raw = document.getElementById('username').value.trim().toLowerCase();
             miNombre = raw.replace('@', '');
@@ -83,7 +124,8 @@
         }
 
         function accesoAdmin() {
-            if(prompt("Clave:") === "1234") {
+            let pass = prompt("Clave:");
+            if(pass === "1234") {
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
@@ -114,7 +156,6 @@
             alert("Puntuado!");
         }
 
-        // --- NUEVA FUNCIÓN PARA MODIFICAR PUNTOS ---
         async function editarPuntos(nombre, actuales) {
             const n = prompt(`Nuevos puntos para @${nombre}:`, actuales);
             if(n !== null && n !== "") {
@@ -123,7 +164,7 @@
         }
 
         async function resetTorneo() {
-            if(confirm("¿Estás seguro de borrar a todos los jugadores?")) {
+            if(confirm("¿Estás seguro?")) {
                 await sb.from('jugadores').delete().neq('nombre', 'admin_placeholder');
                 location.reload();
             }
@@ -132,9 +173,20 @@
         async function refrescar() {
             const { data: est } = await sb.from('estado_juego').select('*').single();
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+            const { data: info } = await sb.from('estadisticas').select('*').order('sujeto');
+
             const container = document.getElementById('options-container');
             const btnVotar = document.getElementById('btn-votar');
             const imgGif = document.getElementById('display-gif');
+
+            // Actualizar tabla informativa
+            const infoBody = document.getElementById('info-body-user');
+            if(info && info.length > 0) {
+                document.getElementById('info-display-section').classList.remove('hidden');
+                infoBody.innerHTML = info.map(i => `<tr><td><b>${i.sujeto}</b></td><td>${i.dato1}</td><td>${i.dato2}</td></tr>`).join('');
+            } else {
+                document.getElementById('info-display-section').classList.add('hidden');
+            }
 
             if(est.correcta2 || est.correcta3) {
                 let aciertos = 0;
@@ -142,7 +194,6 @@
                 const res3 = (est.correcta3 || "").toLowerCase();
                 const miVoto2 = (yo?.seleccion2 || "---").toLowerCase();
                 const miVoto3 = (yo?.seleccion3 || "---").toLowerCase();
-
                 if(res2.includes(miVoto2)) aciertos++;
                 if(res3.includes(miVoto3)) aciertos++;
 
@@ -184,4 +235,3 @@
     </script>
 </body>
 </html>
-
