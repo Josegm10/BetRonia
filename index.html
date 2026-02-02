@@ -3,56 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego de Puntos - Final</title>
+    <title>Djokovic Challenge - Torneo</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #10b981; --admin: #4f46e5; --bg: #f3f4f6; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 420px; margin-bottom: 20px; box-sizing: border-box; }
-        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #d1d5db; font-size: 16px; }
-        button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-        button:active { opacity: 0.8; }
-        .btn-admin { background: var(--admin); }
+        :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
+        body { font-family: 'Arial', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .logo { width: 100%; border-radius: 10px; margin-bottom: 15px; }
+        .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; display: block; }
+        h2 { color: var(--primary); font-weight: 900; }
+        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #003328; }
         .hidden { display: none; }
-        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f3f4f6; }
-        .res-box { background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; color: #065f46; margin-bottom: 15px; }
-        label { display: block; background: #fff; border: 1px solid #e5e7eb; padding: 12px; margin: 6px 0; border-radius: 8px; cursor: pointer; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        label { display: block; background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: left; }
     </style>
 </head>
 <body>
 
     <div id="auth-ui" class="card">
-        <h2>Ingresar Nombre</h2>
-        <input type="text" id="username" placeholder="Tu nombre">
-        <button onclick="entrar()">Entrar a Jugar</button>
-        <button class="btn-admin" onclick="accesoAdmin()">Panel Admin</button>
+        <img src="https://i.postimg.cc/50cY2MwT/Captura-de-pantalla-2026-02-02-001132.png" class="logo">
+        <h2>INSTAGRAM CHALLENGE</h2>
+        <input type="text" id="username" placeholder="@tu_usuario">
+        <button onclick="entrar()">ENTRAR</button>
+        <button onclick="accesoAdmin()" style="background: #666; font-size: 12px;">Admin</button>
     </div>
 
     <div id="game-ui" class="card hidden">
+        <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
-        <div id="options-container">Cargando partida...</div>
-        <button id="btn-votar" onclick="votar()" class="hidden">Enviar Mi Elección</button>
+        <div id="options-container">Esperando ronda...</div>
+        <button id="btn-votar" onclick="votar()" class="hidden">ENVIAR VOTO</button>
+        <button onclick="location.reload()" style="background:#eee; color: #333; font-size: 11px;">Cerrar Sesión</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>Admin: Lanzar Ronda</h3>
-        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)"></textarea>
-        <button onclick="lanzar()">Publicar Opciones</button>
+        <h3>Panel Admin</h3>
+        <textarea id="adm-o2" placeholder="Opciones 2 pts"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 pts"></textarea>
+        <button onclick="lanzar()">Lanzar Ronda</button>
         <hr>
-        <h3>Admin: Validar</h3>
         <input type="text" id="win2" placeholder="Ganadora(s) 2pts">
         <input type="text" id="win3" placeholder="Ganadora(s) 3pts">
-        <button onclick="puntuar()" style="background:#f59e0b">Validar y Sumar Puntos</button>
+        <button onclick="puntuar()" style="background:#f59e0b">Validar y Sumar</button>
     </div>
 
     <div class="card">
-        <h3>Ranking General</h3>
+        <h3>🏆 RANKING</h3>
         <div id="ranking-list"></div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
         const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
         const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -60,20 +62,26 @@
         let miNombre = "";
         let esAdmin = false;
 
+        const GIFS = {
+            espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif",
+            fallaTodo: "https://media1.tenor.com/m/O2cp0tJpUkQAAAAd/novak-djokovic-angry.gif",
+            aciertaUno: "https://media1.tenor.com/m/PesvSN4nf-oAAAAd/djokovic-eats-grass-djoko.gif",
+            aciertaTodo: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
+        };
+
         async function entrar() {
-            miNombre = document.getElementById('username').value.trim();
-            if(!miNombre) return alert("Escribe un nombre");
-            const { error } = await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
-            if(error) return alert("Error al conectar: " + error.message);
-            
+            let raw = document.getElementById('username').value.trim().toLowerCase();
+            miNombre = raw.replace('@', '');
+            if(!miNombre) return alert("Pon tu Instagram");
+            await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
-            document.getElementById('user-display').innerText = "Hola, " + miNombre;
+            document.getElementById('user-display').innerText = "@" + miNombre;
             iniciarJuego();
         }
 
         function accesoAdmin() {
-            if(prompt("Clave Admin:") === "1234") {
+            if(prompt("Clave:") === "1234") {
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
@@ -84,73 +92,68 @@
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(s => s.trim()).filter(s => s);
             const o3 = document.getElementById('adm-o3').value.split(',').map(s => s.trim()).filter(s => s);
-            // Limpia resultados anteriores y pone opciones nuevas
-            await sb.from('estado_juego').update({ 
-                opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: Math.random() 
-            }).eq('id', 1);
-            // Limpia lo que los jugadores habían elegido antes
+            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: Math.random() }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre', '');
-            alert("Ronda publicada");
         }
 
         async function votar() {
             const s2 = document.querySelector('input[name="c2"]:checked')?.value;
             const s3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!s2 || !s3) return alert("Selecciona una de cada categoría");
-
+            if(!s2 || !s3) return alert("Elige ambas");
             await sb.from('jugadores').update({ seleccion2: s2, seleccion3: s3 }).eq('nombre', miNombre);
             document.getElementById('btn-votar').classList.add('hidden');
-            document.getElementById('options-container').innerHTML = "<b>Elección enviada.</b> Esperando resultados...";
+            document.getElementById('options-container').innerHTML = "<b>Voto enviado.</b> ¡Suerte!";
         }
 
         async function puntuar() {
             const c2 = document.getElementById('win2').value.split(',').map(s => s.trim()).filter(s => s);
             const c3 = document.getElementById('win3').value.split(',').map(s => s.trim()).filter(s => s);
-            const { error } = await sb.rpc('validar_y_puntuar', { c2, c3 });
-            if(error) alert("Error: " + error.message);
-            else alert("Puntos repartidos");
+            await sb.rpc('validar_y_puntuar', { c2, c3 });
+            alert("Puntuado!");
         }
 
-        async function editarPuntosManual(nombre, actuales) {
-            const n = prompt(`Cambiar puntos de ${nombre}:`, actuales);
-            if(n !== null) await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nombre);
-        }
-
-        async function refrescarPantalla() {
-            const { data: estado } = await sb.from('estado_juego').select('*').single();
+        async function refrescar() {
+            const { data: est } = await sb.from('estado_juego').select('*').single();
+            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
             const container = document.getElementById('options-container');
             const btnVotar = document.getElementById('btn-votar');
+            const imgGif = document.getElementById('display-gif');
 
-            if(estado.correcta2 || estado.correcta3) {
-                container.innerHTML = `<div class="res-box"><b>Resultados:</b><br>✅ 2 Puntos: ${estado.correcta2 || '---'}<br>✅ 3 Puntos: ${estado.correcta3 || '---'}</div>`;
+            if(est.correcta2 || est.correcta3) {
+                // Lógica de GIFs según aciertos
+                let aciertos = 0;
+                if(est.correcta2 && yo.seleccion2 && est.correcta2.toLowerCase().includes(yo.seleccion2.toLowerCase())) aciertos++;
+                if(est.correcta3 && yo.seleccion3 && est.correcta3.toLowerCase().includes(yo.seleccion3.toLowerCase())) aciertos++;
+
+                if(aciertos === 2) imgGif.src = GIFS.aciertaTodo;
+                else if(aciertos === 1) imgGif.src = GIFS.aciertaUno;
+                else imgGif.src = GIFS.fallaTodo;
+
+                container.innerHTML = `<div style="color:green"><b>FIN DE RONDA</b><br>2pts: ${est.correcta2}<br>3pts: ${est.correcta3}</div>`;
                 btnVotar.classList.add('hidden');
-            } else if (estado.opciones2.length > 0) {
+            } else if (est.opciones2.length > 0) {
+                imgGif.src = GIFS.espera;
                 btnVotar.classList.remove('hidden');
                 container.innerHTML = `
-                    <p><b>Categoría 2 Puntos:</b></p>
-                    ${estado.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
-                    <p><b>Categoría 3 Puntos:</b></p>
-                    ${estado.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
+                    <p><b>2 Puntos:</b></p>
+                    ${est.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
+                    <p><b>3 Puntos:</b></p>
+                    ${est.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
                 `;
             } else {
+                imgGif.src = GIFS.espera;
                 container.innerHTML = "Esperando al administrador...";
             }
 
-            const { data: jugadores } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            document.getElementById('ranking-list').innerHTML = jugadores.map(j => `
-                <div class="ranking-item">
-                    <span>${j.nombre}</span>
-                    <span>
-                        <b>${j.puntos} pts</b>
-                        ${esAdmin ? `<button onclick="editarPuntosManual('${j.nombre}', ${j.puntos})" style="width:auto; margin-left:10px; padding:2px 6px; font-size:12px; background:var(--admin)">Edit</button>` : ''}
-                    </span>
-                </div>
+            const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+            document.getElementById('ranking-list').innerHTML = jugs.map(j => `
+                <div class="ranking-item"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>
             `).join('');
         }
 
         function iniciarJuego() {
-            sb.channel('global').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescarPantalla()).subscribe();
-            refrescarPantalla();
+            sb.channel('torneo').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
+            refrescar();
         }
     </script>
 </body>
