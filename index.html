@@ -3,56 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detronia de Yugoslavia</title>
+    <title>Djokovic GOAT Game</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-    <div id="login-screen" class="container">
-        <div class="header-text">
-            <h1 class="club-title">DETRONIA</h1>
-            <p>DE YUGOSLAVIA</p>
-        </div>
-        <div class="login-box">
-            <input type="text" id="user-name-input" placeholder="Tu usuario de Instagram...">
-            <button class="btn-main" onclick="entrarAlJuego()">ENTRAR</button>
-        </div>
+    <div id="login-screen">
+        <h1>Djokovic GOAT Game</h1>
+        <input type="text" id="user-name-input" placeholder="Tu Usuario de Instagram">
+        <button onclick="entrarAlJuego()">ENTRAR</button>
     </div>
 
-    <div id="main-game" class="container" style="display: none;">
-        <div class="header">
-            <span>Usuario: <b id="current-user-display"></b></span>
-            <button onclick="cerrarSesion()" class="btn-secondary">SALIR</button>
-        </div>
+    <div id="main-game" style="display:none;">
+        <header>
+            <span>Hola, <b id="current-user-display"></b></span>
+            <button onclick="cerrarSesion()">Salir</button>
+        </header>
 
-        <div id="panel-admin" class="admin-box" style="display: none;">
-            <h3>PANEL CONTROL (ADMIN)</h3>
-            <input type="text" id="nueva-opcion-texto" placeholder="Escribe el pronóstico o tarea...">
+        <div id="panel-admin" style="display:none;">
+            <h3>Panel Admin</h3>
+            <input type="text" id="nueva-opcion-texto" placeholder="Descripción de la apuesta">
             <select id="nueva-opcion-puntos">
-                <option value="2">Categoría: 2 Puntos</option>
-                <option value="3">Categoría: 3 Puntos</option>
+                <option value="2">2 Puntos</option>
+                <option value="3">3 Puntos</option>
             </select>
-            <button class="btn-main" onclick="crearOpcion()">PUBLICAR OPCIÓN</button>
+            <button onclick="crearOpcion()">Publicar</button>
+            <button onclick="resetearTablero()" style="background:red;">Limpiar Jornada (Mantener Ranking)</button>
         </div>
 
-        <div class="user-view">
-            <h2>OPCIONES DISPONIBLES</h2>
-            <div id="contenedor-opciones-activas" class="grid-buttons"></div>
-        </div>
+        <h3>Opciones de la Jornada</h3>
+        <p><i>Selecciona una de 2pts y una de 3pts</i></p>
+        <div id="contenedor-opciones-activas"></div>
 
-        <div class="ranking-section">
-            <h3>🏆 RANKING GLOBAL</h3>
-            <div id="tabla-ranking"></div>
-        </div>
+        <h3>Ranking Global (Acumulado)</h3>
+        <div id="tabla-ranking"></div>
     </div>
 
-    <div id="modal-feedback" class="modal">
-        <div class="modal-content">
-            <h2 id="feedback-titulo"></h2>
-            <img id="feedback-gif" src="" alt="Resultado" style="width:100%; border-radius:8px; margin: 15px 0;">
-            <button class="btn-main" onclick="cerrarModal()">CONTINUAR</button>
-        </div>
+    <div id="modal-feedback" style="display:none;" onclick="cerrarModal()">
+        <h2 id="feedback-titulo"></h2>
+        <img id="feedback-gif" src="" width="300">
+        <p>Toca para cerrar</p>
     </div>
 
     <script src="script.js"></script>
