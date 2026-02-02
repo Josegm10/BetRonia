@@ -3,132 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego Puntos - Versión Final</title>
+    <title>Juego de Puntos Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px; width: 100%; max-width: 400px; margin-bottom: 20px; border: 1px solid #ddd; }
-        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: #10b981; color: white; border: none; font-weight: bold; cursor: pointer; }
+        :root { --primary: #10b981; --admin: #6366f1; --bg: #f3f4f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-bottom: 20px; box-sizing: border-box; }
+        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-admin { background: var(--admin); }
         .hidden { display: none; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .res-box { background: #d1fae5; padding: 15px; border-radius: 8px; border: 1px solid #10b981; color: #065f46; margin-bottom: 10px; }
+        label { display: block; background: #fff; border: 1px solid #eee; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; }
+        label:hover { background: #f9fafb; }
     </style>
 </head>
 <body>
 
     <div id="auth-ui" class="card">
         <h2>Ingresar Nombre</h2>
-        <input type="text" id="username" placeholder="Tu nombre">
+        <input type="text" id="username" placeholder="Tu nombre o Nick">
         <button onclick="entrar()">Entrar a Jugar</button>
-        <button onclick="adminMode()" style="background:#6366f1; margin-top:5px;">Admin</button>
+        <button class="btn-admin" onclick="accesoAdmin()">Panel Control</button>
     </div>
 
     <div id="game-ui" class="card hidden">
         <h3 id="user-display"></h3>
         <div id="options-container">Esperando ronda...</div>
-        <button id="btn-votar" onclick="votar()" class="hidden">Enviar Voto</button>
+        <button id="btn-votar" onclick="enviarVoto()" class="hidden">Enviar Elección</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>Panel Admin</h3>
-        <textarea id="adm-o2" placeholder="Opciones 2pts (separar con comas)"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3pts (separar con comas)"></textarea>
-        <button onclick="lanzar()">Lanzar Opciones</button>
+        <h3>Panel Administrador</h3>
+        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)"></textarea>
+        <button onclick="lanzarRonda()">Lanzar Nueva Ronda</button>
         <hr>
-        <input type="text" id="win2" placeholder="Correctas 2pts">
-        <input type="text" id="win3" placeholder="Correctas 3pts">
-        <button onclick="puntuar()" style="background:#f59e0b">Validar y Puntuar</button>
+        <input type="text" id="win2" placeholder="Correctas 2pts (pueden ser varias)">
+        <input type="text" id="win3" placeholder="Correctas 3pts (pueden ser varias)">
+        <button onclick="validarYSumar()" style="background:#f59e0b">Validar e Imprimir Puntos</button>
+        <button onclick="resetTorneo()" style="background:#ef4444; margin-top:20px;">Resetear Todo el Torneo</button>
     </div>
 
     <div class="card">
-        <h3>Ranking</h3>
+        <h3>Ranking General</h3>
         <div id="ranking-list"></div>
     </div>
 
     <script>
-        // --- LLAVES ---
-        const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co'; 
+        const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
         let miNombre = "";
+        let esAdmin = false;
 
         async function entrar() {
             miNombre = document.getElementById('username').value.trim();
             if(!miNombre) return alert("Escribe un nombre");
-
-            try {
-                const { error } = await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
-                if(error) throw error;
-
-                document.getElementById('auth-ui').classList.add('hidden');
-                document.getElementById('game-ui').classList.remove('hidden');
-                document.getElementById('user-display').innerText = "Jugador: " + miNombre;
-                conectarRealtime();
-            } catch (err) {
-                alert("ERROR DE CONEXIÓN: " + err.message + "\n\nRevisa que tu URL y KEY sean correctas.");
-            }
+            const { error } = await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
+            if(error) return alert("Error: " + error.message);
+            document.getElementById('auth-ui').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+            document.getElementById('user-display').innerText = "Jugador: " + miNombre;
+            iniciarEscucha();
         }
 
-        function adminMode() {
+        function accesoAdmin() {
             if(prompt("Clave:") === "1234") {
+                esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
-                conectarRealtime();
+                iniciarEscucha();
             }
         }
 
-        async function lanzar() {
+        async function lanzarRonda() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(s => s.trim()).filter(s => s);
             const o3 = document.getElementById('adm-o3').value.split(',').map(s => s.trim()).filter(s => s);
-            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: Math.random() }).eq('id', 1);
+            await sb.from('estado_juego').update({ 
+                opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: Math.random() 
+            }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre', '');
         }
 
-        async function votar() {
+        async function enviarVoto() {
             const s2 = document.querySelector('input[name="c2"]:checked')?.value;
             const s3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!s2 || !s3) return alert("Selecciona ambas!");
+            if(!s2 || !s3) return alert("Elige una de cada categoría");
             await sb.from('jugadores').update({ seleccion2: s2, seleccion3: s3 }).eq('nombre', miNombre);
             document.getElementById('btn-votar').classList.add('hidden');
-            document.getElementById('options-container').innerHTML = "Voto enviado. Esperando...";
+            document.getElementById('options-container').innerHTML = "<b>¡Recibido!</b> Esperando al admin...";
         }
 
-        async function puntuar() {
+        async function validarYSumar() {
             const c2 = document.getElementById('win2').value.split(',').map(s => s.trim()).filter(s => s);
             const c3 = document.getElementById('win3').value.split(',').map(s => s.trim()).filter(s => s);
-            // Lógica simple de puntos desde el cliente para asegurar funcionamiento
-            await sb.from('estado_juego').update({ correcta2: c2.join(','), correcta3: c3.join(',') }).eq('id', 1);
-            alert("Puntuación enviada (Refresca el ranking)");
+            const { error } = await sb.rpc('validar_y_puntuar', { c2, c3 });
+            if(error) alert("Error: " + error.message);
+            else alert("¡Puntos asignados!");
         }
 
-        async function actualizar() {
+        async function editarPuntosManual(nombre, actuales) {
+            const n = prompt(`Nuevos puntos para ${nombre}:`, actuales);
+            if(n !== null) await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nombre);
+        }
+
+        async function resetTorneo() {
+            if(confirm("¿Borrar todos los jugadores y puntos?")) {
+                await sb.from('jugadores').delete().neq('nombre', 'borrar');
+                location.reload();
+            }
+        }
+
+        async function actualizarUI() {
             const { data: estado } = await sb.from('estado_juego').select('*').single();
             const container = document.getElementById('options-container');
             const btn = document.getElementById('btn-votar');
 
             if(estado.correcta2 || estado.correcta3) {
-                container.innerHTML = `<b>Resultados:</b><br>Cat2: ${estado.correcta2}<br>Cat3: ${estado.correcta3}`;
+                container.innerHTML = `<div class="res-box"><b>Resultados:</b><br>✅ 2 Puntos: ${estado.correcta2}<br>✅ 3 Puntos: ${estado.correcta3}</div>`;
                 btn.classList.add('hidden');
-            } else if(estado.opciones2.length > 0) {
+            } else if (estado.opciones2.length > 0) {
                 btn.classList.remove('hidden');
                 container.innerHTML = `
-                    <p><b>2 Puntos:</b></p>
-                    ${estado.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('')}
-                    <p><b>3 Puntos:</b></p>
-                    ${estado.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('')}
+                    <p><b>Categoría 2 Puntos:</b></p>
+                    ${estado.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
+                    <p><b>Categoría 3 Puntos:</b></p>
+                    ${estado.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
                 `;
+            } else {
+                container.innerHTML = "Esperando nueva ronda...";
             }
 
             const { data: lista } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
             document.getElementById('ranking-list').innerHTML = lista.map(j => `
-                <div class="ranking-item"><span>${j.nombre}</span><b>${j.puntos} pts</b></div>
+                <div class="ranking-item">
+                    <span>${j.nombre}</span>
+                    <span>
+                        <b>${j.puntos} pts</b>
+                        ${esAdmin ? `<button onclick="editarPuntosManual('${j.nombre}', ${j.puntos})" style="width:auto; margin-left:8px; padding:2px 6px; font-size:11px;">Edit</button>` : ''}
+                    </span>
+                </div>
             `).join('');
         }
 
-        function conectarRealtime() {
-            sb.channel('db-changes').on('postgres_changes', { event: '*', schema: 'public' }, () => actualizar()).subscribe();
-            actualizar();
+        function iniciarEscucha() {
+            sb.channel('game').on('postgres_changes', { event: '*', schema: 'public' }, () => actualizarUI()).subscribe();
+            actualizarUI();
         }
     </script>
 </body>
