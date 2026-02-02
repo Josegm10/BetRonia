@@ -1,18 +1,18 @@
 // CONFIGURACIÓN DE TU SUPABASE
 const supabaseUrl = 'https://jvjzqodxumblrkiisfva.supabase.co'; 
 const supabaseKey = 'sb_publishable_k_MTOsgTsM-vTvGk4bARiQ_QjvEJaPX';
-
 const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-// GIFs de Djokovic
 const GIF_ACIERTO = "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif";
 const GIF_FALLO = "https://media1.tenor.com/m/0q37Cfr4pLgAAAAd/novak-djokovic-falling.gif";
 
 async function entrarAlJuego() {
     const nombre = document.getElementById('user-name-input').value.trim().toUpperCase();
-    if (!nombre) return;
+    if (!nombre) return alert("Escribe tu nombre de Instagram");
+    
     const { data } = await client.from('clasificacion').select('*').eq('nombre', nombre).single();
     if (!data) await client.from('clasificacion').insert([{ nombre: nombre, puntos: 0 }]);
+    
     localStorage.setItem('usuarioActivo', nombre);
     iniciarApp(nombre);
 }
@@ -20,6 +20,7 @@ async function entrarAlJuego() {
 async function seleccionarOpcion(opcionId) {
     const nombre = localStorage.getItem('usuarioActivo');
     if (nombre === "ADMIN") return;
+
     const { data: opt } = await client.from('opciones').select('puntos_valor, es_correcta').eq('id', opcionId).single();
     if (opt.es_correcta !== null) return;
 
@@ -27,15 +28,15 @@ async function seleccionarOpcion(opcionId) {
     if (mResp && mResp.length > 0) {
         const ids = mResp.map(r => r.opcion_id);
         const { data: cats } = await client.from('opciones').select('puntos_valor').in('id', ids);
-        if (cats.some(c => c.puntos_valor === opt.puntos_valor)) return alert("Ya votaste en esta categoría.");
+        if (cats.some(c => c.puntos_valor === opt.puntos_valor)) return alert("Ya votaste en esta categoría de puntos.");
     }
+    
     await client.from('respuestas').insert([{ nombre_usuario: nombre, opcion_id: opcionId }]);
     actualizarTodo();
 }
 
 async function procesarOpcion(opcionId, esCorrecta, puntosValor) {
-    const confirmacion = confirm(esCorrecta ? "¿Confirmas que es CORRECTA?" : "¿Confirmas que es INCORRECTA?");
-    if (!confirmacion) return;
+    if (!confirm(esCorrecta ? "Confirmar como CORRECTA" : "Confirmar como INCORRECTA")) return;
 
     await client.from('opciones').update({ es_correcta: esCorrecta }).eq('id', opcionId);
 
@@ -48,9 +49,7 @@ async function procesarOpcion(opcionId, esCorrecta, puntosValor) {
                 await client.from('respuestas').update({ procesada: true }).eq('nombre_usuario', user.nombre_usuario).eq('opcion_id', opcionId);
             }
             mostrarFeedback(true);
-        } else {
-            mostrarFeedback(false);
-        }
+        } else { mostrarFeedback(false); }
     } else {
         await client.from('respuestas').update({ procesada: true }).eq('opcion_id', opcionId);
         mostrarFeedback(false);
@@ -62,11 +61,9 @@ function mostrarFeedback(exito) {
     const modal = document.getElementById('modal-feedback');
     const gif = document.getElementById('feedback-gif');
     const titulo = document.getElementById('feedback-titulo');
-
-    titulo.innerText = exito ? "¡DJOKOVIC GOAT - PUNTOS SUMADOS!" : "NADIE SUMA PUNTOS";
+    titulo.innerText = exito ? "¡GOAT! PUNTOS SUMADOS" : "NADIE SUMA PUNTOS";
     titulo.style.color = exito ? "var(--green)" : "var(--red)";
     gif.src = exito ? GIF_ACIERTO : GIF_FALLO;
-    
     modal.style.display = "block";
 }
 
@@ -85,20 +82,15 @@ async function cargarOpciones() {
         const yaVoto = respIds.includes(opt.id);
         const div = document.createElement('div');
         div.className = `btn-option ${yaVoto ? 'elegida' : ''}`;
-        
-        let label = "";
-        if (opt.es_correcta === true) label = " <span style='color:var(--green)'>[CORRECTA ✅]</span>";
-        if (opt.es_correcta === false) label = " <span style='color:var(--red)'>[INCORRECTA ❌]</span>";
-
+        let label = opt.es_correcta === true ? " ✅" : opt.es_correcta === false ? " ❌" : "";
         div.innerHTML = `<div onclick="${opt.es_correcta === null ? `seleccionarOpcion(${opt.id})` : ''}">
-            <b>${opt.texto_opcion}</b> (${opt.puntos_valor} pts)${label}
+            <b>${opt.texto_opcion}</b> (${opt.puntos_valor} pts)${label} ${yaVoto ? '⭐' : ''}
         </div>`;
-
         if (esAdmin && opt.es_correcta === null) {
             const actions = document.createElement('div');
             actions.className = "admin-actions";
             actions.innerHTML = `
-                <button class="btn-correct" onclick="procesarOpcion(${opt.id}, true, ${opt.puntos_valor})">SI</button>
+                <button class="btn-correct" onclick="procesarOpcion(${opt.id}, true, ${opt.puntos_valor})">SÍ</button>
                 <button class="btn-incorrect" onclick="procesarOpcion(${opt.id}, false, ${opt.puntos_valor})">NO</button>
             `;
             div.appendChild(actions);
@@ -133,4 +125,5 @@ function iniciarApp(n) {
 }
 window.onload = () => { const u = localStorage.getItem('usuarioActivo'); if(u) iniciarApp(u); };
 function cerrarSesion() { localStorage.removeItem('usuarioActivo'); location.reload(); }
+setInterval(actualizarTodo, 10000);
 
