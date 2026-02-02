@@ -1,7 +1,13 @@
 // CONFIGURACIÓN DE TU SUPABASE
 const supabaseUrl = 'https://jvjzqodxumblrkiisfva.supabase.co'; 
 const supabaseKey = 'sb_publishable_k_MTOsgTsM-vTvGk4bARiQ_QjvEJaPX';
-const client = supabase.createClient(supabaseUrl, supabaseKey);
+const client = supabase.createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  }
+});
 
 const GIF_ACIERTO = "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif";
 const GIF_FALLO = "https://media1.tenor.com/m/0q37Cfr4pLgAAAAd/novak-djokovic-falling.gif";
@@ -126,4 +132,5 @@ function iniciarApp(n) {
 window.onload = () => { const u = localStorage.getItem('usuarioActivo'); if(u) iniciarApp(u); };
 function cerrarSesion() { localStorage.removeItem('usuarioActivo'); location.reload(); }
 setInterval(actualizarTodo, 10000);
+
 
