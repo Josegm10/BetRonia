@@ -1,20 +1,15 @@
 // CONFIGURACIÓN DE TU SUPABASE
 const supabaseUrl = 'https://jvjzqodxumblrkiisfva.supabase.co'; 
 const supabaseKey = 'sb_publishable_k_MTOsgTsM-vTvGk4bARiQ_QjvEJaPX';
-const client = supabase.createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
-  }
-});
+const client = supabase.createClient(supabaseUrl, supabaseKey);
 
 const GIF_ACIERTO = "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif";
 const GIF_FALLO = "https://media1.tenor.com/m/0q37Cfr4pLgAAAAd/novak-djokovic-falling.gif";
 
+// LOGIN
 async function entrarAlJuego() {
     const nombre = document.getElementById('user-name-input').value.trim().toUpperCase();
-    if (!nombre) return alert("Escribe tu nombre de Instagram");
+    if (!nombre) return alert("Escribe tu nombre");
     
     const { data } = await client.from('clasificacion').select('*').eq('nombre', nombre).single();
     if (!data) await client.from('clasificacion').insert([{ nombre: nombre, puntos: 0 }]);
@@ -23,83 +18,97 @@ async function entrarAlJuego() {
     iniciarApp(nombre);
 }
 
-async function seleccionarOpcion(opcionId) {
-    const nombre = localStorage.getItem('usuarioActivo');
-    if (nombre === "ADMIN") return;
-
-    const { data: opt } = await client.from('opciones').select('puntos_valor, es_correcta').eq('id', opcionId).single();
-    if (opt.es_correcta !== null) return;
-
-    const { data: mResp } = await client.from('respuestas').select('opcion_id').eq('nombre_usuario', nombre);
-    if (mResp && mResp.length > 0) {
-        const ids = mResp.map(r => r.opcion_id);
-        const { data: cats } = await client.from('opciones').select('puntos_valor').in('id', ids);
-        if (cats.some(c => c.puntos_valor === opt.puntos_valor)) return alert("Ya votaste en esta categoría de puntos.");
-    }
+// ADMIN: CREAR
+async function crearOpcion() {
+    const t = document.getElementById('nueva-opcion-texto').value;
+    const c = parseInt(document.getElementById('nueva-opcion-puntos').value);
+    if(!t) return;
     
-    await client.from('respuestas').insert([{ nombre_usuario: nombre, opcion_id: opcionId }]);
+    await client.from('opciones').insert([{ texto_opcion: t, categoria: c }]);
+    document.getElementById('nueva-opcion-texto').value = "";
     actualizarTodo();
 }
 
-async function procesarOpcion(opcionId, esCorrecta, puntosValor) {
-    if (!confirm(esCorrecta ? "Confirmar como CORRECTA" : "Confirmar como INCORRECTA")) return;
+// ADMIN: RESET JORNADA
+async function resetearTablero() {
+    if(!confirm("¿Borrar apuestas? El ranking se mantendrá.")) return;
+    await client.rpc('limpiar_jornada');
+    actualizarTodo();
+}
 
-    await client.from('opciones').update({ es_correcta: esCorrecta }).eq('id', opcionId);
+// USUARIO: SELECCIONAR (1 por categoría)
+async function seleccionarOpcion(id, cat) {
+    const nombre = localStorage.getItem('usuarioActivo');
+    if (nombre === "ADMIN") return;
 
-    if (esCorrecta) {
-        const { data: acertantes } = await client.from('respuestas').select('nombre_usuario').eq('opcion_id', opcionId).eq('procesada', false);
-        if (acertantes && acertantes.length > 0) {
-            for (let user of acertantes) {
-                let { data: p } = await client.from('clasificacion').select('puntos').eq('nombre', user.nombre_usuario).single();
-                await client.from('clasificacion').update({ puntos: (p.puntos || 0) + puntosValor }).eq('nombre', user.nombre_usuario);
-                await client.from('respuestas').update({ procesada: true }).eq('nombre_usuario', user.nombre_usuario).eq('opcion_id', opcionId);
+    // Verificar si ya tiene esa categoría elegida
+    const { data: votos } = await client.from('respuestas')
+        .select('opciones(categoria)')
+        .eq('nombre_usuario', nombre);
+    
+    const yaVotoCat = votos?.some(v => v.opciones.categoria === cat);
+    if (yaVotoCat) return alert("Ya has elegido una opción de " + cat + " puntos.");
+
+    await client.from('respuestas').insert([{ 
+        nombre_usuario: nombre, 
+        opcion_id: id, 
+        puntos_en_juego: cat 
+    }]);
+    actualizarTodo();
+}
+
+// ADMIN: VALIDAR RESULTADOS
+async function procesarOpcion(id, exito, puntos) {
+    await client.from('opciones').update({ es_correcta: exito }).eq('id', id);
+
+    if (exito) {
+        const { data: acertantes } = await client.from('respuestas')
+            .select('nombre_usuario')
+            .eq('opcion_id', id)
+            .eq('procesada', false);
+
+        if (acertantes) {
+            for (let u of acertantes) {
+                const { data: user } = await client.from('clasificacion').select('puntos').eq('nombre', u.nombre_usuario).single();
+                await client.from('clasificacion').update({ puntos: (user.puntos || 0) + puntos }).eq('nombre', u.nombre_usuario);
+                await client.from('respuestas').update({ procesada: true }).eq('nombre_usuario', u.nombre_usuario).eq('opcion_id', id);
             }
             mostrarFeedback(true);
-        } else { mostrarFeedback(false); }
+        }
     } else {
-        await client.from('respuestas').update({ procesada: true }).eq('opcion_id', opcionId);
+        await client.from('respuestas').update({ procesada: true }).eq('opcion_id', id);
         mostrarFeedback(false);
     }
     actualizarTodo();
 }
 
-function mostrarFeedback(exito) {
-    const modal = document.getElementById('modal-feedback');
-    const gif = document.getElementById('feedback-gif');
-    const titulo = document.getElementById('feedback-titulo');
-    titulo.innerText = exito ? "¡GOAT! PUNTOS SUMADOS" : "NADIE SUMA PUNTOS";
-    titulo.style.color = exito ? "var(--green)" : "var(--red)";
-    gif.src = exito ? GIF_ACIERTO : GIF_FALLO;
-    modal.style.display = "block";
-}
-
-function cerrarModal() { document.getElementById('modal-feedback').style.display = "none"; }
-
+// VISUALIZACIÓN
 async function cargarOpciones() {
-    const { data: opciones } = await client.from('opciones').select('*').order('id', { ascending: false });
+    const { data: opts } = await client.from('opciones').select('*').order('id', {ascending: false});
     const user = localStorage.getItem('usuarioActivo');
-    const esAdmin = user === "ADMIN";
-    const { data: mResp } = await client.from('respuestas').select('opcion_id').eq('nombre_usuario', user);
-    const respIds = mResp ? mResp.map(r => r.opcion_id) : [];
+    const { data: misVotos } = await client.from('respuestas').select('opcion_id').eq('nombre_usuario', user);
+    const idsVotados = misVotos?.map(v => v.opcion_id) || [];
 
     const container = document.getElementById('contenedor-opciones-activas');
     container.innerHTML = "";
-    (opciones || []).forEach(opt => {
-        const yaVoto = respIds.includes(opt.id);
+
+    opts?.forEach(o => {
         const div = document.createElement('div');
-        div.className = `btn-option ${yaVoto ? 'elegida' : ''}`;
-        let label = opt.es_correcta === true ? " ✅" : opt.es_correcta === false ? " ❌" : "";
-        div.innerHTML = `<div onclick="${opt.es_correcta === null ? `seleccionarOpcion(${opt.id})` : ''}">
-            <b>${opt.texto_opcion}</b> (${opt.puntos_valor} pts)${label} ${yaVoto ? '⭐' : ''}
-        </div>`;
-        if (esAdmin && opt.es_correcta === null) {
-            const actions = document.createElement('div');
-            actions.className = "admin-actions";
-            actions.innerHTML = `
-                <button class="btn-correct" onclick="procesarOpcion(${opt.id}, true, ${opt.puntos_valor})">SÍ</button>
-                <button class="btn-incorrect" onclick="procesarOpcion(${opt.id}, false, ${opt.puntos_valor})">NO</button>
-            `;
-            div.appendChild(actions);
+        div.className = `btn-option ${idsVotados.includes(o.id) ? 'elegida' : ''}`;
+        let res = o.es_correcta === true ? " ✅" : o.es_correcta === false ? " ❌" : "";
+        
+        div.innerHTML = `
+            <div onclick="${o.es_correcta === null ? `seleccionarOpcion(${o.id}, ${o.categoria})` : ''}">
+                ${o.texto_opcion} [${o.categoria} pts] ${res}
+            </div>
+        `;
+
+        if (user === "ADMIN" && o.es_correcta === null) {
+            div.innerHTML += `
+                <div class="admin-actions">
+                    <button onclick="procesarOpcion(${o.id}, true, ${o.categoria})">SÍ</button>
+                    <button onclick="procesarOpcion(${o.id}, false, ${o.categoria})">NO</button>
+                </div>`;
         }
         container.appendChild(div);
     });
@@ -107,21 +116,13 @@ async function cargarOpciones() {
 
 async function actualizarRanking() {
     const { data: lista } = await client.from('clasificacion').select('*').order('puntos', { ascending: false });
-    document.getElementById('tabla-ranking').innerHTML = (lista || []).map((j, i) => `
+    document.getElementById('tabla-ranking').innerHTML = lista?.map((j, i) => `
         <div class="ranking-item"><span>${i+1}. ${j.nombre}</span><span><b>${j.puntos}</b> pts</span></div>
-    `).join('');
-}
-
-async function crearOpcion() {
-    const t = document.getElementById('nueva-opcion-texto').value;
-    const p = parseInt(document.getElementById('nueva-opcion-puntos').value);
-    if(!t) return;
-    await client.from('opciones').insert([{ texto_opcion: t, puntos_valor: p, es_correcta: null }]);
-    document.getElementById('nueva-opcion-texto').value = "";
-    actualizarTodo();
+    `).join('') || "";
 }
 
 function actualizarTodo() { actualizarRanking(); cargarOpciones(); }
+
 function iniciarApp(n) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-game').style.display = 'block';
@@ -129,8 +130,15 @@ function iniciarApp(n) {
     if (n === "ADMIN") document.getElementById('panel-admin').style.display = 'block';
     actualizarTodo();
 }
-window.onload = () => { const u = localStorage.getItem('usuarioActivo'); if(u) iniciarApp(u); };
+
+function mostrarFeedback(e) {
+    const m = document.getElementById('modal-feedback');
+    document.getElementById('feedback-titulo').innerText = e ? "¡ACIERTO! Puntos sumados." : "FALLO...";
+    document.getElementById('feedback-gif').src = e ? GIF_ACIERTO : GIF_FALLO;
+    m.style.display = "flex";
+}
+
+function cerrarModal() { document.getElementById('modal-feedback').style.display = "none"; }
 function cerrarSesion() { localStorage.removeItem('usuarioActivo'); location.reload(); }
-setInterval(actualizarTodo, 10000);
-
-
+window.onload = () => { if(localStorage.getItem('usuarioActivo')) iniciarApp(localStorage.getItem('usuarioActivo')); };
+setInterval(actualizarTodo, 20000);
