@@ -3,30 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Final</title>
+    <title>Djokovic Challenge - Definitivo</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 480px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 480px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
         .logo { width: 100%; border-radius: 10px; margin-bottom: 15px; }
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; height: 180px; object-fit: cover; border: 1px solid #ddd; }
-        h3, h4 { color: var(--primary); margin: 10px 0; }
+        h3, h4 { color: var(--primary); margin: 10px 0; text-transform: uppercase; }
         input, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
         .hidden { display: none !important; }
         
-        /* Estilos Tabla */
-        .table-ui { width: 100%; border-collapse: collapse; font-size: 12px; background: white; margin-top: 10px; }
+        /* Tabla Pro */
+        .table-container { background: #fffde7; padding: 10px; border-radius: 10px; border: 2px dashed #fbc02d; margin: 15px 0; overflow-x: auto; }
+        .table-ui { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
         .table-ui th { background: #fbc02d; padding: 6px; border: 1px solid #ddd; }
         .table-ui td { padding: 8px; border: 1px solid #eee; text-align: center; }
-        .am { background: #ffeb3b; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #d4c100; }
-        .ro { background: #f44336; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #b71c1c; color: white; }
+        .am { background: #ffeb3b; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #d4c100; color: #000; }
+        .ro { background: #f44336; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #b71c1c; color: #fff; }
 
         /* Votación Dual */
-        .vote-container { display: flex; flex-direction: column; gap: 15px; margin: 15px 0; text-align: left; }
-        .vote-block { background: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary); }
-        label { display: block; padding: 10px; background: white; border: 1px solid #ddd; margin: 5px 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .vote-block { background: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary); margin-bottom: 10px; text-align: left; }
+        label { display: block; padding: 12px; background: white; border: 1px solid #ddd; margin: 6px 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        input[type="radio"] { width: auto; margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -39,25 +41,23 @@
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>🛠️ ADMIN CONTROL</h3>
-        <input type="text" id="in-jug" placeholder="Nombre Jugador">
-        <input type="text" id="in-pos" placeholder="Posición">
+        <h3>🛠️ PANEL ADMIN</h3>
+        <input type="text" id="in-jug" placeholder="Jugador">
         <div style="display:flex; gap:5px;">
-            <input type="number" id="in-gol" placeholder="Goles">
+            <input type="text" id="in-pos" placeholder="Pos">
+            <input type="number" id="in-gol" placeholder="G">
             <input type="number" id="in-ama" placeholder="AM">
             <input type="number" id="in-roj" placeholder="RO">
         </div>
-        <button onclick="guardarFila()" style="background:#22c55e">ACTUALIZAR TABLA</button>
+        <button onclick="guardarFila()" style="background:#22c55e">ACTUALIZAR ESTADÍSTICAS</button>
         <hr>
-        <textarea id="adm-o2" placeholder="Opciones 2 Puntos (separadas por comas)"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3 Puntos (separadas por comas)"></textarea>
-        <button onclick="lanzar()">LANZAR RONDA</button>
+        <textarea id="adm-o2" placeholder="Opciones 2 Puntos (opción1, opción2...)"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 Puntos (opción1, opción2...)"></textarea>
+        <button onclick="lanzar()">LANZAR NUEVA RONDA</button>
         <hr>
-        <div style="display:flex; gap:5px;">
-            <input type="text" id="win2" placeholder="Ganador 2pts">
-            <input type="text" id="win3" placeholder="Ganador 3pts">
-        </div>
-        <button onclick="puntuar()" style="background:#f59e0b">CERRAR Y SUMAR PUNTOS</button>
+        <input type="text" id="win2" placeholder="Ganador 2pts">
+        <input type="text" id="win3" placeholder="Ganador 3pts">
+        <button onclick="puntuar()" style="background:#f59e0b">VALIDAR Y SUMAR PUNTOS</button>
         <button onclick="location.reload()" style="background:black; margin-top:10px;">SALIR</button>
     </div>
 
@@ -65,8 +65,8 @@
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
         
-        <div class="card" style="width:100%; padding:10px; border:none; box-shadow:none;">
-            <h4>📊 DATOS EN VIVO</h4>
+        <div class="table-container">
+            <h4>📊 ESTADÍSTICAS DEL PARTIDO</h4>
             <table class="table-ui">
                 <thead>
                     <tr><th rowspan="2">JUGADOR</th><th rowspan="2">POS</th><th rowspan="2">GOL</th><th colspan="2">TARJETAS</th></tr>
@@ -76,27 +76,26 @@
             </table>
         </div>
 
-        <div id="vote-ui">
-            <div class="vote-container">
-                <div class="vote-block">
-                    <h4>🎯 2 PUNTOS</h4>
-                    <div id="render-o2">Esperando opciones...</div>
-                </div>
-                <div class="vote-block">
-                    <h4>🔥 3 PUNTOS</h4>
-                    <div id="render-o3">Esperando opciones...</div>
-                </div>
+        <div id="voto-ui">
+            <div class="vote-block">
+                <h4>🎯 CATEGORÍA 2 PUNTOS</h4>
+                <div id="render-o2">Esperando...</div>
             </div>
-            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR AMBOS PRONÓSTICOS</button>
+            <div class="vote-block">
+                <h4>🔥 CATEGORÍA 3 PUNTOS</h4>
+                <div id="render-o3">Esperando...</div>
+            </div>
+            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR AMBOS VOTOS</button>
         </div>
 
         <div style="margin-top:20px;">
-            <h4>🏆 RANKING</h4>
+            <h4>🏆 RANKING TOP 10</h4>
             <div id="ranking-list"></div>
         </div>
     </div>
 
     <script>
+        // CONFIGURACIÓN SUPABASE
         const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
         const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -111,12 +110,12 @@
 
         async function entrar() {
             miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
-            if(!miNombre) return alert("Escribe tu Instagram");
+            if(!miNombre) return alert("Ingresa tu usuario");
             await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
             document.getElementById('user-display').innerText = "@" + miNombre;
-            iniciar();
+            iniciarApp();
         }
 
         function accesoAdmin() {
@@ -124,7 +123,7 @@
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
-                iniciar();
+                iniciarApp();
             }
         }
 
@@ -147,31 +146,30 @@
         async function puntuar() {
             const w2 = document.getElementById('win2').value.trim();
             const w3 = document.getElementById('win3').value.trim();
-            await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
+            if(w2 && w3) await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
         }
 
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: jg } = await sb.from('estado_juego').select('*').single();
-            const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+            const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false}).limit(10);
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Dibujar Tabla
+            // Dibujar Tabla (Visible para todos)
             document.getElementById('info-content-user').innerHTML = (st || []).map(s => `
                 <tr><td><b>${s.sujeto}</b></td><td>${s.dato1}</td><td>${s.dato2}</td>
                 <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
 
-            // Lógica de Votación y GIFs
             const gif = document.getElementById('display-gif');
             const r2 = document.getElementById('render-o2');
             const r3 = document.getElementById('render-o3');
             const btn = document.getElementById('btn-votar');
 
             if(jg.ronda_id === 1) {
-                let gano = (yo?.seleccion2 === jg.correcta2 && jg.correcta2) || (yo?.seleccion3 === jg.correcta3 && jg.correcta3);
-                gif.src = gano ? GIFS.acierta : GIFS.falla;
-                r2.innerHTML = `Resultado: <b>${jg.correcta2 || '---'}</b>`;
-                r3.innerHTML = `Resultado: <b>${jg.correcta3 || '---'}</b>`;
+                let acierto = (yo?.seleccion2 === jg.correcta2 && jg.correcta2) || (yo?.seleccion3 === jg.correcta3 && jg.correcta3);
+                gif.src = acierto ? GIFS.acierta : GIFS.falla;
+                r2.innerHTML = `Ganador: <b>${jg.correcta2}</b>`;
+                r3.innerHTML = `Ganador: <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 gif.src = GIFS.espera;
@@ -180,25 +178,26 @@
                     r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('');
                     r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('');
                 } else {
-                    r2.innerHTML = "Voto 2pts enviado ✅";
-                    r3.innerHTML = "Voto 3pts enviado ✅";
+                    r2.innerHTML = "✅ Voto 2pts registrado";
+                    r3.innerHTML = "✅ Voto 3pts registrado";
                     btn.classList.add('hidden');
                 }
             }
-            document.getElementById('ranking-list').innerHTML = jugs.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>`).join('');
+            document.getElementById('ranking-list').innerHTML = (jugs || []).map(j => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>`).join('');
         }
 
         async function votar() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Debes seleccionar una opción en AMBAS categorías");
+            if(!v2 || !v3) return alert("Debes marcar una opción en cada categoría");
             await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
         }
 
-        function iniciar() {
-            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
+        function iniciarApp() {
+            sb.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
             refrescar();
         }
     </script>
 </body>
 </html>
+
