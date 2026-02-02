@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Pro</title>
+    <title>Djokovic Challenge - Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
@@ -11,21 +11,22 @@
         .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 480px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
         .logo { width: 100%; border-radius: 10px; margin-bottom: 15px; }
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; height: 180px; object-fit: cover; border: 1px solid #ddd; }
-        h3, h4 { color: var(--primary); margin: 10px 0; text-transform: uppercase; }
+        h3, h4 { color: var(--primary); margin: 10px 0; }
         input, button, textarea { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .hidden { display: none !important; }
         
-        /* Tablas */
-        .table-ui { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
-        .table-ui th { background: #fbc02d; padding: 5px; border: 1px solid #ddd; }
+        /* Estilos Tabla */
+        .table-ui { width: 100%; border-collapse: collapse; font-size: 12px; background: white; margin-top: 10px; }
+        .table-ui th { background: #fbc02d; padding: 6px; border: 1px solid #ddd; }
         .table-ui td { padding: 8px; border: 1px solid #eee; text-align: center; }
-        .am { background: #ffeb3b; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #d4c100; color: #000; }
-        .ro { background: #f44336; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #b71c1c; color: #fff; }
+        .am { background: #ffeb3b; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #d4c100; }
+        .ro { background: #f44336; padding: 2px 5px; border-radius: 4px; font-weight: bold; border: 1px solid #b71c1c; color: white; }
 
-        /* Votaciones */
-        .vote-section { background: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary); margin-bottom: 15px; text-align: left; }
-        label { display: block; padding: 10px; background: white; border: 1px solid #ddd; margin: 5px 0; border-radius: 8px; cursor: pointer; }
+        /* Votación Dual */
+        .vote-container { display: flex; flex-direction: column; gap: 15px; margin: 15px 0; text-align: left; }
+        .vote-block { background: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid var(--primary); }
+        label { display: block; padding: 10px; background: white; border: 1px solid #ddd; margin: 5px 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -38,30 +39,25 @@
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>🛠️ ADMIN</h3>
-        <div style="text-align: left; background:#f1f5f9; padding:15px; border-radius:10px;">
-            <h4>1. Tabla de Estadísticas</h4>
-            <input type="text" id="in-jug" placeholder="Nombre Jugador">
-            <input type="text" id="in-pos" placeholder="Posición">
-            <div style="display:flex; gap:5px;">
-                <input type="number" id="in-gol" placeholder="Goles">
-                <input type="number" id="in-ama" placeholder="AM">
-                <input type="number" id="in-roj" placeholder="RO">
-            </div>
-            <button onclick="guardarFila()" style="background:#22c55e">AÑADIR/ACTUALIZAR</button>
-            <div id="adm-list-stats" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
+        <h3>🛠️ ADMIN CONTROL</h3>
+        <input type="text" id="in-jug" placeholder="Nombre Jugador">
+        <input type="text" id="in-pos" placeholder="Posición">
+        <div style="display:flex; gap:5px;">
+            <input type="number" id="in-gol" placeholder="Goles">
+            <input type="number" id="in-ama" placeholder="AM">
+            <input type="number" id="in-roj" placeholder="RO">
         </div>
-
-        <div style="text-align: left; background:#f1f5f9; padding:15px; border-radius:10px; margin-top:10px;">
-            <h4>2. Control de Ronda</h4>
-            <textarea id="adm-o2" placeholder="Opciones 2pts (separadas por comas)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3pts (separadas por comas)"></textarea>
-            <button onclick="lanzar()">LANZAR RONDA</button>
-            <hr>
+        <button onclick="guardarFila()" style="background:#22c55e">ACTUALIZAR TABLA</button>
+        <hr>
+        <textarea id="adm-o2" placeholder="Opciones 2 Puntos (separadas por comas)"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 Puntos (separadas por comas)"></textarea>
+        <button onclick="lanzar()">LANZAR RONDA</button>
+        <hr>
+        <div style="display:flex; gap:5px;">
             <input type="text" id="win2" placeholder="Ganador 2pts">
             <input type="text" id="win3" placeholder="Ganador 3pts">
-            <button onclick="puntuar()" style="background:#f59e0b">CERRAR Y PUNTUAR</button>
         </div>
+        <button onclick="puntuar()" style="background:#f59e0b">CERRAR Y SUMAR PUNTOS</button>
         <button onclick="location.reload()" style="background:black; margin-top:10px;">SALIR</button>
     </div>
 
@@ -69,27 +65,29 @@
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
         
-        <div style="background:#fffde7; padding:10px; border-radius:10px; border:2px dashed #fbc02d; margin-bottom:15px;">
-            <h4>📊 ESTADÍSTICAS OFICIALES</h4>
+        <div class="card" style="width:100%; padding:10px; border:none; box-shadow:none;">
+            <h4>📊 DATOS EN VIVO</h4>
             <table class="table-ui">
                 <thead>
                     <tr><th rowspan="2">JUGADOR</th><th rowspan="2">POS</th><th rowspan="2">GOL</th><th colspan="2">TARJETAS</th></tr>
-                    <tr><th style="background:#ffeb3b">AM</th><th style="background:#f44336; color:#fff">RO</th></tr>
+                    <tr><th style="background:#ffeb3b">AM</th><th style="background:#f44336; color:white">RO</th></tr>
                 </thead>
                 <tbody id="info-content-user"></tbody>
             </table>
         </div>
 
-        <div id="votos-container">
-            <div class="vote-section">
-                <h4>🎯 2 PUNTOS</h4>
-                <div id="render-o2">Esperando...</div>
+        <div id="vote-ui">
+            <div class="vote-container">
+                <div class="vote-block">
+                    <h4>🎯 2 PUNTOS</h4>
+                    <div id="render-o2">Esperando opciones...</div>
+                </div>
+                <div class="vote-block">
+                    <h4>🔥 3 PUNTOS</h4>
+                    <div id="render-o3">Esperando opciones...</div>
+                </div>
             </div>
-            <div class="vote-section">
-                <h4>🔥 3 PUNTOS</h4>
-                <div id="render-o3">Esperando...</div>
-            </div>
-            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR VOTO</button>
+            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR AMBOS PRONÓSTICOS</button>
         </div>
 
         <div style="margin-top:20px;">
@@ -113,7 +111,7 @@
 
         async function entrar() {
             miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
-            if(!miNombre) return;
+            if(!miNombre) return alert("Escribe tu Instagram");
             await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
@@ -137,10 +135,7 @@
             const a = document.getElementById('in-ama').value || 0;
             const r = document.getElementById('in-roj').value || 0;
             if(j) await sb.from('estadisticas').upsert({ sujeto: j, dato1: p, dato2: g, dato3: a, dato4: r }, { onConflict: 'sujeto' });
-            document.getElementById('in-jug').value = "";
         }
-
-        async function borrar(s) { await sb.from('estadisticas').delete().eq('sujeto', s); }
 
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
@@ -161,20 +156,12 @@
             const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Tabla Usuario
+            // Dibujar Tabla
             document.getElementById('info-content-user').innerHTML = (st || []).map(s => `
                 <tr><td><b>${s.sujeto}</b></td><td>${s.dato1}</td><td>${s.dato2}</td>
                 <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
 
-            // Admin List
-            if(esAdmin) {
-                document.getElementById('adm-list-stats').innerHTML = (st || []).map(s => `
-                    <div style="display:flex; justify-content:space-between; background:white; padding:5px; border:1px solid #ddd; font-size:10px;">
-                        <span>${s.sujeto}</span><button onclick="borrar('${s.sujeto}')" style="background:red; width:auto; padding:2px 5px;">X</button>
-                    </div>`).join('');
-            }
-
-            // Votos y GIFs
+            // Lógica de Votación y GIFs
             const gif = document.getElementById('display-gif');
             const r2 = document.getElementById('render-o2');
             const r3 = document.getElementById('render-o3');
@@ -183,17 +170,18 @@
             if(jg.ronda_id === 1) {
                 let gano = (yo?.seleccion2 === jg.correcta2 && jg.correcta2) || (yo?.seleccion3 === jg.correcta3 && jg.correcta3);
                 gif.src = gano ? GIFS.acierta : GIFS.falla;
-                r2.innerHTML = `Ganador: <b>${jg.correcta2 || '---'}</b>`;
-                r3.innerHTML = `Ganador: <b>${jg.correcta3 || '---'}</b>`;
+                r2.innerHTML = `Resultado: <b>${jg.correcta2 || '---'}</b>`;
+                r3.innerHTML = `Resultado: <b>${jg.correcta3 || '---'}</b>`;
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 gif.src = GIFS.espera;
-                if(!yo?.seleccion2) {
+                if(!yo?.seleccion2 || !yo?.seleccion3) {
                     btn.classList.remove('hidden');
                     r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('');
                     r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('');
                 } else {
-                    r2.innerHTML = "✅ Voto 2pts enviado"; r3.innerHTML = "✅ Voto 3pts enviado";
+                    r2.innerHTML = "Voto 2pts enviado ✅";
+                    r3.innerHTML = "Voto 3pts enviado ✅";
                     btn.classList.add('hidden');
                 }
             }
@@ -203,8 +191,8 @@
         async function votar() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(v2 && v3) await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
-            else alert("Selecciona ambos");
+            if(!v2 || !v3) return alert("Debes seleccionar una opción en AMBAS categorías");
+            await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
         }
 
         function iniciar() {
