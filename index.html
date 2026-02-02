@@ -15,16 +15,16 @@
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #003328; transform: scale(1.02); }
+        .btn-edit { background: #333; width: auto; padding: 4px 8px; font-size: 11px; margin-left: 10px; }
         .hidden { display: none; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         label { display: block; background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: left; }
-        label:hover { background: #f1f1f1; }
     </style>
 </head>
 <body>
 
     <div id="auth-ui" class="card">
-        <img src="https://i.postimg.cc/50cY2MwT/Captura-de-pantalla-2026-02-02-001132.png" class="logo">
+        <img src="https://postimg.cc/R6G0PyFP/Captura-de-pantalla-2026-02-02-113118.png" class="logo">
         <h2>INSTAGRAM CHALLENGE</h2>
         <input type="text" id="username" placeholder="@tu_usuario">
         <button onclick="entrar()">ENTRAR</button>
@@ -48,6 +48,7 @@
         <input type="text" id="win2" placeholder="Ganadora(s) 2pts">
         <input type="text" id="win3" placeholder="Ganadora(s) 3pts">
         <button onclick="puntuar()" style="background:#f59e0b">Validar y Sumar</button>
+        <button onclick="resetTorneo()" style="background:#ef4444; font-size: 12px; margin-top: 20px;">BORRAR TODOS LOS JUGADORES</button>
     </div>
 
     <div class="card">
@@ -113,6 +114,21 @@
             alert("Puntuado!");
         }
 
+        // --- NUEVA FUNCIÓN PARA MODIFICAR PUNTOS ---
+        async function editarPuntos(nombre, actuales) {
+            const n = prompt(`Nuevos puntos para @${nombre}:`, actuales);
+            if(n !== null && n !== "") {
+                await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nombre);
+            }
+        }
+
+        async function resetTorneo() {
+            if(confirm("¿Estás seguro de borrar a todos los jugadores?")) {
+                await sb.from('jugadores').delete().neq('nombre', 'admin_placeholder');
+                location.reload();
+            }
+        }
+
         async function refrescar() {
             const { data: est } = await sb.from('estado_juego').select('*').single();
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
@@ -122,7 +138,6 @@
 
             if(est.correcta2 || est.correcta3) {
                 let aciertos = 0;
-                // Normalizamos para comparar sin errores
                 const res2 = (est.correcta2 || "").toLowerCase();
                 const res3 = (est.correcta3 || "").toLowerCase();
                 const miVoto2 = (yo?.seleccion2 || "---").toLowerCase();
@@ -131,46 +146,33 @@
                 if(res2.includes(miVoto2)) aciertos++;
                 if(res3.includes(miVoto3)) aciertos++;
 
-                // Cambiar GIF según desempeño
                 if(aciertos === 2) imgGif.src = GIFS.aciertaTodo;
                 else if(aciertos === 1) imgGif.src = GIFS.aciertaUno;
                 else imgGif.src = GIFS.fallaTodo;
 
-                container.innerHTML = `
-                    <div style="background:#dcfce7; padding:10px; border-radius:8px;">
-                        <b style="color:#166534">RONDA FINALIZADA</b><br>
-                        ✅ Ganadoras 2pts: ${est.correcta2}<br>
-                        ✅ Ganadoras 3pts: ${est.correcta3}<br>
-                        <hr>
-                        Tu resultado: <b>${aciertos} aciertos</b>
-                    </div>`;
+                container.innerHTML = `<div style="background:#dcfce7; padding:10px; border-radius:8px;">✅ Gana 2pts: ${est.correcta2}<br>✅ Gana 3pts: ${est.correcta3}</div>`;
                 btnVotar.classList.add('hidden');
             } else if (est.opciones2 && est.opciones2.length > 0) {
                 imgGif.src = GIFS.espera;
-                // Si el usuario no ha votado aún, mostramos opciones
                 if(!yo?.seleccion2) {
                     btnVotar.classList.remove('hidden');
-                    container.innerHTML = `
-                        <p><b>2 Puntos:</b></p>
-                        ${est.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
-                        <p><b>3 Puntos:</b></p>
-                        ${est.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
-                    `;
+                    container.innerHTML = `<p><b>2 Puntos:</b></p>${est.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}<p><b>3 Puntos:</b></p>${est.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}`;
                 } else {
-                    container.innerHTML = "<b>Voto registrado.</b> Esperando resultados...";
+                    container.innerHTML = "<b>Voto registrado.</b>";
                     btnVotar.classList.add('hidden');
                 }
-            } else {
-                imgGif.src = GIFS.espera;
-                container.innerHTML = "Esperando que el administrador lance la ronda...";
-                btnVotar.classList.add('hidden');
             }
 
-            // Ranking
             const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
             if(jugs) {
                 document.getElementById('ranking-list').innerHTML = jugs.map(j => `
-                    <div class="ranking-item"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>
+                    <div class="ranking-item">
+                        <span>@${j.nombre}</span>
+                        <span>
+                            <b>${j.puntos} pts</b>
+                            ${esAdmin ? `<button class="btn-edit" onclick="editarPuntos('${j.nombre}', ${j.puntos})">Edit</button>` : ''}
+                        </span>
+                    </div>
                 `).join('');
             }
         }
