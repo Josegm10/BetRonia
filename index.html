@@ -3,56 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego de Apuestas</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css">
+    <title>Juego Supabase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos básicos integrados por si acaso falla el css */
-        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
-        .btn-option { background: white; border: 2px solid #333; margin: 10px auto; padding: 15px; max-width: 400px; cursor: pointer; border-radius: 8px; }
-        .elegida { background: #d4edda; border-color: #28a745; }
-        .admin-panel { background: #ddd; padding: 20px; margin-bottom: 20px; border: 2px dashed #666; display: none; }
-        .ranking-row { display: flex; justify-content: space-between; max-width: 300px; margin: 5px auto; border-bottom: 1px solid #ccc; }
-        input, select, button { padding: 10px; margin: 5px; }
-        button { cursor: pointer; }
+        :root { --primary: #3ecf8e; --bg: #f3f4f6; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 20px; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .admin-btn { background: #34495e; }
+        .hidden { display: none; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <h1>🏆 LA PORRA DEL GOAT 🏆</h1>
-        <p>Introduce tu usuario de Instagram:</p>
-        <input type="text" id="username" placeholder="@usuario">
-        <br>
-        <button onclick="entrar()">ENTRAR AL JUEGO</button>
+    <div id="auth-section" class="card">
+        <h2>Juego de Puntos</h2>
+        <input type="text" id="username" placeholder="Tu nombre">
+        <button onclick="entrar()">Jugar</button>
+        <button class="admin-btn" onclick="modoAdmin()">Soy Admin</button>
     </div>
 
-    <div id="game-screen" style="display:none;">
-        <div style="display:flex; justify-content:space-between; padding:10px;">
-            <span>Jugador: <b id="display-user"></b></span>
-            <button onclick="salir()" style="background:#ffcccc;">Salir</button>
-        </div>
-
-        <div id="admin-panel" class="admin-panel">
-            <h3>👮‍♂️ PANEL DE CONTROL</h3>
-            <input type="text" id="new-opt-text" placeholder="Ej: Gana en 3 sets">
-            <select id="new-opt-cat">
-                <option value="2">Categoría 2 Puntos</option>
-                <option value="3">Categoría 3 Puntos</option>
-            </select>
-            <button onclick="crearOpción()" style="background:#ccffcc;">PUBLICAR</button>
-            <hr>
-            <button onclick="limpiarJornada()" style="background:red; color:white;">🗑️ LIMPIAR JORNADA (Mantiene Ranking)</button>
-        </div>
-
-        <h2>OPCIONES DISPONIBLES</h2>
-        <p><i>Elige una de 2pts y una de 3pts</i></p>
-        <div id="options-container">Cargando...</div>
-
-        <h2>📊 CLASIFICACIÓN GENERAL</h2>
-        <div id="ranking-container"></div>
+    <div id="game-section" class="card hidden">
+        <h3 id="user-msg">Cargando opciones...</h3>
+        <div id="options-html"></div>
+        <button id="send-btn" onclick="enviarVoto()">Enviar mi elección</button>
     </div>
 
-    <script src="script.js"></script>
+    <div id="admin-section" class="card hidden">
+        <h3>Panel Administrador</h3>
+        <input type="text" id="admin-o2" placeholder="Opciones 2pts (usar comas)">
+        <input type="text" id="admin-o3" placeholder="Opciones 3pts (usar comas)">
+        <button onclick="nuevaRonda()">Lanzar Nueva Ronda</button>
+        <hr>
+        <input type="text" id="win2" placeholder="Ganadora 2pts">
+        <input type="text" id="win3" placeholder="Ganadora 3pts">
+        <button onclick="finalizarRonda()" style="background:#e67e22">Puntuar y Limpiar</button>
+    </div>
+
+    <div class="card">
+        <h3>Ranking en Vivo</h3>
+        <div id="ranking-list"></div>
+    </div>
+
+    <script>
+        // Configuración
+        const supabaseUrl = 'https://ebonrglgwhketorwnous.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVib25yZ2xnd2hrZXRvcndub3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5OTI1MzEsImV4cCI6MjA4NTU2ODUzMX0.-vMRzQ7fwvfcjyTVVJKy2SuTnuQkWSxtsfMyyXmGp0w';
+        const sb = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let userSession = null;
+
+        // --- LÓGICA DE USUARIO ---
+        async function entrar() {
+            const nombre = document.getElementById('username').value;
+            if(!nombre) return alert("Escribe un nombre");
+            
+            const { data } = await sb.from('jugadores').upsert({ nombre }).select().single();
+            userSession = data;
+            
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+            cargarEstado();
+        }
+
+        async function enviarVoto() {
+            const s2 = document.querySelector('input[name="cat2"]:checked')?.value;
+            const s3 = document.querySelector('input[name="cat3"]:checked')?.value;
+            
+            await sb.from('jugadores').update({ seleccion2: s2, seleccion3: s3 }).eq('nombre', userSession.nombre);
+            alert("¡Voto guardado!");
+            document.getElementById('send-btn').disabled = true;
+        }
+
+        // --- LÓGICA DE ADMIN ---
+        function modoAdmin() {
+            if(prompt("Clave:") === "1234") {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('admin-section').classList.remove('hidden');
+            }
+        }
+
+        async function nuevaRonda() {
+            const o2 = document.getElementById('admin-o2').value.split(',').map(s => s.trim());
+            const o3 = document.getElementById('admin-o3').value.split(',').map(s => s.trim());
+            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, ronda_id: Math.random() }).eq('id', 1);
+            alert("Ronda iniciada");
+        }
+
+        async function finalizarRonda() {
+            const c2 = document.getElementById('win2').value;
+            const c3 = document.getElementById('win3').value;
+            await sb.rpc('validar_y_puntuar', { c2, c3 });
+            alert("Puntos asignados");
+        }
+
+        // --- ACTUALIZACIÓN EN TIEMPO REAL ---
+        async function cargarEstado() {
+            const { data } = await sb.from('estado_juego').select('*').single();
+            pintarOpciones(data);
+        }
+
+        function pintarOpciones(estado) {
+            const div = document.getElementById('options-html');
+            if(!estado.opciones2.length) {
+                div.innerHTML = "Esperando al administrador...";
+                return;
+            }
+            document.getElementById('send-btn').disabled = false;
+            div.innerHTML = `
+                <p><b>Categoría 2 pts:</b></p>
+                ${estado.opciones2.map(o => `<input type="radio" name="cat2" value="${o}"> ${o}`).join('<br>')}
+                <p><b>Categoría 3 pts:</b></p>
+                ${estado.opciones3.map(o => `<input type="radio" name="cat3" value="${o}"> ${o}`).join('<br>')}
+            `;
+        }
+
+        // Suscripciones Realtime
+        sb.channel('db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+                actualizarRanking();
+                cargarEstado();
+            })
+            .subscribe();
+
+        async function actualizarRanking() {
+            const { data } = await sb.from('jugadores').select('*').order('puntos', { ascending: false });
+            document.getElementById('ranking-list').innerHTML = data.map(j => `
+                <div class="ranking-item"><span>${j.nombre}</span> <b>${j.puntos} pts</b></div>
+            `).join('');
+        }
+
+        actualizarRanking();
+    </script>
 </body>
 </html>
+
