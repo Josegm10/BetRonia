@@ -1,6 +1,6 @@
 // CONFIGURACIÓN DE TU SUPABASE
 const supabaseUrl = 'https://jvjzqodxumblrkiisfva.supabase.co'; 
-const supabaseKey = 'sb_publishable_k_MTOsgTsM-vTvGk4bARiQ_QjvEJaPX';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
 const client = supabase.createClient(supabaseUrl, supabaseKey);
 
 // --- 1. LOGIN ---
@@ -162,3 +162,4 @@ function salir() {
 
 // Auto-arranque si ya estaba logueado
 if (localStorage.getItem('usuario')) mostrarJuego(localStorage.getItem('usuario'));
+
