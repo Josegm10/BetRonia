@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Football Edition</title>
+    <title>Djokovic Challenge - Live Stats</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
@@ -12,29 +12,26 @@
         .logo { width: 100%; border-radius: 12px; margin-bottom: 15px; }
         .status-gif { width: 100%; border-radius: 12px; margin-bottom: 15px; height: 180px; object-fit: cover; border: 1px solid #ddd; }
         h3, h4 { color: var(--primary); margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; }
-        
         input, button, textarea { width: 100%; padding: 14px; margin: 8px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        button:hover { filter: brightness(1.2); }
         .hidden { display: none; }
 
         /* TABLA DE ESTADÍSTICAS */
         .info-box { background: #fffde7; border: 2px dashed #fbc02d; padding: 12px; border-radius: 12px; margin-bottom: 20px; }
         .stats-table { width: 100%; border-collapse: collapse; background: white; font-size: 11px; border-radius: 8px; overflow: hidden; }
         .stats-table th { background: #fbc02d; color: #453505; padding: 8px; border: 1px solid #eab308; }
-        .stats-table td { padding: 8px; border: 1px solid #eee; text-align: center; }
+        .stats-table td { padding: 8px; border: 1px solid #eee; text-align: center; color: #333; }
         .am { background: #ffeb3b; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #d4c100; }
         .ro { background: #f44336; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #b71c1c; }
 
         /* VOTACIONES */
         .vote-section { text-align: left; background: #f8fafc; padding: 15px; border-radius: 12px; margin: 15px 0; border-left: 6px solid var(--primary); }
-        label { display: block; padding: 10px; margin: 6px 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        label:hover { background: #f1f5f9; }
+        label { display: block; padding: 10px; margin: 6px 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; }
 
-        /* PANEL ADMIN */
+        /* ADMIN */
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: left; border: 1px solid #cbd5e1; margin-bottom: 15px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .edit-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; margin-top: 6px; border-radius: 8px; border: 1px solid #ddd; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -43,38 +40,34 @@
         <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" class="logo">
         <input type="text" id="username" placeholder="@tu_instagram">
         <button onclick="entrar()">ENTRAR A JUGAR</button>
-        <button onclick="accesoAdmin()" style="background:#64748b; font-size:11px; margin-top:20px;">MODO ADMINISTRADOR</button>
+        <button onclick="accesoAdmin()" style="background:#64748b; font-size:11px; margin-top:20px;">MODO ADMIN</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
-        <h3>🛠️ PANEL DE CONTROL</h3>
-        
+        <h3>🛠️ ADMIN CONTROL</h3>
         <div class="admin-section">
-            <h4>1. Configurar Ronda</h4>
-            <textarea id="adm-o2" placeholder="Opciones 2 pts (separadas por comas)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3 pts (separadas por comas)"></textarea>
-            <button onclick="lanzarOpciones()">LANZAR VOTACIÓN</button>
-            <hr>
-            <h4>2. Validar Ganadores</h4>
-            <input type="text" id="win2" placeholder="Nombre ganador 2pts">
-            <input type="text" id="win3" placeholder="Nombre ganador 3pts">
-            <button onclick="validarYSumar()" style="background:#f59e0b">SUMAR PUNTOS Y CERRAR</button>
-        </div>
-
-        <div class="admin-section">
-            <h4>3. Modificar Tabla Estadísticas</h4>
+            <h4>Actualizar Tabla de Jugadores</h4>
             <input type="text" id="in-jug" placeholder="Nombre Jugador">
             <input type="text" id="in-pos" placeholder="Posición">
             <div class="grid-3">
                 <input type="number" id="in-gol" placeholder="Goles">
-                <input type="number" id="in-ama" placeholder="Amas.">
-                <input type="number" id="in-roj" placeholder="Rojas">
+                <input type="number" id="in-ama" placeholder="AM">
+                <input type="number" id="in-roj" placeholder="RO">
             </div>
-            <button onclick="actualizarEst()" style="background:#22c55e">GUARDAR JUGADOR</button>
-            <div id="admin-list-edit" style="max-height:100px; overflow-y:auto; margin-top:10px;"></div>
+            <button onclick="guardarJugador()" style="background:#22c55e">GUARDAR EN TABLA</button>
+            <div id="admin-list-edit" style="margin-top:10px; max-height:100px; overflow-y:auto; font-size:11px;"></div>
         </div>
-
-        <button onclick="location.reload()" style="background:#000;">SALIR DEL PANEL</button>
+        <div class="admin-section">
+            <h4>Lanzar Ronda</h4>
+            <textarea id="adm-o2" placeholder="Opciones 2 pts (comas)"></textarea>
+            <textarea id="adm-o3" placeholder="Opciones 3 pts (comas)"></textarea>
+            <button onclick="lanzarOpciones()">LANZAR VOTACIÓN</button>
+            <hr>
+            <input type="text" id="win2" placeholder="Ganador 2pts">
+            <input type="text" id="win3" placeholder="Ganador 3pts">
+            <button onclick="validarPuntos()" style="background:#f59e0b">SUMAR PUNTOS Y VALIDAR</button>
+        </div>
+        <button onclick="location.reload()" style="background:#000;">SALIR</button>
     </div>
 
     <div id="game-ui" class="card hidden">
@@ -88,23 +81,22 @@
                     <tr><th rowspan="2">JUGADOR</th><th rowspan="2">POS.</th><th rowspan="2">GOLES</th><th colspan="2">TARJETAS</th></tr>
                     <tr><th>AM</th><th>RO</th></tr>
                 </thead>
-                <tbody id="stats-body"></tbody>
+                <tbody id="stats-body">
+                    </tbody>
             </table>
         </div>
 
         <div id="vote-area">
             <div class="vote-section">
-                <h4>🎯 Categoría 2 Puntos</h4>
-                <div id="render-o2">Esperando opciones...</div>
+                <h4>🎯 2 Puntos</h4><div id="render-o2">Esperando...</div>
             </div>
             <div class="vote-section">
-                <h4>🔥 Categoría 3 Puntos</h4>
-                <div id="render-o3">Esperando opciones...</div>
+                <h4>🔥 3 Puntos</h4><div id="render-o3">Esperando...</div>
             </div>
-            <button id="btn-enviar" onclick="enviarVoto()" class="hidden">ENVIAR PRONÓSTICOS</button>
+            <button id="btn-enviar" onclick="enviarVoto()" class="hidden">ENVIAR PRONÓSTICO</button>
         </div>
 
-        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+        <div style="margin-top:20px;">
             <h4>🏆 RANKING</h4>
             <div id="ranking-list"></div>
         </div>
@@ -115,36 +107,34 @@
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
-        let miUser = "";
-        let esAdmin = false;
+        let userInsta = "";
+        let soyAdmin = false;
         const GIFS = {
             espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif",
             falla: "https://media1.tenor.com/m/O2cp0tJpUkQAAAAd/novak-djokovic-angry.gif",
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
         };
 
-        // --- ACCESO ---
         async function entrar() {
-            miUser = document.getElementById('username').value.trim().toLowerCase().replace('@','');
-            if(!miUser) return;
-            await sb.from('jugadores').upsert({ nombre: miUser }, { onConflict: 'nombre' });
+            userInsta = document.getElementById('username').value.trim().toLowerCase().replace('@','');
+            if(!userInsta) return alert("Pon tu usuario");
+            await sb.from('jugadores').upsert({ nombre: userInsta }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
-            document.getElementById('display-name').innerText = "@" + miUser;
-            iniciarSincronizacion();
+            document.getElementById('display-name').innerText = "@" + userInsta;
+            conectar();
         }
 
         function accesoAdmin() {
             if(prompt("Clave:") === "1234") {
-                esAdmin = true;
+                soyAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
-                iniciarSincronizacion();
+                conectar();
             }
         }
 
-        // --- FUNCIONES ADMIN ---
-        async function actualizarEst() {
+        async function guardarJugador() {
             const j = document.getElementById('in-jug').value;
             const p = document.getElementById('in-pos').value;
             const g = document.getElementById('in-gol').value || 0;
@@ -155,83 +145,84 @@
             document.getElementById('in-jug').value = "";
         }
 
-        async function eliminarEst(j) { await sb.from('estadisticas').delete().eq('sujeto', j); }
+        async function eliminar(j) { await sb.from('estadisticas').delete().eq('sujeto', j); }
 
         async function lanzarOpciones() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim());
             await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null }).eq('id', 1);
-            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre', '');
+            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre','');
         }
 
-        async function validarYSumar() {
+        async function validarPuntos() {
             const w2 = document.getElementById('win2').value.trim();
             const w3 = document.getElementById('win3').value.trim();
             await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
             await sb.from('estado_juego').update({ correcta2: w2, correcta3: w3 }).eq('id', 1);
         }
 
-        // --- REFRESCAR ---
-        async function refrescarTodo() {
+        async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: jg } = await sb.from('estado_juego').select('*').single();
-            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miUser).single();
+            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', userInsta).single();
             const { data: rank } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
 
-            // Tabla Estadística
-            document.getElementById('stats-body').innerHTML = st.map(s => `
-                <tr><td>${s.sujeto}</td><td>${s.dato1}</td><td><b>${s.dato2}</b></td>
-                <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
+            // Actualizar tabla para todos
+            const tbody = document.getElementById('stats-body');
+            if(tbody) {
+                tbody.innerHTML = st.map(s => `
+                    <tr><td>${s.sujeto}</td><td>${s.dato1}</td><td><b>${s.dato2}</b></td>
+                    <td><span class="am">${s.dato3}</span></td><td><span class="ro">${s.dato4}</span></td></tr>`).join('');
+            }
 
             // Lista Admin
-            if(esAdmin) {
+            if(soyAdmin) {
                 document.getElementById('admin-list-edit').innerHTML = st.map(s => `
-                <div class="edit-item"><span>${s.sujeto}</span><button onclick="eliminarEst('${s.sujeto}')" style="width:auto;background:red;padding:2px 5px;">X</button></div>`).join('');
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${s.sujeto}</span><button onclick="eliminar('${s.sujeto}')" style="width:auto; padding:2px 5px; background:red;">X</button></div>`).join('');
             }
 
-            // GIFs y Lógica de Juego
+            // GIFs
             const gif = document.getElementById('status-gif');
-            if(jg.correcta2 || jg.correcta3) {
-                let aciertos = 0;
-                if(yo?.seleccion2 === jg.correcta2 && jg.correcta2) aciertos++;
-                if(yo?.seleccion3 === jg.correcta3 && jg.correcta3) aciertos++;
-                gif.src = aciertos > 0 ? GIFS.acierta : GIFS.falla;
-            } else {
-                gif.src = GIFS.espera;
+            if(gif) {
+                if(jg.correcta2 || jg.correcta3) {
+                    let aciertos = 0;
+                    if(yo?.seleccion2 === jg.correcta2 && jg.correcta2) aciertos++;
+                    if(yo?.seleccion3 === jg.correcta3 && jg.correcta3) aciertos++;
+                    gif.src = aciertos > 0 ? GIFS.acierta : GIFS.falla;
+                } else { gif.src = GIFS.espera; }
             }
 
-            // Opciones Voto
-            if(!esAdmin) {
+            // Opciones
+            if(!soyAdmin) {
                 const r2 = document.getElementById('render-o2');
                 const r3 = document.getElementById('render-o3');
                 const btn = document.getElementById('btn-enviar');
-
                 if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
                     btn.classList.remove('hidden');
                     r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('');
                     r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('');
                 } else {
                     btn.classList.add('hidden');
-                    r2.innerHTML = yo?.seleccion2 ? "Voto enviado ✅" : "Esperando ronda...";
+                    r2.innerHTML = yo?.seleccion2 ? "Voto registrado ✅" : "Esperando ronda...";
                     r3.innerHTML = "";
                 }
             }
 
             // Ranking
             document.getElementById('ranking-list').innerHTML = rank.map(r => `
-                <div class="rank-item"><span>@${r.nombre}</span><b>${r.puntos} pts</b></div>`).join('');
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px;"><span>@${r.nombre}</span><b>${r.puntos} pts</b></div>`).join('');
         }
 
         async function enviarVoto() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Selecciona ambas");
-            await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miUser);
+            if(!v2 || !v3) return alert("Elige ambas");
+            await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', userInsta);
         }
 
-        function iniciarSincronizacion() {
-            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescarTodo()).subscribe();
-            refrescarTodo();
+        function conectar() {
+            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
+            refrescar();
         }
     </script>
 </body>
