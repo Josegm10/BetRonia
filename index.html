@@ -10,14 +10,15 @@
         body { font-family: 'Arial', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 400px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .logo { width: 100%; border-radius: 10px; margin-bottom: 15px; }
-        .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; display: block; }
-        h2 { color: var(--primary); font-weight: 900; }
-        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #003328; }
+        .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; display: block; height: 200px; object-fit: cover; }
+        h2 { color: var(--primary); font-weight: 900; margin: 10px 0; }
+        input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #003328; transform: scale(1.02); }
         .hidden { display: none; }
         .ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
         label { display: block; background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; text-align: left; }
+        label:hover { background: #f1f1f1; }
     </style>
 </head>
 <body>
@@ -35,13 +36,13 @@
         <h3 id="user-display"></h3>
         <div id="options-container">Esperando ronda...</div>
         <button id="btn-votar" onclick="votar()" class="hidden">ENVIAR VOTO</button>
-        <button onclick="location.reload()" style="background:#eee; color: #333; font-size: 11px;">Cerrar Sesión</button>
+        <button onclick="location.reload()" style="background:#eee; color: #333; font-size: 11px; margin-top: 15px;">Cerrar Sesión</button>
     </div>
 
     <div id="admin-ui" class="card hidden">
         <h3>Panel Admin</h3>
-        <textarea id="adm-o2" placeholder="Opciones 2 pts"></textarea>
-        <textarea id="adm-o3" placeholder="Opciones 3 pts"></textarea>
+        <textarea id="adm-o2" placeholder="Opciones 2 pts (separar por comas)"></textarea>
+        <textarea id="adm-o3" placeholder="Opciones 3 pts (separar por comas)"></textarea>
         <button onclick="lanzar()">Lanzar Ronda</button>
         <hr>
         <input type="text" id="win2" placeholder="Ganadora(s) 2pts">
@@ -120,35 +121,58 @@
             const imgGif = document.getElementById('display-gif');
 
             if(est.correcta2 || est.correcta3) {
-                // Lógica de GIFs según aciertos
                 let aciertos = 0;
-                if(est.correcta2 && yo.seleccion2 && est.correcta2.toLowerCase().includes(yo.seleccion2.toLowerCase())) aciertos++;
-                if(est.correcta3 && yo.seleccion3 && est.correcta3.toLowerCase().includes(yo.seleccion3.toLowerCase())) aciertos++;
+                // Normalizamos para comparar sin errores
+                const res2 = (est.correcta2 || "").toLowerCase();
+                const res3 = (est.correcta3 || "").toLowerCase();
+                const miVoto2 = (yo?.seleccion2 || "---").toLowerCase();
+                const miVoto3 = (yo?.seleccion3 || "---").toLowerCase();
 
+                if(res2.includes(miVoto2)) aciertos++;
+                if(res3.includes(miVoto3)) aciertos++;
+
+                // Cambiar GIF según desempeño
                 if(aciertos === 2) imgGif.src = GIFS.aciertaTodo;
                 else if(aciertos === 1) imgGif.src = GIFS.aciertaUno;
                 else imgGif.src = GIFS.fallaTodo;
 
-                container.innerHTML = `<div style="color:green"><b>FIN DE RONDA</b><br>2pts: ${est.correcta2}<br>3pts: ${est.correcta3}</div>`;
-                btnVotar.classList.add('hidden');
-            } else if (est.opciones2.length > 0) {
-                imgGif.src = GIFS.espera;
-                btnVotar.classList.remove('hidden');
                 container.innerHTML = `
-                    <p><b>2 Puntos:</b></p>
-                    ${est.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
-                    <p><b>3 Puntos:</b></p>
-                    ${est.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
-                `;
+                    <div style="background:#dcfce7; padding:10px; border-radius:8px;">
+                        <b style="color:#166534">RONDA FINALIZADA</b><br>
+                        ✅ Ganadoras 2pts: ${est.correcta2}<br>
+                        ✅ Ganadoras 3pts: ${est.correcta3}<br>
+                        <hr>
+                        Tu resultado: <b>${aciertos} aciertos</b>
+                    </div>`;
+                btnVotar.classList.add('hidden');
+            } else if (est.opciones2 && est.opciones2.length > 0) {
+                imgGif.src = GIFS.espera;
+                // Si el usuario no ha votado aún, mostramos opciones
+                if(!yo?.seleccion2) {
+                    btnVotar.classList.remove('hidden');
+                    container.innerHTML = `
+                        <p><b>2 Puntos:</b></p>
+                        ${est.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('')}
+                        <p><b>3 Puntos:</b></p>
+                        ${est.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('')}
+                    `;
+                } else {
+                    container.innerHTML = "<b>Voto registrado.</b> Esperando resultados...";
+                    btnVotar.classList.add('hidden');
+                }
             } else {
                 imgGif.src = GIFS.espera;
-                container.innerHTML = "Esperando al administrador...";
+                container.innerHTML = "Esperando que el administrador lance la ronda...";
+                btnVotar.classList.add('hidden');
             }
 
+            // Ranking
             const { data: jugs } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            document.getElementById('ranking-list').innerHTML = jugs.map(j => `
-                <div class="ranking-item"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>
-            `).join('');
+            if(jugs) {
+                document.getElementById('ranking-list').innerHTML = jugs.map(j => `
+                    <div class="ranking-item"><span>@${j.nombre}</span><b>${j.puntos} pts</b></div>
+                `).join('');
+            }
         }
 
         function iniciarJuego() {
