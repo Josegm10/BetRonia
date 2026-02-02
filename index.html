@@ -3,46 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic GOAT Game</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Juego de Apuestas</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos básicos integrados por si acaso falla el css */
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+        .btn-option { background: white; border: 2px solid #333; margin: 10px auto; padding: 15px; max-width: 400px; cursor: pointer; border-radius: 8px; }
+        .elegida { background: #d4edda; border-color: #28a745; }
+        .admin-panel { background: #ddd; padding: 20px; margin-bottom: 20px; border: 2px dashed #666; display: none; }
+        .ranking-row { display: flex; justify-content: space-between; max-width: 300px; margin: 5px auto; border-bottom: 1px solid #ccc; }
+        input, select, button { padding: 10px; margin: 5px; }
+        button { cursor: pointer; }
+    </style>
 </head>
 <body>
+
     <div id="login-screen">
-        <h1>Djokovic GOAT Game</h1>
-        <input type="text" id="user-name-input" placeholder="Tu Usuario de Instagram">
-        <button onclick="entrarAlJuego()">ENTRAR</button>
+        <h1>🏆 LA PORRA DEL GOAT 🏆</h1>
+        <p>Introduce tu usuario de Instagram:</p>
+        <input type="text" id="username" placeholder="@usuario">
+        <br>
+        <button onclick="entrar()">ENTRAR AL JUEGO</button>
     </div>
 
-    <div id="main-game" style="display:none;">
-        <header>
-            <span>Hola, <b id="current-user-display"></b></span>
-            <button onclick="cerrarSesion()">Salir</button>
-        </header>
-
-        <div id="panel-admin" style="display:none;">
-            <h3>Panel Admin</h3>
-            <input type="text" id="nueva-opcion-texto" placeholder="Descripción de la apuesta">
-            <select id="nueva-opcion-puntos">
-                <option value="2">2 Puntos</option>
-                <option value="3">3 Puntos</option>
-            </select>
-            <button onclick="crearOpcion()">Publicar</button>
-            <button onclick="resetearTablero()" style="background:red;">Limpiar Jornada (Mantener Ranking)</button>
+    <div id="game-screen" style="display:none;">
+        <div style="display:flex; justify-content:space-between; padding:10px;">
+            <span>Jugador: <b id="display-user"></b></span>
+            <button onclick="salir()" style="background:#ffcccc;">Salir</button>
         </div>
 
-        <h3>Opciones de la Jornada</h3>
-        <p><i>Selecciona una de 2pts y una de 3pts</i></p>
-        <div id="contenedor-opciones-activas"></div>
+        <div id="admin-panel" class="admin-panel">
+            <h3>👮‍♂️ PANEL DE CONTROL</h3>
+            <input type="text" id="new-opt-text" placeholder="Ej: Gana en 3 sets">
+            <select id="new-opt-cat">
+                <option value="2">Categoría 2 Puntos</option>
+                <option value="3">Categoría 3 Puntos</option>
+            </select>
+            <button onclick="crearOpción()" style="background:#ccffcc;">PUBLICAR</button>
+            <hr>
+            <button onclick="limpiarJornada()" style="background:red; color:white;">🗑️ LIMPIAR JORNADA (Mantiene Ranking)</button>
+        </div>
 
-        <h3>Ranking Global (Acumulado)</h3>
-        <div id="tabla-ranking"></div>
-    </div>
+        <h2>OPCIONES DISPONIBLES</h2>
+        <p><i>Elige una de 2pts y una de 3pts</i></p>
+        <div id="options-container">Cargando...</div>
 
-    <div id="modal-feedback" style="display:none;" onclick="cerrarModal()">
-        <h2 id="feedback-titulo"></h2>
-        <img id="feedback-gif" src="" width="300">
-        <p>Toca para cerrar</p>
+        <h2>📊 CLASIFICACIÓN GENERAL</h2>
+        <div id="ranking-container"></div>
     </div>
 
     <script src="script.js"></script>
