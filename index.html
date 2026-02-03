@@ -214,3 +214,19 @@
         async function votar() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
+            if(v2 && v3) await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
+        }
+
+        async function puntuar() {
+            const w2 = document.getElementById('win2').value;
+            const w3 = document.getElementById('win3').value;
+            await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
+        }
+
+        function iniciar() {
+            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
+            refrescar();
+        }
+    </script>
+</body>
+</html>
