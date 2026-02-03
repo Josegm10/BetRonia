@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Master Fixed</title>
+    <title>Djokovic Challenge - Versión Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
@@ -13,9 +13,11 @@
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .hidden { display: none !important; }
+        
+        /* Tablas */
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; border: 1px solid #cbd5e1; }
         .table-mini { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 10px; }
-        .table-mini td { border: 1px solid #ddd; padding: 5px; text-align: center; }
+        .table-mini td, .table-mini th { border: 1px solid #ddd; padding: 5px; text-align: center; }
         .info-table-user { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         .info-table-user th { background: #fbc02d; padding: 8px; border: 1px solid #ddd; }
         .info-table-user td { padding: 8px; border: 1px solid #eee; text-align: center; background: #fff; }
@@ -27,7 +29,7 @@
 <body>
 
     <div id="auth-ui" class="card">
-        <h2>DJOKOVIC CHALLENGE</h2>
+        <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" style="width:100%; border-radius:10px;">
         <input type="text" id="username" placeholder="@tu_instagram">
         <button onclick="entrar()">JUGAR</button>
         <button onclick="accesoAdmin()" style="background:#64748b; margin-top:10px; font-size:12px;">MODO ADMIN</button>
@@ -38,13 +40,13 @@
         
         <div class="admin-section">
             <h4>1. Tabla de Apoyo (Editar)</h4>
-            <input type="text" id="info-sujeto" placeholder="Nombre Jugador">
+            <input type="text" id="info-sujeto" placeholder="Jugador">
             <input type="text" id="info-goles" placeholder="Goles">
             <div style="display:flex; gap:5px;">
                 <input type="number" id="info-am" placeholder="AM">
                 <input type="number" id="info-ro" placeholder="RO">
             </div>
-            <button onclick="guardarFila()" style="background:#22c55e">GUARDAR / ACTUALIZAR</button>
+            <button onclick="guardarFila()" style="background:#22c55e">AÑADIR / ACTUALIZAR</button>
             <table class="table-mini"><tbody id="adm-list-stats"></tbody></table>
         </div>
 
@@ -69,6 +71,7 @@
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
+
         <div class="card" style="border:none; background:#fffde7; padding:10px;">
             <h4>📊 ESTADÍSTICAS</h4>
             <table class="info-table-user">
@@ -79,12 +82,17 @@
                 <tbody id="info-content-user"></tbody>
             </table>
         </div>
+
         <div id="votos-ui">
             <div class="vote-box"><strong>2 PUNTOS:</strong><div id="render-o2"></div></div>
             <div class="vote-box"><strong>3 PUNTOS:</strong><div id="render-o3"></div></div>
             <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR VOTOS</button>
         </div>
-        <div style="margin-top:20px;"><h4>🏆 RANKING</h4><div id="ranking-list"></div></div>
+
+        <div style="margin-top:20px;">
+            <h4>🏆 RANKING</h4>
+            <div id="ranking-list"></div>
+        </div>
     </div>
 
     <script>
@@ -106,11 +114,16 @@
             const g = document.getElementById('info-goles').value;
             const a = document.getElementById('info-am').value || 0;
             const r = document.getElementById('info-ro').value || 0;
-            if(!s) return alert("Nombre necesario");
             
-            // Corrección: onConflict 'sujeto' asegura que actualice si el nombre ya existe
-            await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r }, { onConflict: 'sujeto' });
-            
+            if(!s) return alert("El nombre del jugador es obligatorio");
+
+            // onConflict: 'sujeto' permite actualizar los datos si el nombre ya existe en la DB
+            await sb.from('estadisticas').upsert(
+                { sujeto: s, dato1: g, dato2: a, dato3: r },
+                { onConflict: 'sujeto' }
+            );
+
+            // Limpiar campos para la siguiente entrada
             document.getElementById('info-sujeto').value = "";
             document.getElementById('info-goles').value = "";
             document.getElementById('info-am').value = "";
@@ -122,6 +135,7 @@
             document.getElementById('info-goles').value = g;
             document.getElementById('info-am').value = a;
             document.getElementById('info-ro').value = r;
+            window.scrollTo(0,0); // Sube para que el admin vea los campos llenos
         }
 
         async function editPts(nom, pts) {
@@ -129,9 +143,9 @@
             if(n !== null) await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nom);
         }
 
-        async function delEst(s) { if(confirm("¿Borrar?")) await sb.from('estadisticas').delete().eq('sujeto', s); }
+        async function delEst(s) { if(confirm("¿Borrar jugador de estadísticas?")) await sb.from('estadisticas').delete().eq('sujeto', s); }
 
-        // --- CORE ---
+        // --- CORE FUNCTIONS ---
         async function entrar() {
             miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
             if(!miNombre) return;
@@ -171,9 +185,9 @@
             const btn = document.getElementById('btn-votar');
 
             if(jg.ronda_id === 1) {
-                const acerto2 = yo?.seleccion2 === jg.correcta2;
-                const acerto3 = yo?.seleccion3 === jg.correcta3;
-                gif.src = (acerto2 || acerto3) ? GIFS.acierta : GIFS.falla;
+                const acierto2 = yo?.seleccion2 === jg.correcta2;
+                const acierto3 = yo?.seleccion3 === jg.correcta3;
+                gif.src = (acierto2 || acierto3) ? GIFS.acierta : GIFS.falla;
                 r2.innerHTML = `Ganador: <b>${jg.correcta2}</b>`;
                 r3.innerHTML = `Ganador: <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
@@ -200,20 +214,3 @@
         async function votar() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(v2 && v3) await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
-        }
-
-        async function puntuar() {
-            const w2 = document.getElementById('win2').value;
-            const w3 = document.getElementById('win3').value;
-            await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
-        }
-
-        function iniciar() {
-            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
-            refrescar();
-        }
-    </script>
-</body>
-</html>
-
