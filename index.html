@@ -11,8 +11,9 @@
         .card { background: white; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); width: 100%; max-width: 480px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; height: 180px; object-fit: cover; }
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-del { background: #ef4444; width: auto; padding: 5px 8px; font-size: 10px; margin-left: 5px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
+        .btn-del { background: #ef4444; width: auto; padding: 5px 10px; font-size: 12px; margin-left: 5px; }
         .hidden { display: none !important; }
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; border: 1px solid #cbd5e1; }
         .table-mini { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 10px; }
@@ -49,19 +50,19 @@
         </div>
 
         <div class="admin-section">
-            <h4>2. Ranking (Editar Puntos)</h4>
+            <h4>2. Ranking (Editar)</h4>
             <table class="table-mini"><tbody id="adm-list-ranking"></tbody></table>
         </div>
 
         <div class="admin-section">
-            <h4>3. Lanzar Ronda (+1 y +3)</h4>
-            <textarea id="adm-o2" placeholder="Opciones 1 PUNTO (separar por comas)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3 PUNTOS (separar por comas)"></textarea>
-            <button onclick="lanzar()" style="background:#2563eb">LANZAR RONDA</button>
+            <h4>3. Ronda (+1 y +3)</h4>
+            <textarea id="adm-o2" placeholder="Opciones 1 PTO (Ej: Messi, Cristiano)"></textarea>
+            <textarea id="adm-o3" placeholder="Opciones 3 PTOS (Ej: 2-1, 3-0)"></textarea>
+            <button onclick="lanzar()" style="background:#2563eb">ACTIVAR RONDA</button>
             <hr>
-            <input type="text" id="win2" placeholder="Ganador 1 PUNTO">
-            <input type="text" id="win3" placeholder="Ganador 3 PUNTOS">
-            <button onclick="puntuar()" style="background:#f59e0b">SUMAR PUNTOS (+1/+3)</button>
+            <input type="text" id="win2" placeholder="Ganadores 1 PTO (comas)">
+            <input type="text" id="win3" placeholder="Ganadores 3 PTOS (comas)">
+            <button onclick="puntuar()" style="background:#f59e0b">VALIDAR GANADORES</button>
         </div>
         <button onclick="location.reload()" style="background:black">CERRAR PANEL</button>
     </div>
@@ -131,14 +132,13 @@
             const g = document.getElementById('info-goles').value;
             const a = document.getElementById('info-am').value || 0;
             const r = document.getElementById('info-ro').value || 0;
-            if(!s) return alert("Falta nombre");
+            if(!s) return alert("Nombre obligatorio");
             await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r }, { onConflict: 'sujeto' });
             document.getElementById('info-sujeto').value = "";
         }
 
-        // NUEVA FUNCIÓN PARA BORRAR FILAS DE ESTADÍSTICAS
         async function eliminarFila(sujeto) {
-            if(confirm("¿Estás seguro de borrar a " + sujeto + "?")) {
+            if(confirm("¿Eliminar permanentemente a " + sujeto + "?")) {
                 await sb.from('estadisticas').delete().eq('sujeto', sujeto);
             }
         }
@@ -162,52 +162,49 @@
             const btn = document.getElementById('btn-votar');
 
             if(jg.ronda_id === 1) {
-                const acierto2 = yo?.seleccion2 === jg.correcta2;
-                const acierto3 = yo?.seleccion3 === jg.correcta3;
-                gif.src = (acierto2 || acierto3) ? GIFS.acierta : GIFS.falla;
-                r2.innerHTML = `Ganador (+1): <b>${jg.correcta2}</b>`;
-                r3.innerHTML = `Ganador (+3): <b>${jg.correcta3}</b>`;
+                const wins2 = jg.correcta2 ? jg.correcta2.split(',').map(s => s.trim().toLowerCase()) : [];
+                const wins3 = jg.correcta3 ? jg.correcta3.split(',').map(s => s.trim().toLowerCase()) : [];
+                const acierto = wins2.includes(yo?.seleccion2?.toLowerCase()) || wins3.includes(yo?.seleccion3?.toLowerCase());
+                gif.src = acierto ? GIFS.acierta : GIFS.falla;
+                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
+                r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 if(!yo?.seleccion2) {
-                    // BLOQUE CLAVE: Solo redibuja si el usuario NO ha empezado a elegir
-                    // Esto evita que se borre el check mientras el usuario decide.
-                    const yaEligiendo2 = document.querySelector('input[name="c2"]:checked');
-                    const yaEligiendo3 = document.querySelector('input[name="c3"]:checked');
-
-                    if(!yaEligiendo2 && !yaEligiendo3) {
+                    const yaMarcado = document.querySelector('input[name="c2"]:checked');
+                    if(!yaMarcado) { // Evita borrar opciones mientras el usuario elige
                         gif.src = GIFS.espera;
                         btn.classList.remove('hidden');
                         r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
                         r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
                     }
                 } else {
-                    r2.innerHTML = "Voto enviado ✅"; 
-                    r3.innerHTML = "Voto enviado ✅"; 
-                    btn.classList.add('hidden');
+                    r2.innerHTML = "Voto enviado ✅"; r3.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
                 }
             }
             document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
         }
+
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim());
             await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre','');
-            alert("Ronda publicada");
+            alert("Ronda Iniciada");
         }
 
         async function votar() {
             const v2 = document.querySelector('input[name="c2"]:checked')?.value;
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(v2 && v3) await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
+            if(!v2 || !v3) return alert("Elige ambas opciones");
+            await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
         }
 
         async function puntuar() {
-            const w2 = document.getElementById('win2').value;
-            const w3 = document.getElementById('win3').value;
-            await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
-            alert("Puntos sumados (+1 y +3)");
+            const w2 = document.getElementById('win2').value.split(',').map(x => x.trim());
+            const w3 = document.getElementById('win3').value.split(',').map(x => x.trim());
+            await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
+            alert("Puntos asignados a los ganadores.");
         }
 
         function iniciar() {
@@ -230,4 +227,3 @@
     </script>
 </body>
 </html>
-
