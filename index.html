@@ -169,18 +169,26 @@
                 r3.innerHTML = `Ganador (+3): <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
-                gif.src = GIFS.espera;
                 if(!yo?.seleccion2) {
-                    btn.classList.remove('hidden');
-                    r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-                    r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
+                    // BLOQUE CLAVE: Solo redibuja si el usuario NO ha empezado a elegir
+                    // Esto evita que se borre el check mientras el usuario decide.
+                    const yaEligiendo2 = document.querySelector('input[name="c2"]:checked');
+                    const yaEligiendo3 = document.querySelector('input[name="c3"]:checked');
+
+                    if(!yaEligiendo2 && !yaEligiendo3) {
+                        gif.src = GIFS.espera;
+                        btn.classList.remove('hidden');
+                        r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
+                        r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
+                    }
                 } else {
-                    r2.innerHTML = "Voto enviado ✅"; r3.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
+                    r2.innerHTML = "Voto enviado ✅"; 
+                    r3.innerHTML = "Voto enviado ✅"; 
+                    btn.classList.add('hidden');
                 }
             }
             document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
         }
-
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim());
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim());
@@ -222,3 +230,4 @@
     </script>
 </body>
 </html>
+
