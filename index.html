@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Djokovic Challenge - Definitivo</title>
+    <title>Djokovic Challenge - Detronia</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #004d3d; --accent: #c1ff00; --bg: #f0f4f2; }
@@ -12,6 +12,7 @@
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; height: 180px; object-fit: cover; }
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-del { background: #ef4444; width: auto; padding: 5px 8px; font-size: 10px; margin-left: 5px; }
         .hidden { display: none !important; }
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; border: 1px solid #cbd5e1; }
         .table-mini { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 10px; }
@@ -60,7 +61,7 @@
             <hr>
             <input type="text" id="win2" placeholder="Ganador 1 PUNTO">
             <input type="text" id="win3" placeholder="Ganador 3 PUNTOS">
-            <button onclick="puntuar()" style="background:#f59e0b">VALIDAR Y SUMAR</button>
+            <button onclick="puntuar()" style="background:#f59e0b">SUMAR PUNTOS (+1/+3)</button>
         </div>
         <button onclick="location.reload()" style="background:black">CERRAR PANEL</button>
     </div>
@@ -131,14 +132,15 @@
             const a = document.getElementById('info-am').value || 0;
             const r = document.getElementById('info-ro').value || 0;
             if(!s) return alert("Falta nombre");
-            
             await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r }, { onConflict: 'sujeto' });
-            
-            // Limpiar campos sin recargar
             document.getElementById('info-sujeto').value = "";
-            document.getElementById('info-goles').value = "";
-            document.getElementById('info-am').value = "";
-            document.getElementById('info-ro').value = "";
+        }
+
+        // NUEVA FUNCIÓN PARA BORRAR FILAS DE ESTADÍSTICAS
+        async function eliminarFila(sujeto) {
+            if(confirm("¿Estás seguro de borrar a " + sujeto + "?")) {
+                await sb.from('estadisticas').delete().eq('sujeto', sujeto);
+            }
         }
 
         async function refrescar() {
@@ -148,7 +150,7 @@
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
             if(esAdmin) {
-                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3})">✎</button></td></tr>`).join('');
+                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3})">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
                 document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
             }
 
@@ -164,7 +166,7 @@
                 const acierto3 = yo?.seleccion3 === jg.correcta3;
                 gif.src = (acierto2 || acierto3) ? GIFS.acierta : GIFS.falla;
                 r2.innerHTML = `Ganador (+1): <b>${jg.correcta2}</b>`;
-                r3.innerHTML = `Ganador (+2): <b>${jg.correcta3}</b>`;
+                r3.innerHTML = `Ganador (+3): <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 gif.src = GIFS.espera;
@@ -197,13 +199,13 @@
             const w2 = document.getElementById('win2').value;
             const w3 = document.getElementById('win3').value;
             await sb.rpc('validar_y_puntuar', { c2: [w2], c3: [w3] });
-            alert("Puntos sumados correctamente");
+            alert("Puntos sumados (+1 y +3)");
         }
 
         function iniciar() {
             sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
             refrescar();
-            setInterval(refrescar, 5000); // Respaldo cada 5 seg
+            setInterval(refrescar, 5000);
         }
 
         function editEst(s, g, a, r) {
@@ -220,5 +222,3 @@
     </script>
 </body>
 </html>
-
-
