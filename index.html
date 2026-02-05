@@ -57,12 +57,12 @@
 
         <div class="admin-section">
             <h4>3. Lanzar Ronda Doble</h4>
-            <textarea id="adm-o2" placeholder="Opciones 2 Puntos (comas)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3 Puntos (comas)"></textarea>
+            <textarea id="adm-o2" placeholder="Opciones 1 Punto (comas)"></textarea>
+            <textarea id="adm-o3" placeholder="Opciones 2 Puntos (comas)"></textarea>
             <button onclick="lanzar()">LANZAR</button>
             <hr>
-            <input type="text" id="win2" placeholder="Ganador 2 Pts">
-            <input type="text" id="win3" placeholder="Ganador 3 Pts">
+            <input type="text" id="win2" placeholder="Ganador 1 Pts">
+            <input type="text" id="win3" placeholder="Ganador 2 Pts">
             <button onclick="puntuar()" style="background:#f59e0b">VALIDAR RESULTADOS</button>
         </div>
         <button onclick="location.reload()" style="background:black">SALIR</button>
@@ -157,7 +157,7 @@
         }
 
         function accesoAdmin() {
-            if(prompt("Clave:") === "1234") {
+            if(prompt("Clave:") === "idemodetronia") {
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
@@ -230,4 +230,5 @@
     </script>
 </body>
 </html>
+
 
