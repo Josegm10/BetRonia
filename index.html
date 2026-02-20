@@ -13,10 +13,10 @@
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:active { transform: scale(0.98); }
-        .btn-del { background: #ef4444; width: auto; padding: 5px 10px; font-size: 12px; margin-left: 5px; }
+        .btn-del { background: #ef4444; width: auto; padding: 4px 8px; font-size: 11px; margin-left: 5px; color: white; border-radius: 5px; }
         .hidden { display: none !important; }
         
-        /* DISEÑO DE OPCIONES (BOTONES DE SELECCIÓN) */
+        /* DISEÑO DE OPCIONES (BOTÓN A LA DERECHA) */
         #render-o2 label, #render-o3 label {
             display: flex;
             justify-content: space-between;
@@ -27,11 +27,10 @@
             border-radius: 10px;
             border: 1px solid #ddd;
             cursor: pointer;
-            flex-direction: row-reverse; /* Pone el círculo a la derecha */
+            flex-direction: row-reverse;
             transition: 0.2s;
             text-align: left;
         }
-        #render-o2 label:hover, #render-o3 label:hover { border-color: var(--primary); background: #f9fdfc; }
         #render-o2 input, #render-o3 input { width: auto; margin: 0 0 0 10px; accent-color: var(--primary); }
 
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; border: 1px solid #cbd5e1; }
@@ -77,7 +76,7 @@
             <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separar con comas)"></textarea>
             <button onclick="lanzar()" style="background:#2563eb">ACTIVAR RONDA</button>
             <hr>
-            <h5>Validar Resultados:</h5>
+            <h5>Validar:</h5>
             <div id="admin-check-o2"></div>
             <div id="admin-check-o3" style="margin-top:10px;"></div>
             <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">VALIDAR MARCADOS</button>
@@ -151,16 +150,31 @@
         }
 
         async function guardarFila() {
+            if(!esAdmin) return;
             const s = document.getElementById('info-sujeto').value.trim();
-            const g = document.getElementById('info-goles').value;
-            const as = document.getElementById('info-asist').value || '0';
-            const a = document.getElementById('info-am').value || 0;
-            const r = document.getElementById('info-ro').value || 0;
+            const g = String(document.getElementById('info-goles').value || '0');
+            const as = String(document.getElementById('info-asist').value || '0');
+            const a = String(document.getElementById('info-am').value || '0');
+            const r = String(document.getElementById('info-ro').value || '0');
             if(!s) return alert("Nombre obligatorio");
+            
             await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r, dato4: as }, { onConflict: 'sujeto' });
             document.getElementById('info-sujeto').value = "";
             document.getElementById('info-goles').value = "";
             document.getElementById('info-asist').value = "";
+            refrescar();
+        }
+
+        async function borrarEst(sujeto) {
+            if(!esAdmin || !confirm("¿Borrar a "+sujeto+"?")) return;
+            await sb.from('estadisticas').delete().eq('sujeto', sujeto);
+            refrescar();
+        }
+
+        async function borrarJugador(nombre) {
+            if(!esAdmin || !confirm("¿Borrar a @"+nombre+" del ranking?")) return;
+            await sb.from('jugadores').delete().eq('nombre', nombre);
+            refrescar();
         }
 
         async function refrescar() {
@@ -169,19 +183,28 @@
             const { data: jg } = await sb.from('estado_juego').select('*').single();
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Voto guardado
-            const miEleccionDiv = document.getElementById('mi-eleccion-display');
-            if (yo && (yo.seleccion2 || yo.seleccion3)) {
-                miEleccionDiv.classList.remove('hidden');
-                document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2 || '-'}</b> | 3 PTOS: <b>${yo.seleccion3 || '-'}</b>`;
-            } else { miEleccionDiv.classList.add('hidden'); }
-
-            // Tablas
             document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-            document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
+            
+            document.getElementById('ranking-list').innerHTML = rk.map(j => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px; border-bottom:1px solid #eee;">
+                    <span>@${j.nombre}</span>
+                    <div>
+                        <b>${j.puntos} Pts</b>
+                        ${esAdmin ? `<button onclick="borrarJugador('${j.nombre}')" class="btn-del">❌</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
 
             if(esAdmin) {
-                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button></td></tr>`).join('');
+                document.getElementById('adm-list-stats').innerHTML = st.map(s => `
+                    <tr>
+                        <td>${s.sujeto}</td>
+                        <td>
+                            <button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button>
+                            <button onclick="borrarEst('${s.sujeto}')" style="background:red; color:white; border:none; padding:2px 5px; border-radius:3px; margin-left:5px;">🗑️</button>
+                        </td>
+                    </tr>`).join('');
+                
                 const c2 = document.getElementById('admin-check-o2');
                 const c3 = document.getElementById('admin-check-o3');
                 if (jg.opciones2?.length > 0) {
@@ -205,16 +228,15 @@
                 btn.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 if(!yo?.seleccion2) {
-                    gif.src = GIFS.espera;
-                    btn.classList.remove('hidden');
+                    gif.src = GIFS.espera; btn.classList.remove('hidden');
                     r2.innerHTML = jg.opciones2.map(o => `<label><span>${o}</span><input type="radio" name="c2" value="${o}"></label>`).join('');
                     r3.innerHTML = jg.opciones3.map(o => `<label><span>${o}</span><input type="radio" name="c3" value="${o}"></label>`).join('');
                 } else {
                     r2.innerHTML = "Voto enviado ✅"; r3.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
+                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
+                    document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2}</b> | 3 PTOS: <b>${yo.seleccion3}</b>`;
                 }
-            } else {
-                gif.src = GIFS.espera; r2.innerHTML = "Esperando ronda..."; btn.classList.add('hidden');
-            }
+            } else { gif.src = GIFS.espera; r2.innerHTML = "Esperando ronda..."; btn.classList.add('hidden'); }
         }
 
         async function lanzar() {
@@ -238,6 +260,7 @@
             const v3 = document.querySelector('input[name="c3"]:checked')?.value;
             if(!v2 || !v3) return alert("Elige ambas");
             await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
+            refrescar();
         }
 
         function editEst(s, g, a, r, as) {
