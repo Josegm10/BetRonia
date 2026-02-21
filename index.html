@@ -18,18 +18,10 @@
         
         /* DISEÑO DE OPCIONES (BOTÓN A LA DERECHA) */
         #render-o2 label, #render-o3 label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 12px 15px;
-            margin: 6px 0;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            flex-direction: row-reverse;
-            transition: 0.2s;
-            text-align: left;
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 12px 15px; margin: 6px 0;
+            border-radius: 10px; border: 1px solid #ddd; cursor: pointer;
+            flex-direction: row-reverse; transition: 0.2s; text-align: left;
         }
         #render-o2 input, #render-o3 input { width: auto; margin: 0 0 0 10px; accent-color: var(--primary); }
 
@@ -76,7 +68,7 @@
             <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separar con comas)"></textarea>
             <button onclick="lanzar()" style="background:#2563eb">ACTIVAR RONDA</button>
             <hr>
-            <h5>Validar:</h5>
+            <h5>Validar Resultados:</h5>
             <div id="admin-check-o2"></div>
             <div id="admin-check-o3" style="margin-top:10px;"></div>
             <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">VALIDAR MARCADOS</button>
@@ -87,12 +79,10 @@
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="" class="status-gif">
         <h3 id="user-display"></h3>
-
         <div id="mi-eleccion-display" class="vote-box hidden" style="background: #e3f2fd; border-left-color: #2196f3;">
             <strong>TU APUESTA:</strong>
             <div id="voto-guardado-texto" style="font-size: 14px;"></div>
         </div>
-
         <div class="card" style="border:none; background:#fffde7; padding:10px; width:100%; margin:0;">
             <h4>📊 ESTADÍSTICAS</h4>
             <table class="info-table-user">
@@ -103,13 +93,11 @@
                 <tbody id="info-content-user"></tbody>
             </table>
         </div>
-
         <div id="votos-ui">
             <div class="vote-box"><strong>VALE 1 PUNTO:</strong><div id="render-o2"></div></div>
             <div class="vote-box"><strong>VALE 3 PUNTOS:</strong><div id="render-o3"></div></div>
             <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR VOTOS</button>
         </div>
-
         <div style="margin-top:20px;">
             <h4>🏆 RANKING</h4>
             <div id="ranking-list"></div>
@@ -162,6 +150,8 @@
             document.getElementById('info-sujeto').value = "";
             document.getElementById('info-goles').value = "";
             document.getElementById('info-asist').value = "";
+            document.getElementById('info-am').value = "";
+            document.getElementById('info-ro').value = "";
             refrescar();
         }
 
@@ -172,9 +162,18 @@
         }
 
         async function borrarJugador(nombre) {
-            if(!esAdmin || !confirm("¿Borrar a @"+nombre+" del ranking?")) return;
+            if(!esAdmin || !confirm("¿Borrar a @"+nombre+"?")) return;
             await sb.from('jugadores').delete().eq('nombre', nombre);
             refrescar();
+        }
+
+        function editEst(s, g, a, r, as) {
+            document.getElementById('info-sujeto').value = s;
+            document.getElementById('info-goles').value = g;
+            document.getElementById('info-asist').value = as;
+            document.getElementById('info-am').value = a;
+            document.getElementById('info-ro').value = r;
+            window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
         async function refrescar() {
@@ -197,14 +196,10 @@
 
             if(esAdmin) {
                 document.getElementById('adm-list-stats').innerHTML = st.map(s => `
-                    <tr>
-                        <td>${s.sujeto}</td>
-                        <td>
-                            <button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button>
-                            <button onclick="borrarEst('${s.sujeto}')" style="background:red; color:white; border:none; padding:2px 5px; border-radius:3px; margin-left:5px;">🗑️</button>
-                        </td>
-                    </tr>`).join('');
-                
+                    <tr><td>${s.sujeto}</td><td>
+                        <button onclick="editEst('${s.sujeto}','${s.dato1}','${s.dato2}','${s.dato3}','${s.dato4}')">✎</button>
+                        <button onclick="borrarEst('${s.sujeto}')" style="background:red; color:white; border:none; padding:2px 5px; border-radius:3px; margin-left:5px;">🗑️</button>
+                    </td></tr>`).join('');
                 const c2 = document.getElementById('admin-check-o2');
                 const c3 = document.getElementById('admin-check-o3');
                 if (jg.opciones2?.length > 0) {
@@ -217,6 +212,7 @@
             const r2 = document.getElementById('render-o2');
             const r3 = document.getElementById('render-o3');
             const btn = document.getElementById('btn-votar');
+            const miEleccionDiv = document.getElementById('mi-eleccion-display');
 
             if(jg.ronda_id === 1) {
                 const wins2 = jg.correcta2 ? jg.correcta2.toLowerCase().split(',').map(s => s.trim()) : [];
@@ -226,17 +222,18 @@
                 r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
                 r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
                 btn.classList.add('hidden');
+                miEleccionDiv.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 if(!yo?.seleccion2) {
-                    gif.src = GIFS.espera; btn.classList.remove('hidden');
+                    gif.src = GIFS.espera; btn.classList.remove('hidden'); miEleccionDiv.classList.add('hidden');
                     r2.innerHTML = jg.opciones2.map(o => `<label><span>${o}</span><input type="radio" name="c2" value="${o}"></label>`).join('');
                     r3.innerHTML = jg.opciones3.map(o => `<label><span>${o}</span><input type="radio" name="c3" value="${o}"></label>`).join('');
                 } else {
                     r2.innerHTML = "Voto enviado ✅"; r3.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
-                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
+                    miEleccionDiv.classList.remove('hidden');
                     document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2}</b> | 3 PTOS: <b>${yo.seleccion3}</b>`;
                 }
-            } else { gif.src = GIFS.espera; r2.innerHTML = "Esperando ronda..."; btn.classList.add('hidden'); }
+            } else { gif.src = GIFS.espera; r2.innerHTML = "Esperando ronda..."; btn.classList.add('hidden'); miEleccionDiv.classList.add('hidden'); }
         }
 
         async function lanzar() {
@@ -252,7 +249,7 @@
             const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
             if(w2.length === 0 && w3.length === 0) return alert("Marca ganadores");
             await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-            alert("Puntos asignados.");
+            alert("Puntos asignados y ronda finalizada.");
         }
 
         async function votar() {
@@ -263,14 +260,6 @@
             refrescar();
         }
 
-        function editEst(s, g, a, r, as) {
-            document.getElementById('info-sujeto').value = s;
-            document.getElementById('info-goles').value = g;
-            document.getElementById('info-asist').value = as;
-            document.getElementById('info-am').value = a;
-            document.getElementById('info-ro').value = r;
-        }
-
         function iniciar() {
             sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
             refrescar();
@@ -279,3 +268,4 @@
     </script>
 </body>
 </html>
+
