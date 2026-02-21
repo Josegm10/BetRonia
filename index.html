@@ -133,15 +133,35 @@
         }
 
         async function guardarFila() {
-            const s = document.getElementById('info-sujeto').value.trim();
-            const g = document.getElementById('info-goles').value;
-            const as = document.getElementById('info-asist').value || "0";
-            const a = document.getElementById('info-am').value || 0;
-            const r = document.getElementById('info-ro').value || 0;
-            if(!s) return alert("Nombre obligatorio");
-            await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r, dato4: as }, { onConflict: 'sujeto' });
-            document.getElementById('info-sujeto').value = "";
-        }
+    // 1. Capturamos los valores
+    const s = document.getElementById('info-sujeto').value.trim();
+    const g = document.getElementById('info-goles').value || "0";
+    const as = document.getElementById('info-asist').value || "0";
+    const a = document.getElementById('info-am').value || "0";
+    const r = document.getElementById('info-ro').value || "0";
+
+    if(!s) return alert("Escribe el nombre del jugador");
+
+    // 2. Usamos upsert con onConflict
+    // Esto buscará al jugador por su nombre ('sujeto') y actualizará sus datos
+    const { error } = await sb.from('estadisticas').upsert({ 
+        sujeto: s, 
+        dato1: g, 
+        dato2: a, 
+        dato3: r, 
+        dato4: as 
+    }, { onConflict: 'sujeto' });
+
+    if(error) {
+        console.error("Error de Supabase:", error);
+        alert("No se pudo actualizar: " + error.message);
+    } else {
+        // Limpiamos solo el nombre para poder seguir editando rápido
+        document.getElementById('info-sujeto').value = "";
+        // El refresco es automático gracias al Realtime, pero esto ayuda:
+        refrescar();
+    }
+}
 
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
@@ -226,3 +246,4 @@
     </script>
 </body>
 </html>
+
