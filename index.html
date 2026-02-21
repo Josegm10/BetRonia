@@ -16,7 +16,6 @@
         .btn-del { background: #ef4444; width: auto; padding: 4px 8px; font-size: 11px; margin-left: 5px; color: white; border-radius: 5px; }
         .hidden { display: none !important; }
         
-        /* DISEÑO DE OPCIONES (BOTÓN A LA DERECHA) */
         #render-o2 label, #render-o3 label {
             display: flex; justify-content: space-between; align-items: center;
             background: white; padding: 12px 15px; margin: 6px 0;
@@ -49,7 +48,7 @@
         <h3>🛠️ PANEL MASTER</h3>
         <div class="admin-section">
             <h4>1. Tabla de Apoyo</h4>
-            <input type="text" id="info-sujeto" placeholder="Jugador">
+            <input type="text" id="info-sujeto" placeholder="Nombre Jugador">
             <div style="display:flex; gap:5px;">
                 <input type="text" id="info-goles" placeholder="Goles">
                 <input type="text" id="info-asist" placeholder="Asist">
@@ -106,7 +105,7 @@
 
     <script>
         const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
+        const SB_KEY = 'TU_ANON_KEY_AQUI'; // Asegúrate de poner tu clave aquí
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
         let miNombre = "";
@@ -139,30 +138,45 @@
 
         async function guardarFila() {
             if(!esAdmin) return;
-            const s = document.getElementById('info-sujeto').value.trim();
-            const g = String(document.getElementById('info-goles').value || '0');
-            const as = String(document.getElementById('info-asist').value || '0');
-            const a = String(document.getElementById('info-am').value || '0');
-            const r = String(document.getElementById('info-ro').value || '0');
+            const inSujeto = document.getElementById('info-sujeto');
+            const inGoles = document.getElementById('info-goles');
+            const inAsist = document.getElementById('info-asist');
+            const inAm = document.getElementById('info-am');
+            const inRo = document.getElementById('info-ro');
+
+            const s = inSujeto.value.trim();
+            const g = String(inGoles.value || '0');
+            const as = String(inAsist.value || '0');
+            const a = String(inAm.value || '0');
+            const r = String(inRo.value || '0');
+            
             if(!s) return alert("Nombre obligatorio");
             
-            await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r, dato4: as }, { onConflict: 'sujeto' });
-            document.getElementById('info-sujeto').value = "";
-            document.getElementById('info-goles').value = "";
-            document.getElementById('info-asist').value = "";
-            document.getElementById('info-am').value = "";
-            document.getElementById('info-ro').value = "";
-            refrescar();
+            const { error } = await sb.from('estadisticas').upsert({ 
+                sujeto: s, 
+                dato1: g, 
+                dato2: a, 
+                dato3: r, 
+                dato4: as 
+            }, { onConflict: 'sujeto' });
+
+            if(error) {
+                alert("Error: " + error.message);
+            } else {
+                inSujeto.value = ""; inGoles.value = ""; inAsist.value = ""; inAm.value = ""; inRo.value = "";
+                await refrescar();
+                alert("¡Sujeto actualizado!");
+            }
         }
 
         async function borrarEst(sujeto) {
-            if(!esAdmin || !confirm("¿Borrar a "+sujeto+"?")) return;
+            if(!esAdmin || !confirm("¿Borrar estadísticas de "+sujeto+"?")) return;
             await sb.from('estadisticas').delete().eq('sujeto', sujeto);
             refrescar();
         }
 
         async function borrarJugador(nombre) {
-            if(!esAdmin || !confirm("¿Borrar a @"+nombre+"?")) return;
+            if(!esAdmin || !confirm("¿Borrar a @"+nombre+" del ranking?")) return;
             await sb.from('jugadores').delete().eq('nombre', nombre);
             refrescar();
         }
@@ -200,6 +214,7 @@
                         <button onclick="editEst('${s.sujeto}','${s.dato1}','${s.dato2}','${s.dato3}','${s.dato4}')">✎</button>
                         <button onclick="borrarEst('${s.sujeto}')" style="background:red; color:white; border:none; padding:2px 5px; border-radius:3px; margin-left:5px;">🗑️</button>
                     </td></tr>`).join('');
+                
                 const c2 = document.getElementById('admin-check-o2');
                 const c3 = document.getElementById('admin-check-o3');
                 if (jg.opciones2?.length > 0) {
@@ -241,7 +256,7 @@
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
             await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
             await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre','');
-            alert("Ronda Iniciada");
+            alert("¡Ronda lanzada!");
         }
 
         async function puntuarSeleccionados() {
@@ -249,7 +264,7 @@
             const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
             if(w2.length === 0 && w3.length === 0) return alert("Marca ganadores");
             await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-            alert("Puntos asignados y ronda finalizada.");
+            alert("¡Puntos asignados!");
         }
 
         async function votar() {
@@ -268,4 +283,3 @@
     </script>
 </body>
 </html>
-
