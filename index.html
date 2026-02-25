@@ -50,6 +50,15 @@
             <table class="table-mini"><tbody id="adm-list-ranking"></tbody></table>
         </div>
         <div class="admin-section">
+            <div class="admin-section">
+    <h4>3. Ronda (+1 y +3)</h4>
+    <button onclick="lanzar()" style="background:#2563eb">ACTIVAR RONDA</button>
+    
+    <button onclick="regalarCreditosGlobal()" style="background:#8b5cf6; margin-top:5px;">
+        🎁 REPARTIR 5 CRÉDITOS A TODOS
+    </button>
+    <hr>
+    </div>
             <h4>3. Ronda (+1 y +3)</h4>
             <textarea id="adm-o2" placeholder="Opciones 1 PTO (separar con comas)"></textarea>
             <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separar con comas)"></textarea>
@@ -141,28 +150,53 @@
             refrescar();
         }
 
-        async function votar() {
-            const v2 = document.querySelector('input[name="c2"]:checked')?.value;
-            const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Selecciona una opción en cada lista.");
+        // NUEVA: Función para que el admin regale créditos a todos sin reiniciar la ronda
+async function regalarCreditosGlobal() {
+    if(confirm("¿Dar 5 créditos a todos los jugadores actuales?")) {
+        const { error } = await sb.from('jugadores')
+            .update({ creditos: 5 })
+            .neq('nombre', ''); // Afecta a todos los que tengan nombre
+        
+        if(!error) alert("¡Créditos repartidos!");
+        else alert("Error al repartir");
+    }
+}
 
-            let c2 = parseInt(prompt("Créditos para la opción de 1 PTO (1 a 4):")) || 0;
-            let c3 = parseInt(prompt("Créditos para la opción de 3 PTOS (1 a 4):")) || 0;
+// ACTUALIZADA: Lógica de votación flexible
+async function votar() {
+    const v2 = document.querySelector('input[name="c2"]:checked')?.value;
+    const v3 = document.querySelector('input[name="c3"]:checked')?.value;
+    
+    if(!v2 || !v3) return alert("Selecciona una opción en cada lista.");
 
-            if((c2 + c3) !== 5 || c2 < 1 || c3 < 1) {
-                return alert("REGLA: Debes repartir exactamente 5 créditos y poner al menos 1 en cada opción.");
-            }
+    // Obtener créditos actuales del jugador para validar
+    const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
+    const totalDisponibles = user.creditos;
 
-            const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
-            if(user.creditos < 5) return alert("No tienes créditos suficientes.");
+    if(totalDisponibles < 1) return alert("No tienes créditos para apostar.");
 
-            await sb.from('jugadores').update({ 
-                seleccion2: v2, seleccion3: v3, apuesta2: c2, apuesta3: c3, creditos: user.creditos - 5 
-            }).eq('nombre', miNombre);
-            
-            alert("¡Apuesta enviada!");
-            refrescar();
-        }
+    let c2 = parseInt(prompt(`¿Cuántos créditos a la opción de 1 PTO? (Tienes ${totalDisponibles}):`)) || 0;
+    
+    // Cálculo automático del resto o validación manual
+    if (c2 >= totalDisponibles || c2 < 1) {
+        return alert(`Debes dejar al menos 1 crédito para la otra opción. (Apuesta entre 1 y ${totalDisponibles - 1})`);
+    }
+
+    let c3 = totalDisponibles - c2;
+    
+    if(confirm(`Apuesta confirmada:\n- ${v2}: ${c2} créditos\n- ${v3}: ${c3} créditos\n\n¿Proceder?`)) {
+        await sb.from('jugadores').update({ 
+            seleccion2: v2, 
+            seleccion3: v3, 
+            apuesta2: c2, 
+            apuesta3: c3, 
+            creditos: 0 // Se consumen todos al apostar
+        }).eq('nombre', miNombre);
+        
+        alert("¡Apuesta enviada con éxito!");
+        refrescar();
+    }
+}
 
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
@@ -258,3 +292,4 @@
     </script>
 </body>
 </html>
+
