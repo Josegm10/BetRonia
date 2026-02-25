@@ -97,7 +97,13 @@
             <h4>2. Ranking (Editar)</h4>
 
             <table class="table-mini"><tbody id="adm-list-ranking"></tbody></table>
-
+        <div class="admin-section" style="background: #fff7ed; border-color: #fb923c;">
+    <h4>🎁 GESTIÓN DE CRÉDITOS</h4>
+    <button onclick="activarRecarga()" style="background:#f59e0b;">
+        HABILITAR 1 RECLAMO A TODOS
+    </button>
+    <p style="font-size:10px; color:#666;">(Cada usuario podrá pulsar 'Recibir 5 créditos' una sola vez)</p>
+</div>
         </div>
 
         <div class="admin-section">
@@ -249,6 +255,12 @@
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
 
         };
+        async function activarRecarga() {
+    if(confirm("¿Permitir que todos los jugadores reclamen 5 créditos una vez?")) {
+        await sb.rpc('habilitar_recarga_global');
+        alert("¡Recarga habilitada para todos!");
+    }
+}
 
 
 
@@ -293,12 +305,15 @@
 
 
         async function reclamar() {
-
-            await sb.rpc('reclamar_creditos', { user_nom: miNombre });
-
-            refrescar();
-
-        }
+    try {
+        const { error } = await sb.rpc('reclamar_creditos_v2', { user_nom: miNombre });
+        if (error) throw error;
+        alert("¡Has recibido 5 créditos!");
+        refrescar();
+    } catch (err) {
+        alert("Aún no puedes reclamar. Espera a que el admin lo active.");
+    }
+}
 
 
 
@@ -412,21 +427,23 @@ async function votar() {
 
             // Interfaz de créditos del usuario
 
-            if(yo) {
+            // Dentro de refrescar(), busca la parte de 'reclamar-ui'
+if(yo) {
+    // El botón solo aparece si el admin lo activó Y el usuario tiene su permiso individual en TRUE
+    if(jg.permitir_reclamar && yo.puede_reclamar) {
+        document.getElementById('reclamar-ui').classList.remove('hidden');
+    } else {
+        document.getElementById('reclamar-ui').classList.add('hidden');
+    }
 
-                document.getElementById('num-creditos').innerText = yo.creditos;
-
-                if(yo.creditos >= 5) {
-
-                    document.getElementById('reclamar-ui').classList.add('hidden');
-
-                    document.getElementById('status-creditos').classList.remove('hidden');
-
-                } else if (yo.creditos === 0 && !yo.seleccion2) {
-
-                    document.getElementById('reclamar-ui').classList.remove('hidden');
-
-                }
+    // Actualizar visualización de créditos
+    document.getElementById('num-creditos').innerText = yo.creditos;
+    if(yo.creditos > 0) {
+        document.getElementById('status-creditos').classList.remove('hidden');
+    } else {
+        document.getElementById('status-creditos').classList.add('hidden');
+    }
+}
 
                 
 
@@ -587,4 +604,5 @@ setInterval(refrescar, 60000);
 </body>
 
 </html>
+
 
