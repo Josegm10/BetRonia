@@ -340,22 +340,28 @@ async function refrescar() {
 
     if(!jg || !rk) return;
 
-    // Estadísticas y Ranking
+    // 1. Estadísticas y Ranking
     document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
     document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
 
-    if(yo) {
-        // UI Reclamar
-        if(jg.permitir_reclamar && yo.puede_reclamar) {
+    // 2. Lógica de Usuario (Créditos y Apuesta)
+    if (yo) {
+        // Botón de reclamar semanal
+        if (jg.permitir_reclamar && yo.puede_reclamar) {
             document.getElementById('reclamar-ui').classList.remove('hidden');
         } else {
             document.getElementById('reclamar-ui').classList.add('hidden');
         }
 
-        // Créditos y Apuesta Guardada
+        // Visualización de créditos
         document.getElementById('num-creditos').innerText = yo.creditos;
-        document.getElementById('status-creditos').className = yo.creditos > 0 ? "vote-box" : "vote-box hidden";
+        if (yo.creditos > 0) {
+            document.getElementById('status-creditos').classList.remove('hidden');
+        } else {
+            document.getElementById('status-creditos').classList.add('hidden');
+        }
         
+        // Mostrar apuesta guardada
         if(yo.seleccion2) {
             document.getElementById('mi-eleccion-display').classList.remove('hidden');
             document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2}c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3}c)</b>`;
@@ -364,7 +370,7 @@ async function refrescar() {
         }
     }
 
-    // Panel Admin
+    // 3. Panel Admin (Solo se ejecuta si esAdmin es true)
     if(esAdmin) {
         document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button></td></tr>`).join('');
         document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
@@ -374,7 +380,7 @@ async function refrescar() {
         }
     }
 
-    // Votación y GIFs
+    // 4. Votación y GIFs
     const gif = document.getElementById('display-gif');
     const r2 = document.getElementById('render-o2');
     const r3 = document.getElementById('render-o3');
@@ -422,6 +428,7 @@ async function editPts(nom, pts) {
 </body>
 
 </html>
+
 
 
 
