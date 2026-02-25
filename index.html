@@ -213,76 +213,96 @@
     } else {
         alert("Error al guardar: " + error.message);
     }
-}
-        async function refrescar() {
-            const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
-            const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            const { data: jg } = await sb.from('estado_juego').select('*').single();
-            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+}async function refrescar() {
+    const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
+    const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+    const { data: jg } = await sb.from('estado_juego').select('*').single();
+    const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Gestión de Créditos y Botón Reclamar
-            if(yo) {
-                document.getElementById('num-creditos').innerText = yo.creditos;
-                const uiReclamar = document.getElementById('reclamar-ui');
-                if (jg.permitir_reclamar && yo.creditos === 0 && !yo.seleccion2) {
-                    uiReclamar.classList.remove('hidden');
-                } else {
-                    uiReclamar.classList.add('hidden');
-                }
-                
-                if(yo.creditos > 0 || yo.seleccion2) {
-                    document.getElementById('status-creditos').classList.remove('hidden');
-                }
-
-                if(yo.seleccion2) {
-                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
-                    document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2}c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3}c)</b>`;
-                } else {
-                    document.getElementById('mi-eleccion-display').classList.add('hidden');
-                }
-            }
-
-            // Tablas y Ranking
-            document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-            document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
-
-            // Interfaz Admin
-            if(esAdmin) {
-                document.getElementById('btn-on').classList.toggle('hidden', jg.permitir_reclamar);
-                document.getElementById('btn-off').classList.toggle('hidden', !jg.permitir_reclamar);
-                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
-                document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
-                if (jg.opciones2) {
-                    document.getElementById('admin-check-o2').innerHTML = "<b>Ganadores 1 PTO:</b><br>" + jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-                    document.getElementById('admin-check-o3').innerHTML = "<b>Ganadores 3 PTOS:</b><br>" + jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-                }
-            }
-
-            // Votaciones y GIFs
-            const gif = document.getElementById('display-gif');
-            const r2 = document.getElementById('render-o2');
-            const r3 = document.getElementById('render-o3');
-            const btnV = document.getElementById('btn-votar');
-
-            if(jg.ronda_id === 1) {
-                const wins2 = jg.correcta2 ? jg.correcta2.toLowerCase().split(',').map(s => s.trim()) : [];
-                const wins3 = jg.correcta3 ? jg.correcta3.toLowerCase().split(',').map(s => s.trim()) : [];
-                const acierto = (yo?.seleccion2 && wins2.includes(yo.seleccion2.toLowerCase())) || (yo?.seleccion3 && wins3.includes(yo.seleccion3.toLowerCase()));
-                gif.src = acierto ? GIFS.acierta : GIFS.falla;
-                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`; 
-                r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
-                btnV.classList.add('hidden');
-            } else if(jg.opciones2?.length > 0) {
-                if(!yo?.seleccion2) {
-                    gif.src = GIFS.espera; btnV.classList.remove('hidden');
-                    r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-                    r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
-                } else {
-                    r2.innerHTML = "Apuesta registrada ✅"; r3.innerHTML = "Apuesta registrada ✅"; btnV.classList.add('hidden');
-                }
-            }
+    // 1. Gestión de Créditos y Botón Reclamar
+    if(yo) {
+        document.getElementById('num-creditos').innerText = yo.creditos;
+        const uiReclamar = document.getElementById('reclamar-ui');
+        
+        // Mostrar botón reclamar solo si el admin lo permite, el usuario tiene 0 y no ha apostado
+        if (jg.permitir_reclamar && (yo.creditos === 0 || !yo.creditos) && !yo.seleccion2) {
+            uiReclamar.classList.remove('hidden');
+        } else {
+            uiReclamar.classList.add('hidden');
+        }
+        
+        // Mostrar contador de créditos si tiene o si ya apostó
+        if(yo.creditos > 0 || yo.seleccion2) {
+            document.getElementById('status-creditos').classList.remove('hidden');
         }
 
+        // Mostrar resumen de apuesta guardada
+        if(yo.seleccion2) {
+            document.getElementById('mi-eleccion-display').classList.remove('hidden');
+            document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2}c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3}c)</b>`;
+        } else {
+            document.getElementById('mi-eleccion-display').classList.add('hidden');
+        }
+    }
+
+    // 2. Tablas y Ranking (Público)
+    document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
+    document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
+
+    // 3. Interfaz Admin (Solo visible para ti)
+    if(esAdmin) {
+        document.getElementById('btn-on').classList.toggle('hidden', jg.permitir_reclamar);
+        document.getElementById('btn-off').classList.toggle('hidden', !jg.permitir_reclamar);
+        
+        document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
+        document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
+        
+        // IMPORTANTE: Solo renderizamos los checks de validar si el admin NO está tocando nada
+        const container2 = document.getElementById('admin-check-o2');
+        if (jg.opciones2 && container2.querySelectorAll('input:checked').length === 0) {
+            container2.innerHTML = "<b>Ganadores 1 PTO:</b><br>" + jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
+        }
+        
+        const container3 = document.getElementById('admin-check-o3');
+        if (jg.opciones3 && container3.querySelectorAll('input:checked').length === 0) {
+            container3.innerHTML = "<b>Ganadores 3 PTOS:</b><br>" + jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
+        }
+    }
+
+    // 4. Votaciones y GIFs (Lógica de juego)
+    const gif = document.getElementById('display-gif');
+    const r2 = document.getElementById('render-o2');
+    const r3 = document.getElementById('render-o3');
+    const btnV = document.getElementById('btn-votar');
+
+    if(jg.ronda_id === 1) { // Ronda finalizada
+        const wins2 = jg.correcta2 ? jg.correcta2.toLowerCase().split(',').map(s => s.trim()) : [];
+        const wins3 = jg.correcta3 ? jg.correcta3.toLowerCase().split(',').map(s => s.trim()) : [];
+        const acierto = (yo?.seleccion2 && wins2.includes(yo.seleccion2.toLowerCase())) || (yo?.seleccion3 && wins3.includes(yo.seleccion3.toLowerCase()));
+        
+        gif.src = acierto ? GIFS.acierta : GIFS.falla;
+        r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`; 
+        r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
+        btnV.classList.add('hidden');
+    } else if(jg.opciones2?.length > 0) { // Ronda activa
+        if(!yo?.seleccion2) {
+            gif.src = GIFS.espera; 
+            if(yo?.creditos >= 5) btnV.classList.remove('hidden'); // Solo ve botón si tiene créditos
+            
+            // Solo renderiza las opciones si el usuario no ha marcado un radio button todavía
+            if(!document.querySelector('input[name="c2"]:checked')) {
+                r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
+                r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
+            }
+        } else {
+            r2.innerHTML = "Apuesta registrada ✅"; r3.innerHTML = "Apuesta registrada ✅"; btnV.classList.add('hidden');
+        }
+    } else {
+        r2.innerHTML = "Esperando próxima ronda...";
+        r3.innerHTML = "Esperando próxima ronda...";
+        btnV.classList.add('hidden');
+    }
+}
         async function guardarFila() {
             const s = document.getElementById('info-sujeto').value.trim();
             if(!s) return alert("Nombre obligatorio");
@@ -316,4 +336,5 @@
     </script>
 </body>
 </html>
+
 
