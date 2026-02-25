@@ -235,374 +235,193 @@
     <script>
 
         const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
+let miNombre = "";
+let esAdmin = false;
+let estaVotando = false; // Bloqueo para evitar que se borren las opciones al elegir
 
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+const GIFS = {
+    espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif",
+    falla: "https://media1.tenor.com/m/O2cp0tJpUkQAAAAd/novak-djokovic-angry.gif",
+    acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
+};
 
-
-
-        let miNombre = "";
-
-        let esAdmin = false;
-
-        const GIFS = {
-
-            espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif",
-
-            falla: "https://media1.tenor.com/m/O2cp0tJpUkQAAAAd/novak-djokovic-angry.gif",
-
-            acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
-
-        };
-        async function activarRecarga() {
+// --- FUNCIONES DE ADMINISTRADOR ---
+async function activarRecarga() {
     if(confirm("¿Permitir que todos los jugadores reclamen 5 créditos una vez?")) {
         await sb.rpc('habilitar_recarga_global');
         alert("¡Recarga habilitada para todos!");
+        refrescar();
     }
 }
 
+async function lanzar() {
+    const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
+    const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
+    await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0, permitir_reclamar: false }).eq('id', 1);
+    // Limpiamos apuestas de la ronda anterior
+    await sb.from('jugadores').update({ seleccion2: null, seleccion3: null, apuesta2: 0, apuesta3: 0 }).neq('nombre','');
+    alert("Ronda Iniciada.");
+}
 
+async function puntuarSeleccionados() {
+    const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
+    const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
+    if(confirm("¿Repartir puntos basados en créditos?")) {
+        await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
+        alert("Puntos asignados con éxito.");
+        refrescar();
+    }
+}
 
-        async function entrar() {
+// --- FUNCIONES DE USUARIO ---
+async function entrar() {
+    miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
+    if(!miNombre) return;
+    await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
+    document.getElementById('auth-ui').classList.add('hidden');
+    document.getElementById('game-ui').classList.remove('hidden');
+    document.getElementById('user-display').innerText = "@" + miNombre;
+    iniciar();
+}
 
-            miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
+function accesoAdmin() {
+    if(prompt("Clave:") === "idemodetronia") {
+        esAdmin = true;
+        document.getElementById('auth-ui').classList.add('hidden');
+        document.getElementById('admin-ui').classList.remove('hidden');
+        document.getElementById('game-ui').classList.remove('hidden');
+        iniciar();
+    }
+}
 
-            if(!miNombre) return;
-
-            await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
-
-            document.getElementById('auth-ui').classList.add('hidden');
-
-            document.getElementById('game-ui').classList.remove('hidden');
-
-            document.getElementById('user-display').innerText = "@" + miNombre;
-
-            iniciar();
-
-        }
-
-
-
-        function accesoAdmin() {
-
-            if(prompt("Clave:") === "idemodetronia") {
-
-                esAdmin = true;
-
-                document.getElementById('auth-ui').classList.add('hidden');
-
-                document.getElementById('admin-ui').classList.remove('hidden');
-
-                document.getElementById('game-ui').classList.remove('hidden');
-
-                iniciar();
-
-            }
-
-        }
-
-
-
-        async function reclamar() {
+async function reclamar() {
     try {
         const { error } = await sb.rpc('reclamar_creditos_v2', { user_nom: miNombre });
         if (error) throw error;
         alert("¡Has recibido 5 créditos!");
         refrescar();
     } catch (err) {
-        alert("Aún no puedes reclamar. Espera a que el admin lo active.");
+        alert("Error al reclamar o no tienes permiso.");
     }
 }
-
-
-
-        // NUEVA: Función para que el admin regale créditos a todos sin reiniciar la ronda
-
-async function regalarCreditosGlobal() {
-
-    if(confirm("¿Dar 5 créditos a todos los jugadores actuales?")) {
-
-        const { error } = await sb.from('jugadores')
-
-            .update({ creditos: 5 })
-
-            .neq('nombre', ''); // Afecta a todos los que tengan nombre
-
-        
-
-        if(!error) alert("¡Créditos repartidos!");
-
-        else alert("Error al repartir");
-
-    }
-
-}
-
-
-
-// ACTUALIZADA: Lógica de votación flexible
 
 async function votar() {
-
     const v2 = document.querySelector('input[name="c2"]:checked')?.value;
-
     const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-
-    
-
     if(!v2 || !v3) return alert("Selecciona una opción en cada lista.");
 
-
-
-    // Obtener créditos actuales del jugador para validar
-
     const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
+    const total = user.creditos;
 
-    const totalDisponibles = user.creditos;
+    if(total < 1) return alert("No tienes créditos.");
 
+    let c2 = parseInt(prompt(`¿Créditos para 1 PTO? (Tienes ${total}):`)) || 0;
+    if (c2 > total || c2 < 0) return alert("Cantidad no válida.");
 
-
-    if(totalDisponibles < 1) return alert("No tienes créditos para apostar.");
-
-
-
-    let c2 = parseInt(prompt(`¿Cuántos créditos a la opción de 1 PTO? (Tienes ${totalDisponibles}):`)) || 0;
-
-    
-
-    // Cálculo automático del resto o validación manual
-
-    if (c2 >= totalDisponibles || c2 < 1) {
-
-        return alert(`Debes dejar al menos 1 crédito para la otra opción. (Apuesta entre 1 y ${totalDisponibles - 1})`);
-
-    }
-
-
-
-    let c3 = totalDisponibles - c2;
-
-    
-
-    if(confirm(`Apuesta confirmada:\n- ${v2}: ${c2} créditos\n- ${v3}: ${c3} créditos\n\n¿Proceder?`)) {
-
+    let c3 = total - c2;
+    if(confirm(`Apuesta: ${c2} c. al de 1pto y ${c3} c. al de 3ptos. ¿Confirmar?`)) {
         await sb.from('jugadores').update({ 
-
-            seleccion2: v2, 
-
-            seleccion3: v3, 
-
-            apuesta2: c2, 
-
-            apuesta3: c3, 
-
-            creditos: 0 // Se consumen todos al apostar
-
+            seleccion2: v2, seleccion3: v3, apuesta2: c2, apuesta3: c3, creditos: 0 
         }).eq('nombre', miNombre);
-
-        
-
-        alert("¡Apuesta enviada con éxito!");
-
+        alert("¡Votos enviados!");
         refrescar();
-
-    }
-
-}
-
-
-
-        async function refrescar() {
-
-            const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
-
-            const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-
-            const { data: jg } = await sb.from('estado_juego').select('*').single();
-
-            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
-
-
-
-            // Interfaz de créditos del usuario
-
-            // Dentro de refrescar(), busca la parte de 'reclamar-ui'
-if(yo) {
-    // El botón solo aparece si el admin lo activó Y el usuario tiene su permiso individual en TRUE
-    if(jg.permitir_reclamar && yo.puede_reclamar) {
-        document.getElementById('reclamar-ui').classList.remove('hidden');
-    } else {
-        document.getElementById('reclamar-ui').classList.add('hidden');
-    }
-
-    // Actualizar visualización de créditos
-    document.getElementById('num-creditos').innerText = yo.creditos;
-    if(yo.creditos > 0) {
-        document.getElementById('status-creditos').classList.remove('hidden');
-    } else {
-        document.getElementById('status-creditos').classList.add('hidden');
     }
 }
 
-                
+// --- ACTUALIZACIÓN EN TIEMPO REAL ---
+async function refrescar() {
+    const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
+    const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+    const { data: jg } = await sb.from('estado_juego').select('*').single();
+    const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-                if(yo.seleccion2) {
+    if(!jg || !rk) return;
 
-                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
+    // Estadísticas y Ranking
+    document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
+    document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
 
-                    document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2} c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3} c)</b>`;
+    if(yo) {
+        // UI Reclamar
+        if(jg.permitir_reclamar && yo.puede_reclamar) {
+            document.getElementById('reclamar-ui').classList.remove('hidden');
+        } else {
+            document.getElementById('reclamar-ui').classList.add('hidden');
+        }
 
-                } else {
+        // Créditos y Apuesta Guardada
+        document.getElementById('num-creditos').innerText = yo.creditos;
+        document.getElementById('status-creditos').className = yo.creditos > 0 ? "vote-box" : "vote-box hidden";
+        
+        if(yo.seleccion2) {
+            document.getElementById('mi-eleccion-display').classList.remove('hidden');
+            document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2}c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3}c)</b>`;
+        } else {
+            document.getElementById('mi-eleccion-display').classList.add('hidden');
+        }
+    }
 
-                    document.getElementById('mi-eleccion-display').classList.add('hidden');
+    // Panel Admin
+    if(esAdmin) {
+        document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button></td></tr>`).join('');
+        document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
+        if (jg.opciones2?.length > 0) {
+            document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
+            document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
+        }
+    }
 
-                }
+    // Votación y GIFs
+    const gif = document.getElementById('display-gif');
+    const r2 = document.getElementById('render-o2');
+    const r3 = document.getElementById('render-o3');
+    const btn = document.getElementById('btn-votar');
 
+    if(jg.ronda_id === 1) {
+        gif.src = GIFS.acierta;
+        r2.innerHTML = `Ganadores: <b>${jg.correcta2}</b>`;
+        r3.innerHTML = `Ganadores: <b>${jg.correcta3}</b>`;
+        btn.classList.add('hidden');
+    } else if(jg.opciones2?.length > 0) {
+        if(!yo?.seleccion2) {
+            gif.src = GIFS.espera; 
+            btn.classList.remove('hidden');
+            if(!estaVotando) {
+                r2.innerHTML = jg.opciones2.map(o => `<label onmousedown="estaVotando=true" onmouseup="setTimeout(()=>estaVotando=false,2000)"><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
+                r3.innerHTML = jg.opciones3.map(o => `<label onmousedown="estaVotando=true" onmouseup="setTimeout(()=>estaVotando=false,2000)"><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
             }
-
-
-
-            document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-
-            document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
-
-
-
-            if(esAdmin) {
-
-                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
-
-                document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
-
-                if (jg.opciones2?.length > 0) {
-
-                    document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-
-                    document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-
-                }
-
-            }
-
-
-
-            const gif = document.getElementById('display-gif');
-
-            const r2 = document.getElementById('render-o2');
-
-            const r3 = document.getElementById('render-o3');
-
-            const btn = document.getElementById('btn-votar');
-
-
-
-            if(jg.ronda_id === 1) {
-
-                gif.src = GIFS.acierta; // O lógica de acierto personalizada
-
-                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
-
-                r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
-
-                btn.classList.add('hidden');
-
-            } else if(jg.opciones2?.length > 0) {
-
-                if(!yo?.seleccion2) {
-
-                    gif.src = GIFS.espera; btn.classList.remove('hidden');
-
-                    r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-
-                    r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
-
-                } else {
-
-                    r2.innerHTML = "Apuesta registrada ✅"; r3.innerHTML = "Apuesta registrada ✅"; btn.classList.add('hidden');
-
-                }
-
-            }
-
+        } else {
+            r2.innerHTML = "Apuesta registrada ✅"; 
+            r3.innerHTML = "Apuesta registrada ✅"; 
+            btn.classList.add('hidden');
         }
+    }
+}
 
+function iniciar() {
+    sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
+    refrescar();
+    setInterval(refrescar, 30000); // Refresco cada 15 seg para ahorrar recursos
+}
 
-
-        async function lanzar() {
-
-            const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
-
-            const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
-
-            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
-
-            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null, apuesta2: 0, apuesta3: 0, creditos: 5 }).neq('nombre','');
-
-            alert("Ronda Iniciada. Todos han recuperado 5 créditos.");
-
-        }
-
-
-
-        async function puntuarSeleccionados() {
-
-            const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
-
-            const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
-
-            if(confirm("¿Repartir puntos?")) {
-
-                await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-
-                alert("Puntos asignados con éxito.");
-
-            }
-
-        }
-
-
-
-        function editEst(s, g, a, r, as) {
-
-            document.getElementById('info-sujeto').value = s; document.getElementById('info-goles').value = g;
-
-            document.getElementById('info-asist').value = as; document.getElementById('info-am').value = a; document.getElementById('info-ro').value = r;
-
-        }
-
-
-
-        async function eliminarFila(sujeto) { if(confirm("¿Eliminar?")) await sb.from('estadisticas').delete().eq('sujeto', sujeto); }
-
-
-
-        async function editPts(nom, pts) {
-
-            const n = prompt(`Puntos para @${nom}:`, pts);
-
-            if(n !== null) await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nom);
-
-        }
-
-
-
-        function iniciar() {
-
-            sb.channel('db').on('postgres_changes', { event: '*', schema: 'public' }, () => refrescar()).subscribe();
-
-            refrescar();
-
-            setInterval(refrescar, 8000);
-
-        }
-        // Cambia el 8000 (8 segundos) por un tiempo más largo, como 30000 (30 segundos)
-setInterval(refrescar, 60000);
+// Funciones auxiliares de edición
+function editEst(s, g, a, r, as) {
+    document.getElementById('info-sujeto').value = s; document.getElementById('info-goles').value = g;
+    document.getElementById('info-asist').value = as; document.getElementById('info-am').value = a; document.getElementById('info-ro').value = r;
+}
+async function editPts(nom, pts) {
+    const n = prompt(`Puntos para @${nom}:`, pts);
+    if(n !== null) await sb.from('jugadores').update({ puntos: parseInt(n) }).eq('nombre', nom);
+}
 
     </script>
 
 </body>
 
 </html>
+
 
 
