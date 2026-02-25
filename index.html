@@ -197,64 +197,41 @@ async function votar() {
         refrescar();
     }
 }
+// Variable global para saber si el usuario está interactuando
+let estaVotando = false;
 
-        async function refrescar() {
-            const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
-            const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            const { data: jg } = await sb.from('estado_juego').select('*').single();
-            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+async function refrescar() {
+    // ... (mantén el inicio de la función igual hasta llegar a la parte de los botones)
 
-            // Interfaz de créditos del usuario
-            if(yo) {
-                document.getElementById('num-creditos').innerText = yo.creditos;
-                if(yo.creditos >= 5) {
-                    document.getElementById('reclamar-ui').classList.add('hidden');
-                    document.getElementById('status-creditos').classList.remove('hidden');
-                } else if (yo.creditos === 0 && !yo.seleccion2) {
-                    document.getElementById('reclamar-ui').classList.remove('hidden');
-                }
-                
-                if(yo.seleccion2) {
-                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
-                    document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2} c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3} c)</b>`;
-                } else {
-                    document.getElementById('mi-eleccion-display').classList.add('hidden');
-                }
+    if(jg.ronda_id === 1) {
+        gif.src = GIFS.acierta;
+        r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
+        r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
+        btn.classList.add('hidden');
+    } else if(jg.opciones2?.length > 0) {
+        if(!yo?.seleccion2) {
+            gif.src = GIFS.espera; 
+            btn.classList.remove('hidden');
+
+            // --- ESTA ES LA MEJORA ---
+            // Solo dibujamos las opciones si el usuario NO está tocando nada
+            if (!estaVotando) {
+                r2.innerHTML = jg.opciones2.map(o => `
+                    <label onmousedown="estaVotando=true" onmouseup="setTimeout(()=>estaVotando=false, 2000)">
+                        <input type="radio" name="c2" value="${o}"> ${o}
+                    </label><br>`).join('');
+                r3.innerHTML = jg.opciones3.map(o => `
+                    <label onmousedown="estaVotando=true" onmouseup="setTimeout(()=>estaVotando=false, 2000)">
+                        <input type="radio" name="c3" value="${o}"> ${o}
+                    </label><br>`).join('');
             }
-
-            document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-            document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
-
-            if(esAdmin) {
-                document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
-                document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
-                if (jg.opciones2?.length > 0) {
-                    document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-                    document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-                }
-            }
-
-            const gif = document.getElementById('display-gif');
-            const r2 = document.getElementById('render-o2');
-            const r3 = document.getElementById('render-o3');
-            const btn = document.getElementById('btn-votar');
-
-            if(jg.ronda_id === 1) {
-                gif.src = GIFS.acierta; // O lógica de acierto personalizada
-                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
-                r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
-                btn.classList.add('hidden');
-            } else if(jg.opciones2?.length > 0) {
-                if(!yo?.seleccion2) {
-                    gif.src = GIFS.espera; btn.classList.remove('hidden');
-                    r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-                    r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
-                } else {
-                    r2.innerHTML = "Apuesta registrada ✅"; r3.innerHTML = "Apuesta registrada ✅"; btn.classList.add('hidden');
-                }
-            }
+        } else {
+            r2.innerHTML = "Apuesta registrada ✅"; 
+            r3.innerHTML = "Apuesta registrada ✅"; 
+            btn.classList.add('hidden');
         }
-
+    }
+}
         async function lanzar() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
@@ -292,4 +269,5 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
