@@ -38,6 +38,13 @@
 
     <div id="admin-ui" class="card hidden">
         <h3>🛠️ PANEL MASTER</h3>
+        
+        <div class="admin-section" style="background: #e3f2fd;">
+            <h4>🚀 CONTROL DE CRÉDITOS</h4>
+            <button id="btn-on" onclick="toggleReclamar(true)" style="background:#22c55e">HABILITAR RECLAMO 🎁</button>
+            <button id="btn-off" onclick="toggleReclamar(false)" class="hidden" style="background:#ef4444">DESHABILITAR RECLAMO 🔒</button>
+        </div>
+
         <div class="admin-section">
             <h4>1. Tabla de Apoyo</h4>
             <input type="text" id="info-sujeto" placeholder="Jugador">
@@ -54,12 +61,7 @@
         </div>
 
         <div class="admin-section">
-            <h4>2. Ranking (Editar)</h4>
-            <table class="table-mini"><tbody id="adm-list-ranking"></tbody></table>
-        </div>
-
-        <div class="admin-section">
-            <h4>3. Ronda (+1 y +3)</h4>
+            <h4>2. Ronda (+1 y +3)</h4>
             <textarea id="adm-o2" placeholder="Opciones 1 PTO (separar con comas)"></textarea>
             <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separar con comas)"></textarea>
             <button onclick="lanzar()" style="background:#2563eb">ACTIVAR RONDA</button>
@@ -67,7 +69,7 @@
             <h5>Validar Ganadores:</h5>
             <div id="admin-check-o2" class="check-group"></div>
             <div id="admin-check-o3" class="check-group" style="margin-top:10px;"></div>
-            <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">VALIDAR MARCADOS</button>
+            <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">VALIDAR Y REPARTIR PUNTOS</button>
         </div>
         <button onclick="location.reload()" style="background:black">CERRAR PANEL</button>
     </div>
@@ -75,6 +77,15 @@
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
         <h3 id="user-display"></h3>
+
+        <div id="reclamar-ui" class="card hidden" style="background: var(--accent); color: black; border: none; padding: 15px;">
+            <p style="margin: 0 0 10px 0; font-weight: bold;">🎁 ¡Créditos disponibles para esta ronda!</p>
+            <button onclick="reclamar()" style="background: black;">RECIBIR MIS 5 CRÉDITOS</button>
+        </div>
+
+        <div id="status-creditos" class="vote-box hidden" style="background: #e8f5e9;">
+            <b>💰 Mis Créditos: <span id="num-creditos">0</span></b>
+        </div>
 
         <div id="mi-eleccion-display" class="vote-box hidden" style="background: #e3f2fd; border-left-color: #2196f3;">
             <strong>TU APUESTA:</strong>
@@ -85,10 +96,7 @@
             <h4>📊 ESTADÍSTICAS</h4>
             <table class="info-table-user">
                 <thead>
-                    <tr>
-                        <th rowspan="2">JUGADOR</th><th rowspan="2">GOL</th><th rowspan="2">ASIST</th>
-                        <th colspan="2">TARJETAS</th>
-                    </tr>
+                    <tr><th rowspan="2">JUGADOR</th><th rowspan="2">GOL</th><th rowspan="2">ASIST</th><th colspan="2">TARJETAS</th></tr>
                     <tr><th style="background:#ffeb3b">AM</th><th style="background:#f44336; color:white">RO</th></tr>
                 </thead>
                 <tbody id="info-content-user"></tbody>
@@ -96,13 +104,13 @@
         </div>
 
         <div id="votos-ui">
-            <div class="vote-box"><strong>VALE 1 PUNTO:</strong><div id="render-o2"></div></div>
-            <div class="vote-box"><strong>VALE 3 PUNTOS:</strong><div id="render-o3"></div></div>
-            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR VOTOS</button>
+            <div class="vote-box"><strong>VALE 1 PUNTO (x Créditos):</strong><div id="render-o2"></div></div>
+            <div class="vote-box"><strong>VALE 3 PUNTOS (x Créditos):</strong><div id="render-o3"></div></div>
+            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR VOTOS (5 CRÉD.)</button>
         </div>
 
         <div style="margin-top:20px;">
-            <h4>🏆 RANKING</h4>
+            <h4>🏆 RANKING TOTAL</h4>
             <div id="ranking-list"></div>
         </div>
     </div>
@@ -140,17 +148,53 @@
             }
         }
 
-        async function guardarFila() {
-            const s = document.getElementById('info-sujeto').value.trim();
-            const g = document.getElementById('info-goles').value;
-            const as = document.getElementById('info-asist').value || '0';
-            const a = document.getElementById('info-am').value || 0;
-            const r = document.getElementById('info-ro').value || 0;
-            if(!s) return alert("Nombre obligatorio");
-            await sb.from('estadisticas').upsert({ sujeto: s, dato1: g, dato2: a, dato3: r, dato4: as }, { onConflict: 'sujeto' });
-            document.getElementById('info-sujeto').value = "";
-            document.getElementById('info-goles').value = "";
-            document.getElementById('info-asist').value = "";
+        // --- FUNCIONES ADMIN ---
+        async function toggleReclamar(estado) {
+            await sb.from('estado_juego').update({ permitir_reclamar: estado }).eq('id', 1);
+        }
+
+        async function lanzar() {
+            const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
+            const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
+            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0, permitir_reclamar: false }).eq('id', 1);
+            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null, apuesta2: 0, apuesta3: 0 }).neq('nombre','');
+            alert("Ronda Iniciada. Los usuarios deberán reclamar sus créditos cuando lo habilites.");
+        }
+
+        async function puntuarSeleccionados() {
+            const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
+            const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
+            if(confirm("¿Sumar puntos al ranking y finalizar?")) {
+                await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
+                alert("Ranking actualizado con éxito.");
+            }
+        }
+
+        // --- FUNCIONES JUGADOR ---
+        async function reclamar() {
+            await sb.rpc('reclamar_creditos', { user_nom: miNombre });
+            refrescar();
+        }
+
+        async function votar() {
+            const v2 = document.querySelector('input[name="c2"]:checked')?.value;
+            const v3 = document.querySelector('input[name="c3"]:checked')?.value;
+            if(!v2 || !v3) return alert("Debes seleccionar una opción en cada categoría.");
+
+            let c2 = parseInt(prompt("Créditos para Opción 1 PTO (1 a 4):")) || 0;
+            let c3 = parseInt(prompt("Créditos para Opción 3 PTOS (1 a 4):")) || 0;
+
+            if ((c2 + c3) !== 5 || c2 < 1 || c3 < 1) {
+                return alert("Regla: Debes repartir exactamente 5 créditos y poner mínimo 1 en cada opción (Ej: 4 y 1).");
+            }
+
+            const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
+            if(user.creditos < 5) return alert("No tienes créditos suficientes.");
+
+            await sb.from('jugadores').update({ 
+                seleccion2: v2, seleccion3: v3, apuesta2: c2, apuesta3: c3, creditos: user.creditos - 5 
+            }).eq('nombre', miNombre);
+            refrescar();
         }
 
         async function refrescar() {
@@ -159,94 +203,88 @@
             const { data: jg } = await sb.from('estado_juego').select('*').single();
             const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Render Apuesta Usuario
-            const miEleccionDiv = document.getElementById('mi-eleccion-display');
-            if (yo && (yo.seleccion2 || yo.seleccion3)) {
-                miEleccionDiv.classList.remove('hidden');
-                document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2 || '-'}</b> | 3 PTOS: <b>${yo.seleccion3 || '-'}</b>`;
-            } else { miEleccionDiv.classList.add('hidden'); }
+            // Gestión de Créditos y Botón Reclamar
+            if(yo) {
+                document.getElementById('num-creditos').innerText = yo.creditos;
+                const uiReclamar = document.getElementById('reclamar-ui');
+                if (jg.permitir_reclamar && yo.creditos === 0 && !yo.seleccion2) {
+                    uiReclamar.classList.remove('hidden');
+                } else {
+                    uiReclamar.classList.add('hidden');
+                }
+                
+                if(yo.creditos > 0 || yo.seleccion2) {
+                    document.getElementById('status-creditos').classList.remove('hidden');
+                }
 
-            // Render Tablas
+                if(yo.seleccion2) {
+                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
+                    document.getElementById('voto-guardado-texto').innerHTML = `1 PTO: <b>${yo.seleccion2} (${yo.apuesta2}c)</b> | 3 PTOS: <b>${yo.seleccion3} (${yo.apuesta3}c)</b>`;
+                } else {
+                    document.getElementById('mi-eleccion-display').classList.add('hidden');
+                }
+            }
+
+            // Tablas y Ranking
             document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
             document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
 
+            // Interfaz Admin
             if(esAdmin) {
+                document.getElementById('btn-on').classList.toggle('hidden', jg.permitir_reclamar);
+                document.getElementById('btn-off').classList.toggle('hidden', !jg.permitir_reclamar);
                 document.getElementById('adm-list-stats').innerHTML = st.map(s => `<tr><td>${s.sujeto}</td><td><button onclick="editEst('${s.sujeto}','${s.dato1}',${s.dato2},${s.dato3},'${s.dato4}')">✎</button><button class="btn-del" onclick="eliminarFila('${s.sujeto}')">X</button></td></tr>`).join('');
                 document.getElementById('adm-list-ranking').innerHTML = rk.map(j => `<tr><td>@${j.nombre}</td><td>${j.puntos}</td><td><button onclick="editPts('${j.nombre}',${j.puntos})">✎</button></td></tr>`).join('');
-                
-                // Render Checkboxes Admin
-                const c2 = document.getElementById('admin-check-o2');
-                const c3 = document.getElementById('admin-check-o3');
-                if (jg.opciones2?.length > 0) {
-                    c2.innerHTML = "<strong>Correctas 1 PTO:</strong><br>" + jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-                    c3.innerHTML = "<strong>Correctas 3 PTOS:</strong><br>" + jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-                } else { c2.innerHTML = "Esperando nueva ronda..."; c3.innerHTML = ""; }
+                if (jg.opciones2) {
+                    document.getElementById('admin-check-o2').innerHTML = "<b>Ganadores 1 PTO:</b><br>" + jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
+                    document.getElementById('admin-check-o3').innerHTML = "<b>Ganadores 3 PTOS:</b><br>" + jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
+                }
             }
 
+            // Votaciones y GIFs
             const gif = document.getElementById('display-gif');
             const r2 = document.getElementById('render-o2');
             const r3 = document.getElementById('render-o3');
-            const btn = document.getElementById('btn-votar');
+            const btnV = document.getElementById('btn-votar');
 
             if(jg.ronda_id === 1) {
                 const wins2 = jg.correcta2 ? jg.correcta2.toLowerCase().split(',').map(s => s.trim()) : [];
                 const wins3 = jg.correcta3 ? jg.correcta3.toLowerCase().split(',').map(s => s.trim()) : [];
                 const acierto = (yo?.seleccion2 && wins2.includes(yo.seleccion2.toLowerCase())) || (yo?.seleccion3 && wins3.includes(yo.seleccion3.toLowerCase()));
                 gif.src = acierto ? GIFS.acierta : GIFS.falla;
-                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`;
+                r2.innerHTML = `Ganadores (+1): <b>${jg.correcta2}</b>`; 
                 r3.innerHTML = `Ganadores (+3): <b>${jg.correcta3}</b>`;
-                btn.classList.add('hidden');
+                btnV.classList.add('hidden');
             } else if(jg.opciones2?.length > 0) {
                 if(!yo?.seleccion2) {
-                    const yaMarcado = document.querySelector('input[name="c2"]:checked');
-                    if(!yaMarcado) {
-                        gif.src = GIFS.espera;
-                        btn.classList.remove('hidden');
-                        r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-                        r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
-                    }
+                    gif.src = GIFS.espera; btnV.classList.remove('hidden');
+                    r2.innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
+                    r3.innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
                 } else {
-                    r2.innerHTML = "Voto enviado ✅"; r3.innerHTML = "Voto enviado ✅"; btn.classList.add('hidden');
+                    r2.innerHTML = "Apuesta registrada ✅"; r3.innerHTML = "Apuesta registrada ✅"; btnV.classList.add('hidden');
                 }
             }
         }
 
-        async function lanzar() {
-            const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
-            const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
-            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
-            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null }).neq('nombre','');
-            alert("Ronda Iniciada");
-        }
-
-        async function votar() {
-            const v2 = document.querySelector('input[name="c2"]:checked')?.value;
-            const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Elige ambas opciones");
-            await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3 }).eq('nombre', miNombre);
-        }
-
-        async function puntuarSeleccionados() {
-            const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
-            const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
-            if(w2.length === 0 && w3.length === 0) return alert("Marca al menos un ganador");
-            if(confirm("¿Finalizar ronda y repartir puntos?")) {
-                await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-                alert("Puntos asignados.");
-            }
+        async function guardarFila() {
+            const s = document.getElementById('info-sujeto').value.trim();
+            if(!s) return alert("Nombre obligatorio");
+            await sb.from('estadisticas').upsert({ 
+                sujeto: s, 
+                dato1: document.getElementById('info-goles').value, 
+                dato2: document.getElementById('info-am').value || 0, 
+                dato3: document.getElementById('info-ro').value || 0, 
+                dato4: document.getElementById('info-asist').value || '0' 
+            }, { onConflict: 'sujeto' });
+            document.getElementById('info-sujeto').value = "";
         }
 
         function editEst(s, g, a, r, as) {
-            document.getElementById('info-sujeto').value = s;
-            document.getElementById('info-goles').value = g;
-            document.getElementById('info-asist').value = as;
-            document.getElementById('info-am').value = a;
-            document.getElementById('info-ro').value = r;
+            document.getElementById('info-sujeto').value = s; document.getElementById('info-goles').value = g;
+            document.getElementById('info-asist').value = as; document.getElementById('info-am').value = a; document.getElementById('info-ro').value = r;
         }
 
-        async function eliminarFila(sujeto) {
-            if(confirm("¿Eliminar a " + sujeto + "?")) await sb.from('estadisticas').delete().eq('sujeto', sujeto);
-        }
+        async function eliminarFila(sujeto) { if(confirm("¿Eliminar?")) await sb.from('estadisticas').delete().eq('sujeto', sujeto); }
 
         async function editPts(nom, pts) {
             const n = prompt(`Puntos para @${nom}:`, pts);
