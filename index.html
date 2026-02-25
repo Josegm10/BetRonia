@@ -177,26 +177,43 @@
         }
 
         async function votar() {
-            const v2 = document.querySelector('input[name="c2"]:checked')?.value;
-            const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Debes seleccionar una opción en cada categoría.");
+    const v2 = document.querySelector('input[name="c2"]:checked')?.value;
+    const v3 = document.querySelector('input[name="c3"]:checked')?.value;
+    
+    if(!v2 || !v3) return alert("Debes seleccionar una opción en cada categoría.");
 
-            let c2 = parseInt(prompt("Créditos para Opción 1 PTO (1 a 4):")) || 0;
-            let c3 = parseInt(prompt("Créditos para Opción 3 PTOS (1 a 4):")) || 0;
+    // Pedir el reparto de créditos
+    let c2 = parseInt(prompt("¿Cuántos créditos pones a la Opción de 1 PUNTO? (1 a 4)"));
+    let c3 = parseInt(prompt("¿Cuántos créditos pones a la Opción de 3 PUNTOS? (1 a 4)"));
 
-            if ((c2 + c3) !== 5 || c2 < 1 || c3 < 1) {
-                return alert("Regla: Debes repartir exactamente 5 créditos y poner mínimo 1 en cada opción (Ej: 4 y 1).");
-            }
+    // Validación estricta de la regla
+    if (isNaN(c2) || isNaN(c3) || (c2 + c3) !== 5 || c2 < 1 || c3 < 1) {
+        return alert("ERROR: Debes repartir tus 5 créditos. Ejemplo: 4 en una y 1 en otra. Mínimo 1 por opción.");
+    }
 
-            const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
-            if(user.creditos < 5) return alert("No tienes créditos suficientes.");
+    // Verificar si el usuario tiene los créditos en la DB
+    const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
+    
+    if(!user || user.creditos < 5) {
+        return alert("No tienes créditos. Espera a que el admin habilite el botón de reclamar.");
+    }
 
-            await sb.from('jugadores').update({ 
-                seleccion2: v2, seleccion3: v3, apuesta2: c2, apuesta3: c3, creditos: user.creditos - 5 
-            }).eq('nombre', miNombre);
-            refrescar();
-        }
+    // Guardar la apuesta y restar los créditos para que no vuelva a votar
+    const { error } = await sb.from('jugadores').update({ 
+        seleccion2: v2, 
+        seleccion3: v3, 
+        apuesta2: c2, 
+        apuesta3: c3, 
+        creditos: 0 // Se consumen al apostar
+    }).eq('nombre', miNombre);
 
+    if(!error) {
+        alert("¡Apuesta guardada con éxito!");
+        refrescar();
+    } else {
+        alert("Error al guardar: " + error.message);
+    }
+}
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
@@ -299,3 +316,4 @@
     </script>
 </body>
 </html>
+
