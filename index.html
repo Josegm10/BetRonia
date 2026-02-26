@@ -40,19 +40,25 @@
         <h3>🛠️ PANEL MASTER</h3>
         
         <div class="admin-section">
-            <h4>1. Estadísticas Globales</h4>
-            <input type="text" id="info-sujeto" placeholder="Nombre Jugador">
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="info-goles" placeholder="Goles">
-                <input type="text" id="info-asist" placeholder="Asist.">
-            </div>
-            <div style="display:flex; gap:5px;">
-                <input type="number" id="info-am" placeholder="AM">
-                <input type="number" id="info-ro" placeholder="RO">
-            </div>
-            <button onclick="guardarFila()" style="background:#22c55e">ACTUALIZAR DATOS</button>
-        </div>
-
+    <h4>1. Editor de Estadísticas</h4>
+    <select id="adm-select-stats" style="width:100%; margin-bottom:5px;" onchange="cargarDatosEstadistica()">
+        <option value="">-- Seleccionar Jugador para editar --</option>
+    </select>
+    
+    <input type="text" id="info-sujeto" placeholder="Nombre del Jugador">
+    
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="info-goles" placeholder="Goles">
+        <input type="number" id="info-asist" placeholder="Asistencias">
+    </div>
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="info-am" placeholder="AM">
+        <input type="number" id="info-ro" placeholder="RO">
+    </div>
+    
+    <button onclick="guardarFila()" style="background:#22c55e">GUARDAR ESTADÍSTICAS</button>
+    <button onclick="eliminarEstadistica()" class="btn-del" style="width:100%; margin-top:5px;">BORRAR ESTADÍSTICA</button>
+</div>
         <div class="admin-section">
             <h4>2. Configurar Ronda</h4>
             <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
@@ -237,7 +243,44 @@
                 rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
                 select.value = valorGuardado;
             }
+            // Dentro de refrescar(), al final junto al otro select:
+            if (esAdmin && st) {
+            const selectSt = document.getElementById('adm-select-stats');
+            const valorSt = selectSt.value;
+            selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' + 
+                st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
+            selectSt.value = valorSt;
         }
+     }
+        // Esta función rellena los campos automáticamente al seleccionar un jugador
+async function cargarDatosEstadistica() {
+    const nombre = document.getElementById('adm-select-stats').value;
+    if (!nombre) {
+        document.getElementById('info-sujeto').value = "";
+        return;
+    }
+    
+    // Buscamos los datos actuales en la tabla para facilitar la edición
+    const { data } = await sb.from('estadisticas').select('*').eq('sujeto', nombre).single();
+    if (data) {
+        document.getElementById('info-sujeto').value = data.sujeto;
+        document.getElementById('info-goles').value = data.dato1;
+        document.getElementById('info-asist').value = data.dato4;
+        document.getElementById('info-am').value = data.dato2;
+        document.getElementById('info-ro').value = data.dato3;
+    }
+}
+
+async function eliminarEstadistica() {
+    const nombre = document.getElementById('adm-select-stats').value;
+    if (!nombre) return alert("Selecciona un registro para borrar");
+    
+    if (confirm(`¿Borrar las estadísticas de ${nombre}? No afectará a sus puntos en el ranking.`)) {
+        await sb.from('estadisticas').delete().eq('sujeto', nombre);
+        alert("Estadística eliminada");
+        refrescar();
+    }
+}
         async function modificarJugador() {
     const nombre = document.getElementById('adm-select-jugador').value;
     const nuevosPuntos = document.getElementById('adm-edit-puntos').value;
@@ -317,6 +360,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
