@@ -33,6 +33,16 @@
         <button onclick="entrar()">JUGAR</button>
         <button onclick="accesoAdmin()" style="background:#64748b; margin-top:10px; font-size:12px;">MODO ADMIN</button>
     </div>
+    <div class="admin-section">
+    <h4>4. Editor de Ranking y Puntos</h4>
+    <select id="adm-select-jugador" style="width:100%;"></select>
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="adm-edit-puntos" placeholder="Puntos Totales">
+        <input type="number" id="adm-edit-creditos" placeholder="Créditos">
+    </div>
+    <button onclick="modificarJugador()" style="background:#0ea5e9">GUARDAR CAMBIOS JUGADOR</button>
+    <button onclick="eliminarJugador()" class="btn-del" style="width:100%; margin-top:5px;">ELIMINAR JUGADOR DEL SISTEMA</button>
+</div>
 
     <div id="admin-ui" class="card hidden">
         <h3>🛠️ PANEL MASTER</h3>
@@ -210,7 +220,45 @@
             } else {
                 btn.classList.add('hidden');
             }
+            // Añade esto dentro de la función refrescar(), al final
+            if (esAdmin && rk) {
+                const select = document.getElementById('adm-select-jugador');
+                const valorGuardado = select.value;
+                select.innerHTML = '<option value="">Selecciona un jugador...</option>' + 
+                rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
+                select.value = valorGuardado;
+            }
         }
+        async function modificarJugador() {
+    const nombre = document.getElementById('adm-select-jugador').value;
+    const nuevosPuntos = document.getElementById('adm-edit-puntos').value;
+    const nuevosCreditos = document.getElementById('adm-edit-creditos').value;
+
+    if (!nombre) return alert("Selecciona un jugador");
+
+    const actualizaciones = {};
+    if (nuevosPuntos !== "") actualizaciones.puntos = parseInt(nuevosPuntos);
+    if (nuevosCreditos !== "") actualizaciones.creditos = parseInt(nuevosCreditos);
+
+    const { error } = await sb.from('jugadores').update(actualizaciones).eq('nombre', nombre);
+    
+    if (error) alert("Error: " + error.message);
+    else {
+        alert("Jugador actualizado correctamente");
+        refrescar();
+    }
+}
+
+async function eliminarJugador() {
+    const nombre = document.getElementById('adm-select-jugador').value;
+    if (!nombre) return;
+    
+    if (confirm(`¿ESTÁS SEGURO? Esto borrará a @${nombre} y todos sus puntos permanentemente.`)) {
+        await sb.from('jugadores').delete().eq('nombre', nombre);
+        alert("Jugador eliminado");
+        refrescar();
+    }
+}
 
         async function guardarFila() {
             const s = document.getElementById('info-sujeto').value;
@@ -260,5 +308,6 @@
     </script>
 </body>
 </html>
+
 
 
