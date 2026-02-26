@@ -45,10 +45,14 @@
             <table class="table-mini"><tbody id="adm-list-stats"></tbody></table>
         </div>
         <div class="admin-section">
-            <h4>2. Configurar Ronda</h4>
-            <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
-            <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separadas por coma)"></textarea>
-            <button onclick="lanzarRonda()" style="background:#2563eb">ACTIVAR RONDA Y CRÉDITOS</button>
+    <h4>2. Configurar Ronda</h4>
+    <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
+    <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separadas por coma)"></textarea>
+    <button onclick="lanzarRonda()" style="background:#2563eb">ACTIVAR OPCIONES DE VOTO</button>
+    
+    <button onclick="habilitarCreditos()" style="background:#8b5cf6; margin-top:10px;">
+        🔓 HABILITAR RECARGA DE 5 CRÉDITOS
+    </button>
         </div>
         <div class="admin-section">
             <h4>3. Validar Ganadores</h4>
@@ -232,8 +236,19 @@
 
         function iniciar() {
             refrescar();
-            setInterval(refrescar, 8000);
+            setInterval(refrescar, 30000);
         }
+        async function habilitarCreditos() {
+    if(confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
+        const { error } = await sb.rpc('habilitar_recarga_global');
+        if(!error) {
+            alert("¡Grifo abierto! Los jugadores ya pueden ver el botón de 'Recibir 5 créditos'.");
+        } else {
+            alert("Error al habilitar créditos: " + error.message);
+        }
+    }
+}
     </script>
 </body>
 </html>
+
