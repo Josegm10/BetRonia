@@ -249,6 +249,26 @@
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
 
         };
+        async function guardarFila() {
+    const s = document.getElementById('info-sujeto').value;
+    const g = document.getElementById('info-goles').value;
+    const as = document.getElementById('info-asist').value;
+    const am = document.getElementById('info-am').value;
+    const ro = document.getElementById('info-ro').value;
+
+    if(!s) return alert("Escribe el nombre del jugador");
+
+    await sb.from('estadisticas').upsert({ 
+        sujeto: s, 
+        dato1: g, 
+        dato4: as, 
+        dato2: am, 
+        dato3: ro 
+    }, { onConflict: 'sujeto' });
+
+    alert("Estadística actualizada.");
+    refrescar();
+}
 
 
 
@@ -513,18 +533,23 @@ async function votar() {
 
 
         async function lanzar() {
-
-            const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
-
-            const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
-
-            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
-
-            await sb.from('jugadores').update({ seleccion2: null, seleccion3: null, apuesta2: 0, apuesta3: 0, creditos: 5 }).neq('nombre','');
-
-            alert("Ronda Iniciada. Todos han recuperado 5 créditos.");
-
-        }
+    const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
+    const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
+    
+    // 1. Actualiza las opciones visuales
+    await sb.from('estado_juego').update({ 
+        opciones2: o2, 
+        opciones3: o3, 
+        correcta2: null, 
+        correcta3: null, 
+        ronda_id = 0 
+    }).eq('id', 1);
+    
+    // 2. Ejecuta la función SQL que habilita los créditos para todos
+    await sb.rpc('habilitar_recarga_global');
+    
+    alert("¡Ronda Iniciada! Todos pueden reclamar sus 5 créditos.");
+}
 
 
 
@@ -579,9 +604,16 @@ async function votar() {
             setInterval(refrescar, 8000);
 
         }
+        async function reclamar() {
+    // Usamos el nombre exacto de la función RPC en Supabase
+    const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
+    if (error) alert(error.message);
+    else refrescar();
+}
 
     </script>
 
 </body>
 
 </html>
+
