@@ -226,13 +226,22 @@
         }
 
         async function puntuarSeleccionados() {
-            const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
-            const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
-            if(confirm("¿Repartir puntos?")) {
-                await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-                alert("Puntos asignados.");
-            }
+    const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
+    const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
+    
+    if(w2.length === 0 && w3.length === 0) return alert("Selecciona al menos un ganador.");
+
+    if(confirm("¿Repartir puntos? Esto sumará los aciertos al ranking y limpiará las apuestas.")) {
+        const { error } = await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
+        if(error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("¡Puntos repartidos con éxito!");
+            // ESTA LÍNEA ES CLAVE:
+            await refrescar(); 
         }
+    }
+}
 
         function iniciar() {
             refrescar();
@@ -251,4 +260,5 @@
     </script>
 </body>
 </html>
+
 
