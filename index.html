@@ -122,6 +122,19 @@
             falla: "https://media1.tenor.com/m/O2cp0tJpUkQAAAAd/novak-djokovic-angry.gif",
             acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
         };
+        async function reclamar() {
+    try {
+        // Llamamos a la función RPC de la base de datos
+        const { error } = await sb.rpc('reclamar_creditos_v2', { user_nom: miNombre });
+        
+        if (error) throw error;
+
+        alert("¡5 Créditos recibidos!");
+        refrescar();
+    } catch (err) {
+        alert(err.message || "No puedes reclamar en este momento.");
+    }
+}
 
         // --- ADMIN ---
         async function guardarFila() {
@@ -251,3 +264,4 @@
     </script>
 </body>
 </html>
+
