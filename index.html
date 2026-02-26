@@ -33,17 +33,7 @@
         <button onclick="entrar()">JUGAR</button>
         <button onclick="accesoAdmin()" style="background:#64748b; margin-top:10px; font-size:12px;">MODO ADMIN</button>
     </div>
-    <div class="admin-section">
-    <h4>4. Editor de Ranking y Puntos</h4>
-    <select id="adm-select-jugador" style="width:100%;"></select>
-    <div style="display:flex; gap:5px;">
-        <input type="number" id="adm-edit-puntos" placeholder="Puntos Totales">
-        <input type="number" id="adm-edit-creditos" placeholder="Créditos">
-    </div>
-    <button onclick="modificarJugador()" style="background:#0ea5e9">GUARDAR CAMBIOS JUGADOR</button>
-    <button onclick="eliminarJugador()" class="btn-del" style="width:100%; margin-top:5px;">ELIMINAR JUGADOR DEL SISTEMA</button>
-</div>
-
+    
     <div id="admin-ui" class="card hidden">
         <h3>🛠️ PANEL MASTER</h3>
         <div class="admin-section">
@@ -72,6 +62,17 @@
         </div>
         <button onclick="location.reload()" style="background:black">CERRAR PANEL</button>
     </div>
+    <div class="admin-section">
+    <h4>4. Editor de Ranking y Puntos</h4>
+    <select id="adm-select-jugador" style="width:100%;"></select>
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="adm-edit-puntos" placeholder="Puntos Totales">
+        <input type="number" id="adm-edit-creditos" placeholder="Créditos">
+    </div>
+    <button onclick="modificarJugador()" style="background:#0ea5e9">GUARDAR CAMBIOS JUGADOR</button>
+    <button onclick="eliminarJugador()" class="btn-del" style="width:100%; margin-top:5px;">ELIMINAR JUGADOR DEL SISTEMA</button>
+</div>
+
 
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
@@ -308,6 +309,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
