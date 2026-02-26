@@ -12,7 +12,7 @@
         .status-gif { width: 100%; border-radius: 10px; margin-bottom: 15px; height: 180px; object-fit: cover; }
         input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-del { background: #ef4444; width: auto; padding: 5px 10px; font-size: 12px; margin-left: 5px; }
+        .btn-del { background: #ef4444 !important; }
         .hidden { display: none !important; }
         .admin-section { background: #f1f5f9; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; border: 1px solid #cbd5e1; }
         .table-mini { width: 100%; font-size: 12px; border-collapse: collapse; background: white; margin-top: 10px; }
@@ -23,6 +23,8 @@
         .am { background: #ffeb3b; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
         .ro { background: #f44336; color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
         .vote-box { background: #fffde7; padding: 10px; border-radius: 10px; border-left: 5px solid var(--primary); margin: 10px 0; text-align: left; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
+        .podium-0 { background: #fff7ed; font-weight: bold; border-left: 4px solid #f59e0b; }
     </style>
 </head>
 <body>
@@ -33,46 +35,52 @@
         <button onclick="entrar()">JUGAR</button>
         <button onclick="accesoAdmin()" style="background:#64748b; margin-top:10px; font-size:12px;">MODO ADMIN</button>
     </div>
-    
+
     <div id="admin-ui" class="card hidden">
         <h3>🛠️ PANEL MASTER</h3>
+        
         <div class="admin-section">
-            <h4>1. Estadísticas</h4>
-            <input type="text" id="info-sujeto" placeholder="Jugador">
-            <div style="display:flex; gap:5px;"><input type="text" id="info-goles" placeholder="Goles"><input type="text" id="info-asist" placeholder="Asistencias"></div>
-            <div style="display:flex; gap:5px;"><input type="number" id="info-am" placeholder="AM"><input type="number" id="info-ro" placeholder="RO"></div>
+            <h4>1. Estadísticas Globales</h4>
+            <input type="text" id="info-sujeto" placeholder="Nombre Jugador">
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="info-goles" placeholder="Goles">
+                <input type="text" id="info-asist" placeholder="Asist.">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="info-am" placeholder="AM">
+                <input type="number" id="info-ro" placeholder="RO">
+            </div>
             <button onclick="guardarFila()" style="background:#22c55e">ACTUALIZAR DATOS</button>
-            <table class="table-mini"><tbody id="adm-list-stats"></tbody></table>
         </div>
+
         <div class="admin-section">
-    <h4>2. Configurar Ronda</h4>
-    <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
-    <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separadas por coma)"></textarea>
-    <button onclick="lanzarRonda()" style="background:#2563eb">ACTIVAR OPCIONES DE VOTO</button>
-    
-    <button onclick="habilitarCreditos()" style="background:#8b5cf6; margin-top:10px;">
-        🔓 HABILITAR RECARGA DE 5 CRÉDITOS
-    </button>
+            <h4>2. Configurar Ronda</h4>
+            <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
+            <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separadas por coma)"></textarea>
+            <button onclick="lanzarRonda()" style="background:#2563eb">ACTIVAR OPCIONES DE VOTO</button>
+            <button onclick="habilitarCreditos()" style="background:#8b5cf6; margin-top:10px;">🔓 HABILITAR RECARGA CRÉDITOS</button>
         </div>
+
         <div class="admin-section">
             <h4>3. Validar Ganadores</h4>
             <div id="admin-check-o2"></div>
             <div id="admin-check-o3" style="margin-top:10px;"></div>
-            <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">REPARTIR PUNTOS</button>
+            <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">REPARTIR PUNTOS Y CERRAR</button>
         </div>
+
+        <div class="admin-section">
+            <h4>4. Editor de Ranking y Puntos</h4>
+            <select id="adm-select-jugador" style="width:100%;"></select>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="adm-edit-puntos" placeholder="Puntos">
+                <input type="number" id="adm-edit-creditos" placeholder="Créditos">
+            </div>
+            <button onclick="modificarJugador()" style="background:#0ea5e9">GUARDAR CAMBIOS</button>
+            <button onclick="eliminarJugador()" class="btn-del" style="width:100%; margin-top:5px;">ELIMINAR JUGADOR</button>
+        </div>
+
         <button onclick="location.reload()" style="background:black">CERRAR PANEL</button>
     </div>
-    <div class="admin-section">
-    <h4>4. Editor de Ranking y Puntos</h4>
-    <select id="adm-select-jugador" style="width:100%;"></select>
-    <div style="display:flex; gap:5px;">
-        <input type="number" id="adm-edit-puntos" placeholder="Puntos Totales">
-        <input type="number" id="adm-edit-creditos" placeholder="Créditos">
-    </div>
-    <button onclick="modificarJugador()" style="background:#0ea5e9">GUARDAR CAMBIOS JUGADOR</button>
-    <button onclick="eliminarJugador()" class="btn-del" style="width:100%; margin-top:5px;">ELIMINAR JUGADOR DEL SISTEMA</button>
-</div>
-
 
     <div id="game-ui" class="card hidden">
         <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif">
@@ -309,6 +317,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
