@@ -25,6 +25,48 @@
         .vote-box { background: #fffde7; padding: 10px; border-radius: 10px; border-left: 5px solid var(--primary); margin: 10px 0; text-align: left; }
         .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
         .podium-0 { background: #fff7ed; font-weight: bold; border-left: 4px solid #f59e0b; }
+        /* --- ESTILOS PARA LAS OPCIONES BIEN CUADRADAS --- */
+        .options-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+
+        .option-card { 
+            background: white; 
+            border: 2px solid #ddd; 
+            padding: 12px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            transition: 0.2s; 
+            font-weight: bold;
+            position: relative;
+        }
+
+        /* Oculta el radio button original que estorba */
+        .option-card input { 
+            position: absolute; 
+            opacity: 0; 
+        } 
+
+        .option-card:hover { border-color: var(--primary); background: #f0fdf4; }
+
+        /* Color cuando se selecciona */
+        .option-card.selected { 
+            border-color: var(--primary); 
+            background: #dcfce7; 
+            color: var(--primary); 
+        }
+
+        /* Check visual a la derecha */
+        .option-card.selected::after { 
+            content: "✓"; 
+            margin-left: auto; 
+            font-size: 18px; 
+        }
     </style>
 </head>
 <body>
@@ -228,9 +270,14 @@
                 document.getElementById('render-o2').innerHTML = `Ganadores: ${jg.correcta2}`;
                 document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3}`;
                 btn.classList.add('hidden');
+            // Dentro de refrescar(), donde genera las opciones:
             } else if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
-                document.getElementById('render-o2').innerHTML = jg.opciones2.map(o => `<label><input type="radio" name="c2" value="${o}"> ${o}</label><br>`).join('');
-                document.getElementById('render-o3').innerHTML = jg.opciones3.map(o => `<label><input type="radio" name="c3" value="${o}"> ${o}</label><br>`).join('');
+                document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
+                    jg.opciones2.map(o => `<label class="option-card" onclick="marcarEfecto(this)"><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('') + `</div>`;
+    
+                document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
+                    jg.opciones3.map(o => `<label class="option-card" onclick="marcarEfecto(this)"><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('') + `</div>`;
+    
                 btn.classList.remove('hidden');
             } else {
                 btn.classList.add('hidden');
@@ -347,6 +394,15 @@ async function eliminarJugador() {
             refrescar();
             setInterval(refrescar, 60000);
         }
+        function marcarEfecto(el, name) {
+    // Busca todas las opciones del mismo grupo (c2 o c3) y les quita el color
+    const cards = el.parentElement.querySelectorAll('.option-card');
+    cards.forEach(c => c.classList.remove('selected'));
+    
+    // Se lo pone solo a la que acabamos de tocar
+    el.classList.add('selected');
+}
+  
         async function habilitarCreditos() {
     if(confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
         const { error } = await sb.rpc('habilitar_recarga_global');
@@ -357,9 +413,11 @@ async function eliminarJugador() {
         }
     }
 }
+        
     </script>
 </body>
 </html>
+
 
 
 
