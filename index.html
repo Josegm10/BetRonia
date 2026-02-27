@@ -67,9 +67,35 @@
             margin-left: auto; 
             font-size: 18px; 
         }
+        #duende-animacion {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.5s ease;
+}
+
+#duende-animacion.duende-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#duende-animacion video {
+    border-radius: 20px; /* Opcional: para darle bordes suaves */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
     </style>
 </head>
 <body>
+    <div id="duende-animacion" class="duende-oculto">
+    <video id="video-duende" width="300" muted playsinline>
+        <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/139914805795530332-7ea84194cb924d948b964bfc6e76a6d4.mp4" type="video/mp4">
+        Tu navegador no soporta video.
+    </video>
+</div>
 
     <div id="auth-ui" class="card">
         <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" style="width:100%; border-radius:10px;">
@@ -200,12 +226,37 @@
             }
         }
 
-        async function reclamar() {
-            const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
-            if(error) alert("Aún no disponible o ya reclamado");
-            refrescar();
-        }
+      async function reclamar() {
+    const duendeContenedor = document.getElementById('duende-animacion');
+    const video = document.getElementById('video-duende');
 
+    const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
+    
+    if(error) {
+        alert("Aún no disponible o ya reclamado");
+    } else {
+        // Mostrar contenedor y reproducir video
+        duendeContenedor.classList.remove('duende-oculto');
+        duendeContenedor.classList.add('duende-visible');
+        
+        video.currentTime = 0; // Reinicia el video al inicio
+        video.play();
+
+        // Ocultar cuando el video termine (o después de unos segundos)
+        video.onended = () => {
+            duendeContenedor.classList.remove('duende-visible');
+            duendeContenedor.classList.add('duende-oculto');
+        };
+
+        // Respaldo por si el video es muy largo o no termina
+        setTimeout(() => {
+            duendeContenedor.classList.remove('duende-visible');
+            duendeContenedor.classList.add('duende-oculto');
+        }, 5000); 
+
+        refrescar();
+    }
+}
         async function lanzarRonda() {
             const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
             const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
@@ -417,6 +468,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
