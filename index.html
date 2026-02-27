@@ -93,8 +93,8 @@
     </style>
 </head>
 <body>
-    <div id="duende-animacion" class="duende-oculto">
-    <video id="video-duende" width="300" muted playsinline>
+    <div id="duende-animacion">
+    <video id="video-duende" playsinline preload="auto">
         <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/Firefly%20quiero%20que%20el%20elfo%20entregue%20las%20monedas%20308054.mp4" type="video/mp4">
         Tu navegador no soporta video.
     </video>
@@ -237,25 +237,37 @@
     if(error) {
         alert("Aún no disponible o ya reclamado");
     } else {
-        // 1. Mostrar a pantalla completa
+        // 1. Mostrar contenedor
         duendeContenedor.classList.add('duende-visible');
         
-        // 2. Configurar y reproducir video
-        video.currentTime = 0; 
-        video.muted = false; // Nos aseguramos que suene
-        video.volume = 1.0;  // Volumen al máximo
-        
-        video.play().catch(e => console.log("Error al reproducir:", e));
+        // 2. Forzar carga y reproducción
+        video.load(); // Importante para que reconozca el cambio de URL
+        video.currentTime = 0;
+        video.muted = false; 
+        video.volume = 1.0;
 
-        // 3. Al terminar el video, limpiar pantalla
+        // Intentar reproducir
+        const playPromise = video.play();
+
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                // Reproducción iniciada correctamente
+            }).catch(error => {
+                console.log("El navegador bloqueó el audio, intentando sin sonido...");
+                video.muted = true;
+                video.play();
+            });
+        }
+
+        // 3. Limpieza al terminar
         video.onended = () => {
             duendeContenedor.classList.remove('duende-visible');
         };
 
-        // Respaldo de seguridad (por si algo falla, se cierra en 7 segundos)
+        // Respaldo: cerrar a los 8 segundos por si el video falla
         setTimeout(() => {
             duendeContenedor.classList.remove('duende-visible');
-        }, 7000); 
+        }, 8000); 
 
         refrescar();
     }
@@ -473,6 +485,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
