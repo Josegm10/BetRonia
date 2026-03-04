@@ -206,12 +206,12 @@
     
     <div id="selector-reparto" class="hidden" style="margin-top:15px;">
         <p style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">REPARTIR MIS 5 CRÉDITOS:</p>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-            <button class="btn-reparto" onclick="setReparto(1,4)">C2: 1pt | C3: 4pts</button>
-            <button class="btn-reparto" onclick="setReparto(2,3)">C2: 2pts | C3: 3pts</button>
-            <button class="btn-reparto" onclick="setReparto(3,2)">C2: 3pts | C3: 2pts</button>
-            <button class="btn-reparto" onclick="setReparto(4,1)">C2: 4pts | C3: 1pt</button>
-        </div>
+       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+    <button class="btn-reparto" onclick="setReparto(1,4, this)">C2: 1pt | C3: 4pts</button>
+    <button class="btn-reparto" onclick="setReparto(2,3, this)">C2: 2pts | C3: 3pts</button>
+    <button class="btn-reparto" onclick="setReparto(3,2, this)">C2: 3pts | C3: 2pts</button>
+    <button class="btn-reparto" onclick="setReparto(4,1, this)">C2: 4pts | C3: 1pt</button>
+</div>
     </div>
 
     <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:20px;">ENVIAR APUESTA</button>
@@ -344,14 +344,24 @@
                 document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3}`;
                 btn.classList.add('hidden');
             // Dentro de refrescar(), donde genera las opciones:
+           // ... dentro de refrescar() ...
             } else if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
+                // Render Categoría 2 (1 PTO)
                 document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
-                    jg.opciones2.map(o => `<label class="option-card" onclick="marcarEfecto(this)"><input type="radio" name="c2" value="${o}"> ${o}</label>`).join('') + `</div>`;
-    
+                    jg.opciones2.map(o => `
+                        <div class="option-card" onclick="marcarOpcion('c2', '${o}', this)">
+                            ${o}
+                        </div>`).join('') + `</div>`;
+
+                // Render Categoría 3 (3 PTOS)
                 document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
-                    jg.opciones3.map(o => `<label class="option-card" onclick="marcarEfecto(this)"><input type="radio" name="c3" value="${o}"> ${o}</label>`).join('') + `</div>`;
-    
-                btn.classList.remove('hidden');
+                    jg.opciones3.map(o => `
+                        <div class="option-card" onclick="marcarOpcion('c3', '${o}', this)">
+                            ${o}
+                        </div>`).join('') + `</div>`;
+
+                // El botón de votar solo se muestra si ya se eligió el reparto
+                if (apuestaC2 > 0) btn.classList.remove('hidden'); 
             } else {
                 btn.classList.add('hidden');
             }
@@ -475,49 +485,45 @@ async function eliminarJugador() {
     // Se lo pone solo a la que acabamos de tocar
     el.classList.add('selected');
 }
-        let eleccionC2 = "";
+        // Variables globales de control
+let eleccionC2 = "";
 let eleccionC3 = "";
 let apuestaC2 = 0;
 let apuestaC3 = 0;
 
-// Esta función se llama al tocar una opción de jugador/equipo
 function marcarOpcion(grupo, valor, el) {
     if (grupo === 'c2') eleccionC2 = valor;
     if (grupo === 'c3') eleccionC3 = valor;
 
-    // Resaltado visual
+    // Resaltado visual: Quita 'selected' de las hermanas y ponlo en la clicada
     const cards = el.parentElement.querySelectorAll('.option-card');
     cards.forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
 
-    // Si ya tiene ambas opciones elegidas, mostramos el selector de créditos
-    if (eleccionC2 && eleccionC3) {
+    // Si ya tiene ambas categorías elegidas, mostramos el selector de reparto
+    if (eleccionC2 !== "" && eleccionC3 !== "") {
         document.getElementById('selector-reparto').classList.remove('hidden');
     }
 }
 
-// Esta función se llama al tocar uno de los 4 botones de combinación
-function setReparto(c2, c3) {
+function setReparto(c2, c3, el) {
     apuestaC2 = c2;
     apuestaC3 = c3;
 
-    // Visual: marcar botón activo
+    // Visual: marcar botón de reparto activo
     document.querySelectorAll('.btn-reparto').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    
+    // Si pasamos 'this' desde el HTML, 'el' será el botón
+    if(el) {
+        el.classList.add('active');
+    } else {
+        // Por seguridad si no pasaste 'this', buscamos por texto (opcional)
+        event.target.classList.add('active');
+    }
 
-    // Mostrar botón de enviar
+    // Mostrar botón final de enviar
     document.getElementById('btn-votar').classList.remove('hidden');
 }
-
-// Actualiza tu función refrescar() para que el render-o2/o3 use 'marcarOpcion'
-// Ejemplo de cómo quedaría el map dentro de refrescar:
-/*
-jg.opciones2.map(o => `
-    <label class="option-card" onclick="marcarOpcion('c2', '${o}', this)">
-        <input type="radio" name="c2" value="${o}" style="display:none"> ${o}
-    </label>`).join('');
-*/
-
 async function votar() {
     if (!eleccionC2 || !eleccionC3 || apuestaC2 === 0) return alert("Completa tu selección.");
 
@@ -553,6 +559,7 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
 
 
