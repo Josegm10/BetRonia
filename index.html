@@ -26,12 +26,24 @@
         .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
         .podium-0 { background: #fff7ed; font-weight: bold; border-left: 4px solid #f59e0b; }
         /* --- ESTILOS PARA LAS OPCIONES BIEN CUADRADAS --- */
+        .btn-reparto {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            font-size: 13px;
+            padding: 10px 5px;
+        }
+        .btn-reparto.active {
+            background: var(--primary);
+            color: white;
+        }
         .options-grid { 
             display: grid; 
             grid-template-columns: 1fr; 
             gap: 10px; 
             margin-top: 10px; 
         }
+    
 
         .option-card { 
             background: white; 
@@ -189,10 +201,21 @@
         </div>
 
         <div id="votos-ui">
-            <div class="vote-box"><strong>VALE 1 PUNTO:</strong><div id="render-o2"></div></div>
-            <div class="vote-box"><strong>VALE 3 PUNTOS:</strong><div id="render-o3"></div></div>
-            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e">ENVIAR APUESTA</button>
+    <div class="vote-box"><strong>VALE 1 PUNTO (C2):</strong><div id="render-o2"></div></div>
+    <div class="vote-box"><strong>VALE 3 PUNTOS (C3):</strong><div id="render-o3"></div></div>
+    
+    <div id="selector-reparto" class="hidden" style="margin-top:15px;">
+        <p style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">REPARTIR MIS 5 CRÉDITOS:</p>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            <button class="btn-reparto" onclick="setReparto(1,4)">C2: 1pt | C3: 4pts</button>
+            <button class="btn-reparto" onclick="setReparto(2,3)">C2: 2pts | C3: 3pts</button>
+            <button class="btn-reparto" onclick="setReparto(3,2)">C2: 3pts | C3: 2pts</button>
+            <button class="btn-reparto" onclick="setReparto(4,1)">C2: 4pts | C3: 1pt</button>
         </div>
+    </div>
+
+    <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:20px;">ENVIAR APUESTA</button>
+</div>
 
         <div style="margin-top:20px;">
             <h4>🏆 RANKING GLOBAL</h4>
@@ -282,25 +305,7 @@
             alert("Ronda iniciada y créditos habilitados para todos.");
         }
 
-        async function votar() {
-            const v2 = document.querySelector('input[name="c2"]:checked')?.value;
-            const v3 = document.querySelector('input[name="c3"]:checked')?.value;
-            if(!v2 || !v3) return alert("Selecciona una opción de cada lista.");
-
-            const { data: user } = await sb.from('jugadores').select('creditos').eq('nombre', miNombre).single();
-            const total = user.creditos;
-            if(total < 2) return alert("Necesitas al menos 2 créditos.");
-
-            let c2 = parseInt(prompt(`Créditos para 1 PTO (Tienes ${total}):`));
-            if(isNaN(c2) || c2 < 1 || c2 >= total) return alert("Cantidad no válida.");
-            
-            let c3 = total - c2;
-            if(confirm(`Apuesta: ${c2} cred. a ${v2} y ${c3} cred. a ${v3}. ¿Confirmar?`)) {
-                await sb.from('jugadores').update({ seleccion2: v2, seleccion3: v3, apuesta2: c2, apuesta3: c3, creditos: 0 }).eq('nombre', miNombre);
-                alert("¡Apuesta enviada!");
-                refrescar();
-            }
-        }
+    
 
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
@@ -470,6 +475,69 @@ async function eliminarJugador() {
     // Se lo pone solo a la que acabamos de tocar
     el.classList.add('selected');
 }
+        let eleccionC2 = "";
+let eleccionC3 = "";
+let apuestaC2 = 0;
+let apuestaC3 = 0;
+
+// Esta función se llama al tocar una opción de jugador/equipo
+function marcarOpcion(grupo, valor, el) {
+    if (grupo === 'c2') eleccionC2 = valor;
+    if (grupo === 'c3') eleccionC3 = valor;
+
+    // Resaltado visual
+    const cards = el.parentElement.querySelectorAll('.option-card');
+    cards.forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+
+    // Si ya tiene ambas opciones elegidas, mostramos el selector de créditos
+    if (eleccionC2 && eleccionC3) {
+        document.getElementById('selector-reparto').classList.remove('hidden');
+    }
+}
+
+// Esta función se llama al tocar uno de los 4 botones de combinación
+function setReparto(c2, c3) {
+    apuestaC2 = c2;
+    apuestaC3 = c3;
+
+    // Visual: marcar botón activo
+    document.querySelectorAll('.btn-reparto').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Mostrar botón de enviar
+    document.getElementById('btn-votar').classList.remove('hidden');
+}
+
+// Actualiza tu función refrescar() para que el render-o2/o3 use 'marcarOpcion'
+// Ejemplo de cómo quedaría el map dentro de refrescar:
+/*
+jg.opciones2.map(o => `
+    <label class="option-card" onclick="marcarOpcion('c2', '${o}', this)">
+        <input type="radio" name="c2" value="${o}" style="display:none"> ${o}
+    </label>`).join('');
+*/
+
+async function votar() {
+    if (!eleccionC2 || !eleccionC3 || apuestaC2 === 0) return alert("Completa tu selección.");
+
+    if (confirm(`¿Confirmar apuesta?\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
+        const { error } = await sb.from('jugadores')
+            .update({ 
+                seleccion2: eleccionC2, 
+                seleccion3: eleccionC3, 
+                apuesta2: apuestaC2, 
+                apuesta3: apuestaC3, 
+                creditos: 0 
+            })
+            .eq('nombre', miNombre);
+
+        if (!error) {
+            alert("¡Apuesta enviada!");
+            location.reload(); // Recargamos para limpiar todo
+        }
+    }
+}
   
         async function habilitarCreditos() {
     if(confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
@@ -485,6 +553,7 @@ async function eliminarJugador() {
     </script>
 </body>
 </html>
+
 
 
 
