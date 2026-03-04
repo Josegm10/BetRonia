@@ -364,6 +364,21 @@
         async function refrescar() {
     const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
     const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+            // --- CÁLCULO DE PORCENTAJES ---
+let conteoVotos = {};
+let totalVotantes = rk ? rk.filter(j => j.seleccion2).length : 0;
+
+if (totalVotantes > 0) {
+    rk.forEach(j => {
+        if(j.seleccion2) conteoVotos[j.seleccion2] = (conteoVotos[j.seleccion2] || 0) + 1;
+        if(j.seleccion3) conteoVotos[j.seleccion3] = (conteoVotos[j.seleccion3] || 0) + 1;
+    });
+}
+
+const getPct = (opcion) => {
+    if (totalVotantes === 0 || !conteoVotos[opcion]) return "0%";
+    return Math.round((conteoVotos[opcion] / totalVotantes) * 100) + "%";
+};
     const { data: jg } = await sb.from('estado_juego').select('*').single();
     const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
@@ -407,17 +422,21 @@
 
         // Render Categoría 2
         document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
-            jg.opciones2.map(o => `
-                <div class="option-card ${eleccionC2 === o ? 'selected' : ''}" onclick="marcarOpcion('c2', '${o}', this)">
-                    ${o}
-                </div>`).join('') + `</div>`;
+            // Reemplaza el bloque de jg.opciones2.map por este:
+jg.opciones2.map(o => `
+    <div class="option-card ${eleccionC2 === o ? 'selected' : ''}" onclick="marcarOpcion('c2', '${o}', this)">
+        <span>${o}</span>
+        <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPct(o)}</span>
+    </div>`).join('')
 
         // Render Categoría 3
         document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
-            jg.opciones3.map(o => `
-                <div class="option-card ${eleccionC3 === o ? 'selected' : ''}" onclick="marcarOpcion('c3', '${o}', this)">
-                    ${o}
-                </div>`).join('') + `</div>`;
+            // Reemplaza el bloque de jg.opciones3.map por este:
+jg.opciones3.map(o => `
+    <div class="option-card ${eleccionC3 === o ? 'selected' : ''}" onclick="marcarOpcion('c3', '${o}', this)">
+        <span>${o}</span>
+        <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPct(o)}</span>
+    </div>`).join('')
 
         // El botón de votar se controla con la función actualizarRestricciones()
     } 
@@ -698,6 +717,7 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
 
 
