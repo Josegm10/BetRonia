@@ -513,6 +513,7 @@ async function eliminarJugador() {
     el.classList.add('selected');
 }
         // Variables globales de control
+// --- VARIABLES GLOBALES (Mantenlas igual) ---
 let eleccionC2 = "";
 let eleccionC3 = "";
 let apuestaC2 = 0;
@@ -522,48 +523,65 @@ function marcarOpcion(grupo, valor, el) {
     if (grupo === 'c2') eleccionC2 = valor;
     if (grupo === 'c3') eleccionC3 = valor;
 
-    // Resaltar tarjeta seleccionada
     const cards = el.parentElement.querySelectorAll('.option-card');
     cards.forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
 
-    // Mostrar los botones de números de esa categoría
     document.getElementById(`controles-${grupo}`).classList.remove('hidden');
     actualizarRestricciones();
 }
 
+// --- FUNCIÓN ACTUALIZADA: SELECCIONAR PUNTOS ---
 function seleccionarPuntos(grupo, cantidad, el) {
+    // Si el botón está deshabilitado por la lógica de 5 créditos, no hacer nada
+    if (el.disabled) return;
+
     if (grupo === 'c2') apuestaC2 = cantidad;
     if (grupo === 'c3') apuestaC3 = cantidad;
 
-    // Resaltar botón de número
+    // Resaltar botón de número dentro de su propio grupo
     document.querySelectorAll(`.${grupo}-btn`).forEach(b => b.classList.remove('active'));
     el.classList.add('active');
 
     actualizarRestricciones();
 }
 
+// --- FUNCIÓN ACTUALIZADA: RESTRICCIONES INTELIGENTES ---
 function actualizarRestricciones() {
     const total = apuestaC2 + apuestaC3;
     const displayTotal = document.getElementById('suma-total');
     const btnVotar = document.getElementById('btn-votar');
     
+    // 1. Mostrar el contador de créditos
     if (apuestaC2 > 0 || apuestaC3 > 0) {
         document.getElementById('resumen-apuesta').classList.remove('hidden');
         displayTotal.innerText = total;
     }
 
-    // Si el total es 5 y tenemos ambas opciones elegidas, permitir votar
+    // 2. LÓGICA DE BLOQUEO: Deshabilitar botones que sumen > 5
+    // Bloquear botones en Categoría 3 basados en C2
+    document.querySelectorAll('.c3-btn').forEach(btn => {
+        const valorBtn = parseInt(btn.innerText);
+        // Si ya elegí algo en C2, deshabilito lo que me pase de 5
+        btn.disabled = (apuestaC2 > 0 && (apuestaC2 + valorBtn > 5));
+    });
+
+    // Bloquear botones en Categoría 2 basados en C3
+    document.querySelectorAll('.c2-btn').forEach(btn => {
+        const valorBtn = parseInt(btn.innerText);
+        btn.disabled = (apuestaC3 > 0 && (apuestaC3 + valorBtn > 5));
+    });
+
+    // 3. VALIDACIÓN PARA MOSTRAR BOTÓN DE ENVÍO
+    // Solo aparece si la suma es EXACTAMENTE 5 y ambos jugadores están elegidos
     if (total === 5 && eleccionC2 && eleccionC3) {
-        displayTotal.style.color = "#22c55e";
+        displayTotal.style.color = "#22c55e"; // Verde
         btnVotar.classList.remove('hidden');
     } else {
-        displayTotal.style.color = total > 5 ? "red" : "orange";
+        // Naranja si falta, rojo si se pasa (aunque el bloqueo evita que se pase)
+        displayTotal.style.color = total > 5 ? "#ef4444" : "#f59e0b"; 
         btnVotar.classList.add('hidden');
     }
-
-    // Opcional: Bloquear botones que harían que la suma supere 5
-    // (Esto es más avanzado, por ahora la validación de arriba es suficiente)
 }
 
 async function votar() {
@@ -571,17 +589,23 @@ async function votar() {
         return alert("La suma de créditos debe ser exactamente 5.");
     }
 
-    if (confirm(`Confirmar:\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
+    if (confirm(`Confirmar apuesta:\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
         const { error } = await sb.from('jugadores')
             .update({ 
-                seleccion2: eleccionC2, seleccion3: eleccionC3, 
-                apuesta2: apuestaC2, apuesta3: apuestaC3, creditos: 0 
+                seleccion2: eleccionC2, 
+                seleccion3: eleccionC3, 
+                apuesta2: apuestaC2, 
+                apuesta3: apuestaC3, 
+                creditos: 0,
+                puede_reclamar: false // Importante: ya usó sus créditos
             })
             .eq('nombre', miNombre);
 
         if (!error) {
-            alert("¡Apuesta enviada!");
+            alert("¡Apuesta enviada con éxito!");
             location.reload();
+        } else {
+            alert("Error al enviar: " + error.message);
         }
     }
 }
@@ -599,6 +623,7 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
 
 
