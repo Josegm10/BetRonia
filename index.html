@@ -335,80 +335,86 @@
     
 
         async function refrescar() {
-            const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
-            const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            const { data: jg } = await sb.from('estado_juego').select('*').single();
-            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+    const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
+    const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
+    const { data: jg } = await sb.from('estado_juego').select('*').single();
+    const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
 
-            // Interfaz de créditos
-            if(yo) {
-                document.getElementById('num-creditos').innerText = yo.creditos;
-                document.getElementById('status-creditos').classList.toggle('hidden', yo.creditos === 0 && !yo.seleccion2);
-                document.getElementById('reclamar-ui').classList.toggle('hidden', !jg.permitir_reclamar || !yo.puede_reclamar);
-                
-                if(yo.seleccion2) {
-                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
-                    document.getElementById('voto-guardado-texto').innerHTML = `${yo.seleccion2} (${yo.apuesta2}c) | ${yo.seleccion3} (${yo.apuesta3}c)`;
-                } else {
-                    document.getElementById('mi-eleccion-display').classList.add('hidden');
-                }
-            }
-
-            // Tablas
-            document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-            document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
-
-            // Admin UI
-            if(esAdmin) {
-                document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-                document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-            }
-
-            // Votación UI
-            const btn = document.getElementById('btn-votar');
-            if(jg.ronda_id === 1) {
-                document.getElementById('render-o2').innerHTML = `Ganadores: ${jg.correcta2}`;
-                document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3}`;
-                btn.classList.add('hidden');
-            // Dentro de refrescar(), donde genera las opciones:
-           // ... dentro de refrescar() ...
-            } else if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
-                // Render Categoría 2 (1 PTO)
-                document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
-                    jg.opciones2.map(o => `
-                        <div class="option-card" onclick="marcarOpcion('c2', '${o}', this)">
-                            ${o}
-                        </div>`).join('') + `</div>`;
-
-                // Render Categoría 3 (3 PTOS)
-                document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
-                    jg.opciones3.map(o => `
-                        <div class="option-card" onclick="marcarOpcion('c3', '${o}', this)">
-                            ${o}
-                        </div>`).join('') + `</div>`;
-
-                // El botón de votar solo se muestra si ya se eligió el reparto
-                if (apuestaC2 > 0) btn.classList.remove('hidden'); 
-            } else {
-                btn.classList.add('hidden');
-            }
-            // Añade esto dentro de la función refrescar(), al final
-            if (esAdmin && rk) {
-                const select = document.getElementById('adm-select-jugador');
-                const valorGuardado = select.value;
-                select.innerHTML = '<option value="">Selecciona un jugador...</option>' + 
-                rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
-                select.value = valorGuardado;
-            }
-            // Dentro de refrescar(), al final junto al otro select:
-            if (esAdmin && st) {
-            const selectSt = document.getElementById('adm-select-stats');
-            const valorSt = selectSt.value;
-            selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' + 
-                st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
-            selectSt.value = valorSt;
+    // Interfaz de créditos
+    if(yo) {
+        document.getElementById('num-creditos').innerText = yo.creditos;
+        document.getElementById('status-creditos').classList.toggle('hidden', yo.creditos === 0 && !yo.seleccion2);
+        document.getElementById('reclamar-ui').classList.toggle('hidden', !jg.permitir_reclamar || !yo.puede_reclamar);
+        
+        if(yo.seleccion2) {
+            document.getElementById('mi-eleccion-display').classList.remove('hidden');
+            document.getElementById('voto-guardado-texto').innerHTML = `${yo.seleccion2} (${yo.apuesta2}c) | ${yo.seleccion3} (${yo.apuesta3}c)`;
+        } else {
+            document.getElementById('mi-eleccion-display').classList.add('hidden');
         }
-     }
+    }
+
+    // Tablas
+    document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
+    document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
+
+    // Admin UI
+    if(esAdmin) {
+        document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
+        document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
+    }
+
+    // --- SECCIÓN DE VOTACIÓN CORREGIDA ---
+    const btn = document.getElementById('btn-votar');
+    const votosContainer = document.getElementById('votos-ui');
+
+    if(jg.ronda_id === 1) {
+        votosContainer.classList.remove('hidden'); // Mostramos para ver resultados
+        document.getElementById('render-o2').innerHTML = `Ganadores: ${jg.correcta2 || 'Pendiente'}`;
+        document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3 || 'Pendiente'}`;
+        btn.classList.add('hidden');
+    } 
+    else if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
+        // ¡ESTA ES LA LÍNEA QUE FALTABA!
+        votosContainer.classList.remove('hidden'); 
+
+        // Render Categoría 2
+        document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
+            jg.opciones2.map(o => `
+                <div class="option-card ${eleccionC2 === o ? 'selected' : ''}" onclick="marcarOpcion('c2', '${o}', this)">
+                    ${o}
+                </div>`).join('') + `</div>`;
+
+        // Render Categoría 3
+        document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
+            jg.opciones3.map(o => `
+                <div class="option-card ${eleccionC3 === o ? 'selected' : ''}" onclick="marcarOpcion('c3', '${o}', this)">
+                    ${o}
+                </div>`).join('') + `</div>`;
+
+        // El botón de votar se controla con la función actualizarRestricciones()
+    } 
+    else {
+        // Si no hay opciones o el usuario ya votó, ocultamos todo el bloque
+        votosContainer.classList.add('hidden');
+    }
+
+    // Selectores de Admin (final de la función)
+    if (esAdmin && rk) {
+        const select = document.getElementById('adm-select-jugador');
+        const valorGuardado = select.value;
+        select.innerHTML = '<option value="">Selecciona un jugador...</option>' + 
+        rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
+        select.value = valorGuardado;
+    }
+    if (esAdmin && st) {
+        const selectSt = document.getElementById('adm-select-stats');
+        const valorSt = selectSt.value;
+        selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' + 
+            st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
+        selectSt.value = valorSt;
+    }
+}
         // Esta función rellena los campos automáticamente al seleccionar un jugador
 async function cargarDatosEstadistica() {
     const nombre = document.getElementById('adm-select-stats').value;
@@ -623,21 +629,3 @@ async function votar() {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
