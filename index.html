@@ -26,6 +26,15 @@
         .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
         .podium-0 { background: #fff7ed; font-weight: bold; border-left: 4px solid #f59e0b; }
         /* --- ESTILOS PARA LAS OPCIONES BIEN CUADRADAS --- */
+        .puntos-selector { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .puntos-selector span { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
+        .puntos-grid { display: flex; gap: 8px; justify-content: center; }
+        .btn-pto { 
+            background: white; color: var(--primary); border: 2px solid var(--primary); 
+            width: 40px; height: 40px; border-radius: 8px; font-weight: bold; transition: 0.2s; 
+        }
+.btn-pto.active { background: var(--primary); color: white; }
+.btn-pto:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
         .btn-reparto {
             background: white;
             color: var(--primary);
@@ -200,23 +209,41 @@
             </table>
         </div>
 
-        <div id="votos-ui">
-    <div class="vote-box"><strong>VALE 1 PUNTO (C2):</strong><div id="render-o2"></div></div>
-    <div class="vote-box"><strong>VALE 3 PUNTOS (C3):</strong><div id="render-o3"></div></div>
-    
-    <div id="selector-reparto" class="hidden" style="margin-top:15px;">
-        <p style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">REPARTIR MIS 5 CRÉDITOS:</p>
-       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-    <button class="btn-reparto" onclick="setReparto(1,4, this)">C2: 1pt | C3: 4pts</button>
-    <button class="btn-reparto" onclick="setReparto(2,3, this)">C2: 2pts | C3: 3pts</button>
-    <button class="btn-reparto" onclick="setReparto(3,2, this)">C2: 3pts | C3: 2pts</button>
-    <button class="btn-reparto" onclick="setReparto(4,1, this)">C2: 4pts | C3: 1pt</button>
-</div>
+        <div id="votos-ui" class="hidden">
+    <div class="vote-box">
+        <strong>VALE 1 PUNTO (C2):</strong>
+        <div id="render-o2"></div>
+        <div id="controles-c2" class="puntos-selector hidden">
+            <span>¿Cuántos créditos apuestas?</span>
+            <div class="puntos-grid">
+                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 1, this)">1</button>
+                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 2, this)">2</button>
+                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 3, this)">3</button>
+                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 4, this)">4</button>
+            </div>
+        </div>
     </div>
 
-    <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:20px;">ENVIAR APUESTA</button>
-</div>
+    <div class="vote-box">
+        <strong>VALE 3 PUNTOS (C3):</strong>
+        <div id="render-o3"></div>
+        <div id="controles-c3" class="puntos-selector hidden">
+            <span>¿Cuántos créditos apuestas?</span>
+            <div class="puntos-grid">
+                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 1, this)">1</button>
+                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 2, this)">2</button>
+                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 3, this)">3</button>
+                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 4, this)">4</button>
+            </div>
+        </div>
+    </div>
 
+    <div id="resumen-apuesta" class="hidden" style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">
+        Total: <span id="suma-total">0</span> / 5 créditos
+    </div>
+
+    <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
+</div>
         <div style="margin-top:20px;">
             <h4>🏆 RANKING GLOBAL</h4>
             <div id="ranking-list"></div>
@@ -495,56 +522,69 @@ function marcarOpcion(grupo, valor, el) {
     if (grupo === 'c2') eleccionC2 = valor;
     if (grupo === 'c3') eleccionC3 = valor;
 
-    // Resaltado visual: Quita 'selected' de las hermanas y ponlo en la clicada
+    // Resaltar tarjeta seleccionada
     const cards = el.parentElement.querySelectorAll('.option-card');
     cards.forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
 
-    // Si ya tiene ambas categorías elegidas, mostramos el selector de reparto
-    if (eleccionC2 !== "" && eleccionC3 !== "") {
-        document.getElementById('selector-reparto').classList.remove('hidden');
-    }
+    // Mostrar los botones de números de esa categoría
+    document.getElementById(`controles-${grupo}`).classList.remove('hidden');
+    actualizarRestricciones();
 }
 
-function setReparto(c2, c3, el) {
-    apuestaC2 = c2;
-    apuestaC3 = c3;
+function seleccionarPuntos(grupo, cantidad, el) {
+    if (grupo === 'c2') apuestaC2 = cantidad;
+    if (grupo === 'c3') apuestaC3 = cantidad;
 
-    // Visual: marcar botón de reparto activo
-    document.querySelectorAll('.btn-reparto').forEach(b => b.classList.remove('active'));
+    // Resaltar botón de número
+    document.querySelectorAll(`.${grupo}-btn`).forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+
+    actualizarRestricciones();
+}
+
+function actualizarRestricciones() {
+    const total = apuestaC2 + apuestaC3;
+    const displayTotal = document.getElementById('suma-total');
+    const btnVotar = document.getElementById('btn-votar');
     
-    // Si pasamos 'this' desde el HTML, 'el' será el botón
-    if(el) {
-        el.classList.add('active');
-    } else {
-        // Por seguridad si no pasaste 'this', buscamos por texto (opcional)
-        event.target.classList.add('active');
+    if (apuestaC2 > 0 || apuestaC3 > 0) {
+        document.getElementById('resumen-apuesta').classList.remove('hidden');
+        displayTotal.innerText = total;
     }
 
-    // Mostrar botón final de enviar
-    document.getElementById('btn-votar').classList.remove('hidden');
-}
-async function votar() {
-    if (!eleccionC2 || !eleccionC3 || apuestaC2 === 0) return alert("Completa tu selección.");
+    // Si el total es 5 y tenemos ambas opciones elegidas, permitir votar
+    if (total === 5 && eleccionC2 && eleccionC3) {
+        displayTotal.style.color = "#22c55e";
+        btnVotar.classList.remove('hidden');
+    } else {
+        displayTotal.style.color = total > 5 ? "red" : "orange";
+        btnVotar.classList.add('hidden');
+    }
 
-    if (confirm(`¿Confirmar apuesta?\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
+    // Opcional: Bloquear botones que harían que la suma supere 5
+    // (Esto es más avanzado, por ahora la validación de arriba es suficiente)
+}
+
+async function votar() {
+    if (apuestaC2 + apuestaC3 !== 5) {
+        return alert("La suma de créditos debe ser exactamente 5.");
+    }
+
+    if (confirm(`Confirmar:\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
         const { error } = await sb.from('jugadores')
             .update({ 
-                seleccion2: eleccionC2, 
-                seleccion3: eleccionC3, 
-                apuesta2: apuestaC2, 
-                apuesta3: apuestaC3, 
-                creditos: 0 
+                seleccion2: eleccionC2, seleccion3: eleccionC3, 
+                apuesta2: apuestaC2, apuesta3: apuestaC3, creditos: 0 
             })
             .eq('nombre', miNombre);
 
         if (!error) {
             alert("¡Apuesta enviada!");
-            location.reload(); // Recargamos para limpiar todo
+            location.reload();
         }
     }
 }
-  
         async function habilitarCreditos() {
     if(confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
         const { error } = await sb.rpc('habilitar_recarga_global');
@@ -559,6 +599,7 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
 
 
