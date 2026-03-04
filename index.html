@@ -165,11 +165,15 @@
             <div id="admin-check-o3" style="margin-top:10px;"></div>
             <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">REPARTIR PUNTOS Y CERRAR</button>
         </div>
-        <div class="admin-section">
+      <div class="admin-section">
     <h4>5. Validar Porra (+10 Pts)</h4>
+    <div style="display:flex; justify-content: flex-start; gap:5px; font-size: 10px; font-weight: bold; margin-bottom: 2px;">
+        <span style="width: 48%;">DETRONIA</span>
+        <span style="width: 48%;">RIVAL</span>
+    </div>
     <div style="display:flex; gap:5px;">
-        <input type="number" id="final-l" placeholder="DETRONIA">
-        <input type="number" id="final-v" placeholder="RIVAL">
+        <input type="number" id="final-l" placeholder="Goles">
+        <input type="number" id="final-v" placeholder="Goles">
     </div>
     <button onclick="validarPorra()" style="background:#9c27b0; margin-top:10px;">REPARTIR 10 PTS A ACERTANTES</button>
 </div>
@@ -249,13 +253,19 @@
     <div id="resumen-apuesta" class="hidden" style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">
         Total: <span id="suma-total">0</span> / 5 créditos
     </div>
-            <div class="vote-box" style="background: #f3e5f5; border-left-color: #9c27b0;">
+           <div class="vote-box" style="background: #f3e5f5; border-left-color: #9c27b0;">
     <strong>⚽ PORRA: MARCADOR EXACTO</strong>
     <p style="font-size: 12px; margin: 5px 0;">(Acierto exacto = <b>+10 puntos</b>)</p>
-    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
-        <input type="number" id="porra-l" placeholder="DETRONIA" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+    
+    <div style="display: flex; justify-content: center; gap: 10px; font-size: 11px; font-weight: bold; color: #9c27b0; margin-top: 5px;">
+        <span style="width: 70px; text-align: center;">DETRONIA</span>
+        <span style="width: 10px;"></span> <span style="width: 70px; text-align: center;">RIVAL</span>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px;">
+        <input type="number" id="porra-l" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
         <span style="font-weight: bold;">-</span>
-        <input type="number" id="porra-v" placeholder="RIVAL" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+        <input type="number" id="porra-v" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
     </div>
 </div>
 
@@ -688,5 +698,6 @@ async function votar() {
     </script>
 </body>
 </html>
+
 
 
