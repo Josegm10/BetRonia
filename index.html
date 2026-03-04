@@ -165,6 +165,14 @@
             <div id="admin-check-o3" style="margin-top:10px;"></div>
             <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">REPARTIR PUNTOS Y CERRAR</button>
         </div>
+        <div class="admin-section">
+    <h4>5. Validar Porra (+10 Pts)</h4>
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="final-l" placeholder="Local">
+        <input type="number" id="final-v" placeholder="Visitante">
+    </div>
+    <button onclick="validarPorra()" style="background:#9c27b0; margin-top:10px;">REPARTIR 10 PTS A ACERTANTES</button>
+</div>
 
         <div class="admin-section">
             <h4>4. Editor de Ranking y Puntos</h4>
@@ -241,6 +249,15 @@
     <div id="resumen-apuesta" class="hidden" style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">
         Total: <span id="suma-total">0</span> / 5 créditos
     </div>
+            <div class="vote-box" style="background: #f3e5f5; border-left-color: #9c27b0;">
+    <strong>⚽ PORRA: MARCADOR EXACTO</strong>
+    <p style="font-size: 12px; margin: 5px 0;">(Acierto exacto = <b>+10 puntos</b>)</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+        <input type="number" id="porra-l" placeholder="Local" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+        <span style="font-weight: bold;">-</span>
+        <input type="number" id="porra-v" placeholder="Vis." style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+    </div>
+</div>
 
     <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
 </div>
@@ -595,23 +612,32 @@ async function votar() {
         return alert("La suma de créditos debe ser exactamente 5.");
     }
 
-    if (confirm(`Confirmar apuesta:\n- ${eleccionC2}: ${apuestaC2} cred.\n- ${eleccionC3}: ${apuestaC3} cred.`)) {
+    const pl = document.getElementById('porra-l').value;
+    const pv = document.getElementById('porra-v').value;
+
+    if (pl === "" || pv === "") {
+        return alert("Por favor, introduce un marcador para la porra.");
+    }
+
+    if (confirm(`Confirmar apuesta:\n- C2: ${eleccionC2} (${apuestaC2}c)\n- C3: ${eleccionC3} (${apuestaC3}c)\n- Porra: ${pl} - ${pv}`)) {
         const { error } = await sb.from('jugadores')
             .update({ 
                 seleccion2: eleccionC2, 
                 seleccion3: eleccionC3, 
                 apuesta2: apuestaC2, 
                 apuesta3: apuestaC3, 
+                porra_l: parseInt(pl), // Guardamos marcador local
+                porra_v: parseInt(pv), // Guardamos marcador visitante
                 creditos: 0,
-                puede_reclamar: false // Importante: ya usó sus créditos
+                puede_reclamar: false 
             })
             .eq('nombre', miNombre);
 
         if (!error) {
-            alert("¡Apuesta enviada con éxito!");
+            alert("¡Apuesta y Porra enviadas!");
             location.reload();
         } else {
-            alert("Error al enviar: " + error.message);
+            alert("Error: " + error.message);
         }
     }
 }
@@ -625,7 +651,41 @@ async function votar() {
         }
     }
 }
+        async function validarPorra() {
+    const resL = parseInt(document.getElementById('final-l').value);
+    const resV = parseInt(document.getElementById('final-v').value);
+
+    if (isNaN(resL) || isNaN(resV)) return alert("Pon el resultado final del partido");
+
+    if (confirm(`¿Repartir 10 puntos para el marcador ${resL}-${resV}?`)) {
+        // 1. Buscamos quiénes acertaron exactamente
+        const { data: ganadores, error } = await sb
+            .from('jugadores')
+            .select('nombre, puntos')
+            .eq('porra_l', resL)
+            .eq('porra_v', resV);
+
+        if (error) return alert("Error: " + error.message);
+
+        // 2. Sumamos 10 puntos a cada ganador
+        if (ganadores.length > 0) {
+            for (const g of ganadores) {
+                await sb.from('jugadores')
+                    .update({ puntos: g.puntos + 10 })
+                    .eq('nombre', g.nombre);
+            }
+            alert(`¡Se han entregado 10 puntos a ${ganadores.length} acertantes!`);
+        } else {
+            alert("Nadie acertó el marcador exacto.");
+        }
+
+        // 3. Limpiamos las porras de todos para la próxima semana
+        await sb.from('jugadores').update({ porra_l: null, porra_v: null }).not('nombre', 'is', null);
+        refrescar();
+    }
+}
         
     </script>
 </body>
 </html>
+
