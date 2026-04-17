@@ -337,23 +337,21 @@
                 alert("Aún no disponible o ya reclamado");
             } else {
                 duendeContenedor.classList.add('duende-visible');
-
                 video.load();
-                video.currentTime = 0;
-                video.muted = false;
-                video.volume = 1.0;
+video.currentTime = 0;
+video.muted = false;
+video.volume = 1.0;
 
-                const playPromise = video.play();
+const playPromise = video.play();
 
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {}).catch(error => {
-                        console.log("El navegador bloqueó el audio, intentando sin sonido...");
-                        video.muted = true;
-                        video.play();
-                    });
-                }
+if (playPromise !== undefined) {
+    playPromise.catch(() => {
+        video.muted = true;
+        video.play();
+    });
+}
 
-               video.onended = () => {
+video.onended = () => {
     duendeContenedor.classList.remove('duende-visible');
     video.pause();
     video.currentTime = 0;
@@ -364,6 +362,7 @@ setTimeout(() => {
     video.pause();
     video.currentTime = 0;
 }, 3000);
+
 
                 refrescar();
             }
