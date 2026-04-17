@@ -653,10 +653,13 @@ if (cierreApuestas && hayRondaActiva) {
             }
         }
 
-        function iniciar() {
-            refrescar();
-            setInterval(refrescar, 10000);
-        }
+       function iniciar() {
+    refrescar();
+
+    if (!esAdmin) {
+        setInterval(refrescar, 10000);
+    }
+}
 
         function marcarEfecto(el, name) {
             const cards = el.parentElement.querySelectorAll('.option-card');
