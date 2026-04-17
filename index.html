@@ -278,6 +278,7 @@
             </div>
 
             <div id="cierre-info" class="hidden" style="text-align:center; margin-top:10px; font-size:12px; color:#666;"></div>
+            <div id="countdown-info" class="hidden" style="text-align:center; margin-top:6px; font-size:14px; font-weight:bold; color:var(--primary);"></div>
 
             <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
         </div>
@@ -305,6 +306,7 @@
         let apuestaC2 = 0;
         let apuestaC3 = 0;
         let cierreApuestas = null;
+        let countdownInterval = null;
 
         async function entrar() {
             miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
@@ -522,13 +524,16 @@
                 selectSt.value = valorSt;
             }
 
-            const cierreInfo = document.getElementById('cierre-info');
-            if (cierreApuestas) {
-                cierreInfo.classList.remove('hidden');
-                cierreInfo.innerHTML = `⏳ Cierre de apuestas: <b>${cierreApuestas.toLocaleString()}</b>`;
-            } else {
-                cierreInfo.classList.add('hidden');
-            }
+         const cierreInfo = document.getElementById('cierre-info');
+if (cierreApuestas) {
+    cierreInfo.classList.remove('hidden');
+    cierreInfo.innerHTML = `⏳ Cierre de apuestas: <b>${cierreApuestas.toLocaleString()}</b>`;
+} else {
+    cierreInfo.classList.add('hidden');
+    cierreInfo.innerHTML = "";
+}
+
+iniciarCountdown();
 
             if (esAdmin) {
     const inputCierre = document.getElementById('adm-cierre-apuestas');
@@ -677,6 +682,63 @@
 
             actualizarRestricciones();
         }
+       function iniciarCountdown() {
+    const countdownEl = document.getElementById('countdown-info');
+
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+
+    if (!cierreApuestas) {
+        countdownEl.classList.add('hidden');
+        countdownEl.innerHTML = "";
+        return;
+    }
+
+    countdownEl.classList.remove('hidden');
+
+    function actualizarCountdown() {
+        const ahora = new Date();
+        const diff = cierreApuestas - ahora;
+
+        if (diff <= 0) {
+            countdownEl.innerHTML = "⛔ Apuestas cerradas";
+            countdownEl.style.color = "#dc2626"; // rojo fuerte
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            refrescar();
+            return;
+        }
+
+        const totalSegundos = Math.floor(diff / 1000);
+        const horas = Math.floor(totalSegundos / 3600);
+        const minutos = Math.floor((totalSegundos % 3600) / 60);
+        const segundos = totalSegundos % 60;
+
+        // 🎨 COLORES SEGÚN TIEMPO
+        if (totalSegundos <= 60) {
+            countdownEl.style.color = "#dc2626"; // 🔴 menos de 1 min
+        } else if (totalSegundos <= 300) {
+            countdownEl.style.color = "#f59e0b"; // 🟠 menos de 5 min
+        } else {
+            countdownEl.style.color = "var(--primary)"; // 🟢 normal
+        }
+
+        // ⏳ TEXTO
+        if (horas > 0) {
+            countdownEl.innerHTML = `⏳ Quedan ${horas}h ${minutos}m ${segundos}s`;
+        } else if (minutos > 0) {
+            countdownEl.innerHTML = `⏳ Quedan ${minutos}m ${segundos}s`;
+        } else {
+            countdownEl.innerHTML = `⏳ Quedan ${segundos}s`;
+        }
+    }
+
+    actualizarCountdown();
+    countdownInterval = setInterval(actualizarCountdown, 1000);
+}
+
 
         function actualizarRestricciones() {
             const total = apuestaC2 + apuestaC3;
