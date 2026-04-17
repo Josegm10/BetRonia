@@ -25,16 +25,17 @@
         .vote-box { background: #fffde7; padding: 10px; border-radius: 10px; border-left: 5px solid var(--primary); margin: 10px 0; text-align: left; }
         .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
         .podium-0 { background: #fff7ed; font-weight: bold; border-left: 4px solid #f59e0b; }
-        /* --- ESTILOS PARA LAS OPCIONES BIEN CUADRADAS --- */
+
         .puntos-selector { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
         .puntos-selector span { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
         .puntos-grid { display: flex; gap: 8px; justify-content: center; }
-        .btn-pto { 
-            background: white; color: var(--primary); border: 2px solid var(--primary); 
-            width: 40px; height: 40px; border-radius: 8px; font-weight: bold; transition: 0.2s; 
+        .btn-pto {
+            background: white; color: var(--primary); border: 2px solid var(--primary);
+            width: 40px; height: 40px; border-radius: 8px; font-weight: bold; transition: 0.2s;
         }
-.btn-pto.active { background: var(--primary); color: white; }
-.btn-pto:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+        .btn-pto.active { background: var(--primary); color: white; }
+        .btn-pto:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+
         .btn-reparto {
             background: white;
             color: var(--primary);
@@ -46,80 +47,77 @@
             background: var(--primary);
             color: white;
         }
-        .options-grid { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 10px; 
-            margin-top: 10px; 
-        }
-    
 
-        .option-card { 
-            background: white; 
-            border: 2px solid #ddd; 
-            padding: 12px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            transition: 0.2s; 
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-card {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: 0.2s;
             font-weight: bold;
             position: relative;
         }
 
-        /* Oculta el radio button original que estorba */
-        .option-card input { 
-            position: absolute; 
-            opacity: 0; 
-        } 
+        .option-card input {
+            position: absolute;
+            opacity: 0;
+        }
 
         .option-card:hover { border-color: var(--primary); background: #f0fdf4; }
 
-        /* Color cuando se selecciona */
-        .option-card.selected { 
-            border-color: var(--primary); 
-            background: #dcfce7; 
-            color: var(--primary); 
+        .option-card.selected {
+            border-color: var(--primary);
+            background: #dcfce7;
+            color: var(--primary);
         }
 
-        /* Check visual a la derecha */
-        .option-card.selected::after { 
-            content: "✓"; 
-            margin-left: auto; 
-            font-size: 18px; 
+        .option-card.selected::after {
+            content: "✓";
+            margin-left: auto;
+            font-size: 18px;
         }
-         /* --- EFECTO PANTALLA COMPLETA --- */
-#duende-animacion {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: black; /* Fondo negro total */
-    z-index: 10000;    /* Por encima de absolutamente todo */
-    display: none;     /* Oculto por defecto */
-    justify-content: center;
-    align-items: center;
-}
 
-#duende-animacion.duende-visible {
-    display: flex; /* Se muestra solo al activar la clase */
-}
+        #duende-animacion {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
 
-#video-duende {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Cambia a 'cover' si quieres que no queden franjas negras */
-}
+        #duende-animacion.duende-visible {
+            display: flex;
+        }
+
+        #video-duende {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
     <div id="duende-animacion">
-    <video id="video-duende" playsinline preload="auto">
-        <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/Firefly%20quiero%20que%20el%20elfo%20entregue%20las%20monedas%20308054.mp4" type="video/mp4">
-        Tu navegador no soporta video.
-    </video>
-</div>
+        <video id="video-duende" playsinline preload="auto">
+            <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/Firefly%20quiero%20que%20el%20elfo%20entregue%20las%20monedas%20308054.mp4" type="video/mp4">
+            Tu navegador no soporta video.
+        </video>
+    </div>
 
     <div id="auth-ui" class="card">
         <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" style="width:100%; border-radius:10px;">
@@ -130,31 +128,38 @@
 
     <div id="admin-ui" class="card hidden">
         <h3>🛠️ PANEL MASTER</h3>
-        
+
         <div class="admin-section">
-    <h4>1. Editor de Estadísticas</h4>
-    <select id="adm-select-stats" style="width:100%; margin-bottom:5px;" onchange="cargarDatosEstadistica()">
-        <option value="">-- Seleccionar Jugador para editar --</option>
-    </select>
-    
-    <input type="text" id="info-sujeto" placeholder="Nombre del Jugador">
-    
-    <div style="display:flex; gap:5px;">
-        <input type="number" id="info-goles" placeholder="Goles">
-        <input type="number" id="info-asist" placeholder="Asistencias">
-    </div>
-    <div style="display:flex; gap:5px;">
-        <input type="number" id="info-am" placeholder="AM">
-        <input type="number" id="info-ro" placeholder="RO">
-    </div>
-    
-    <button onclick="guardarFila()" style="background:#22c55e">GUARDAR ESTADÍSTICAS</button>
-    <button onclick="eliminarEstadistica()" class="btn-del" style="width:100%; margin-top:5px;">BORRAR ESTADÍSTICA</button>
-</div>
+            <h4>1. Editor de Estadísticas</h4>
+            <select id="adm-select-stats" style="width:100%; margin-bottom:5px;" onchange="cargarDatosEstadistica()">
+                <option value="">-- Seleccionar Jugador para editar --</option>
+            </select>
+
+            <input type="text" id="info-sujeto" placeholder="Nombre del Jugador">
+
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="info-goles" placeholder="Goles">
+                <input type="number" id="info-asist" placeholder="Asistencias">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="info-am" placeholder="AM">
+                <input type="number" id="info-ro" placeholder="RO">
+            </div>
+
+            <button onclick="guardarFila()" style="background:#22c55e">GUARDAR ESTADÍSTICAS</button>
+            <button onclick="eliminarEstadistica()" class="btn-del" style="width:100%; margin-top:5px;">BORRAR ESTADÍSTICA</button>
+        </div>
+
         <div class="admin-section">
             <h4>2. Configurar Ronda</h4>
             <textarea id="adm-o2" placeholder="Opciones 1 PTO (separadas por coma)"></textarea>
             <textarea id="adm-o3" placeholder="Opciones 3 PTOS (separadas por coma)"></textarea>
+
+            <label style="font-size:12px; font-weight:bold; margin-top:8px; display:block;">
+                Cierre de apuestas
+            </label>
+            <input type="datetime-local" id="adm-cierre-apuestas">
+
             <button onclick="lanzarRonda()" style="background:#2563eb">ACTIVAR OPCIONES DE VOTO</button>
             <button onclick="habilitarCreditos()" style="background:#8b5cf6; margin-top:10px;">🔓 HABILITAR RECARGA CRÉDITOS</button>
         </div>
@@ -165,18 +170,19 @@
             <div id="admin-check-o3" style="margin-top:10px;"></div>
             <button onclick="puntuarSeleccionados()" style="background:#f59e0b; margin-top:10px;">REPARTIR PUNTOS Y CERRAR</button>
         </div>
-      <div class="admin-section">
-    <h4>5. Validar Porra (+10 Pts)</h4>
-    <div style="display:flex; justify-content: flex-start; gap:5px; font-size: 10px; font-weight: bold; margin-bottom: 2px;">
-        <span style="width: 48%;">DETRONIA</span>
-        <span style="width: 48%;">RIVAL</span>
-    </div>
-    <div style="display:flex; gap:5px;">
-        <input type="number" id="final-l" placeholder="Goles">
-        <input type="number" id="final-v" placeholder="Goles">
-    </div>
-    <button onclick="validarPorra()" style="background:#9c27b0; margin-top:10px;">REPARTIR 10 PTS A ACERTANTES</button>
-</div>
+
+        <div class="admin-section">
+            <h4>5. Validar Porra (+10 Pts)</h4>
+            <div style="display:flex; justify-content: flex-start; gap:5px; font-size: 10px; font-weight: bold; margin-bottom: 2px;">
+                <span style="width: 48%;">DETRONIA</span>
+                <span style="width: 48%;">RIVAL</span>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="final-l" placeholder="Goles">
+                <input type="number" id="final-v" placeholder="Goles">
+            </div>
+            <button onclick="validarPorra()" style="background:#9c27b0; margin-top:10px;">REPARTIR 10 PTS A ACERTANTES</button>
+        </div>
 
         <div class="admin-section">
             <h4>4. Editor de Ranking y Puntos</h4>
@@ -222,55 +228,60 @@
         </div>
 
         <div id="votos-ui" class="hidden">
-    <div class="vote-box">
-        <strong>VALE 1 PUNTO (C2):</strong>
-        <div id="render-o2"></div>
-        <div id="controles-c2" class="puntos-selector hidden">
-            <span>¿Cuántos créditos apuestas?</span>
-            <div class="puntos-grid">
-                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 1, this)">1</button>
-                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 2, this)">2</button>
-                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 3, this)">3</button>
-                <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 4, this)">4</button>
+            <div class="vote-box">
+                <strong>VALE 1 PUNTO (C2):</strong>
+                <div id="render-o2"></div>
+                <div id="controles-c2" class="puntos-selector hidden">
+                    <span>¿Cuántos créditos apuestas?</span>
+                    <div class="puntos-grid">
+                        <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 1, this)">1</button>
+                        <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 2, this)">2</button>
+                        <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 3, this)">3</button>
+                        <button class="btn-pto c2-btn" onclick="seleccionarPuntos('c2', 4, this)">4</button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="vote-box">
-        <strong>VALE 3 PUNTOS (C3):</strong>
-        <div id="render-o3"></div>
-        <div id="controles-c3" class="puntos-selector hidden">
-            <span>¿Cuántos créditos apuestas?</span>
-            <div class="puntos-grid">
-                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 1, this)">1</button>
-                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 2, this)">2</button>
-                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 3, this)">3</button>
-                <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 4, this)">4</button>
+            <div class="vote-box">
+                <strong>VALE 3 PUNTOS (C3):</strong>
+                <div id="render-o3"></div>
+                <div id="controles-c3" class="puntos-selector hidden">
+                    <span>¿Cuántos créditos apuestas?</span>
+                    <div class="puntos-grid">
+                        <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 1, this)">1</button>
+                        <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 2, this)">2</button>
+                        <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 3, this)">3</button>
+                        <button class="btn-pto c3-btn" onclick="seleccionarPuntos('c3', 4, this)">4</button>
+                    </div>
+                </div>
             </div>
+
+            <div id="resumen-apuesta" class="hidden" style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">
+                Total: <span id="suma-total">0</span> / 5 créditos
+            </div>
+
+            <div class="vote-box" style="background: #f3e5f5; border-left-color: #9c27b0;">
+                <strong>⚽ PORRA: MARCADOR EXACTO</strong>
+                <p style="font-size: 12px; margin: 5px 0;">(Acierto exacto = <b>+10 puntos</b>)</p>
+
+                <div style="display: flex; justify-content: center; gap: 10px; font-size: 11px; font-weight: bold; color: #9c27b0; margin-top: 5px;">
+                    <span style="width: 70px; text-align: center;">DETRONIA</span>
+                    <span style="width: 10px;"></span>
+                    <span style="width: 70px; text-align: center;">RIVAL</span>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px;">
+                    <input type="number" id="porra-l" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+                    <span style="font-weight: bold;">-</span>
+                    <input type="number" id="porra-v" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
+                </div>
+            </div>
+
+            <div id="cierre-info" class="hidden" style="text-align:center; margin-top:10px; font-size:12px; color:#666;"></div>
+
+            <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
         </div>
-    </div>
 
-    <div id="resumen-apuesta" class="hidden" style="text-align:center; margin-top:10px; font-weight:bold; color:var(--primary);">
-        Total: <span id="suma-total">0</span> / 5 créditos
-    </div>
-           <div class="vote-box" style="background: #f3e5f5; border-left-color: #9c27b0;">
-    <strong>⚽ PORRA: MARCADOR EXACTO</strong>
-    <p style="font-size: 12px; margin: 5px 0;">(Acierto exacto = <b>+10 puntos</b>)</p>
-    
-    <div style="display: flex; justify-content: center; gap: 10px; font-size: 11px; font-weight: bold; color: #9c27b0; margin-top: 5px;">
-        <span style="width: 70px; text-align: center;">DETRONIA</span>
-        <span style="width: 10px;"></span> <span style="width: 70px; text-align: center;">RIVAL</span>
-    </div>
-
-    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px;">
-        <input type="number" id="porra-l" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
-        <span style="font-weight: bold;">-</span>
-        <input type="number" id="porra-v" placeholder="0" style="width: 70px; text-align: center; border: 2px solid #9c27b0;">
-    </div>
-</div>
-
-    <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
-</div>
         <div style="margin-top:20px;">
             <h4>🏆 RANKING GLOBAL</h4>
             <div id="ranking-list"></div>
@@ -279,16 +290,25 @@
 
     <script>
         const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU'; // Asegúrate de poner tu clave aquí
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
         let miNombre = "";
         let esAdmin = false;
-        const GIFS = { espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif", acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif" };
+        const GIFS = {
+            espera: "https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif",
+            acierta: "https://media1.tenor.com/m/3QhOPLGp9sUAAAAd/tennisgifs-tennis.gif"
+        };
+
+        let eleccionC2 = "";
+        let eleccionC3 = "";
+        let apuestaC2 = 0;
+        let apuestaC3 = 0;
+        let cierreApuestas = null;
 
         async function entrar() {
             miNombre = document.getElementById('username').value.trim().toLowerCase().replace('@','');
-            if(!miNombre) return;
+            if (!miNombre) return;
             await sb.from('jugadores').upsert({ nombre: miNombre }, { onConflict: 'nombre' });
             document.getElementById('auth-ui').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
@@ -297,7 +317,7 @@
         }
 
         function accesoAdmin() {
-            if(prompt("Clave:") === "idemodetronia") {
+            if (prompt("Clave:") === "idemodetronia") {
                 esAdmin = true;
                 document.getElementById('auth-ui').classList.add('hidden');
                 document.getElementById('admin-ui').classList.remove('hidden');
@@ -305,419 +325,453 @@
                 iniciar();
             }
         }
+
         async function reclamar() {
-    const duendeContenedor = document.getElementById('duende-animacion');
-    const video = document.getElementById('video-duende');
+            const duendeContenedor = document.getElementById('duende-animacion');
+            const video = document.getElementById('video-duende');
 
-    const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
-    
-    if(error) {
-        alert("Aún no disponible o ya reclamado");
-    } else {
-        // 1. Mostrar contenedor
-        duendeContenedor.classList.add('duende-visible');
-        
-        // 2. Forzar carga y reproducción
-        video.load(); // Importante para que reconozca el cambio de URL
-        video.currentTime = 0;
-        video.muted = false; 
-        video.volume = 1.0;
+            const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
 
-        // Intentar reproducir
-        const playPromise = video.play();
+            if (error) {
+                alert("Aún no disponible o ya reclamado");
+            } else {
+                duendeContenedor.classList.add('duende-visible');
 
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                // Reproducción iniciada correctamente
-            }).catch(error => {
-                console.log("El navegador bloqueó el audio, intentando sin sonido...");
-                video.muted = true;
-                video.play();
-            });
+                video.load();
+                video.currentTime = 0;
+                video.muted = false;
+                video.volume = 1.0;
+
+                const playPromise = video.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {}).catch(error => {
+                        console.log("El navegador bloqueó el audio, intentando sin sonido...");
+                        video.muted = true;
+                        video.play();
+                    });
+                }
+
+                video.onended = () => {
+                    duendeContenedor.classList.remove('duende-visible');
+                };
+
+                setTimeout(() => {
+                    duendeContenedor.classList.remove('duende-visible');
+                }, 8000);
+
+                refrescar();
+            }
         }
-
-        // 3. Limpieza al terminar
-        video.onended = () => {
-            duendeContenedor.classList.remove('duende-visible');
-        };
-
-        // Respaldo: cerrar a los 8 segundos por si el video falla
-        setTimeout(() => {
-            duendeContenedor.classList.remove('duende-visible');
-        }, 8000); 
-
-        refrescar();
-    }
-}
-      
 
         async function lanzarRonda() {
-            const o2 = document.getElementById('adm-o2').value.split(',').map(x=>x.trim()).filter(x=>x);
-            const o3 = document.getElementById('adm-o3').value.split(',').map(x=>x.trim()).filter(x=>x);
-            await sb.from('estado_juego').update({ opciones2: o2, opciones3: o3, correcta2: null, correcta3: null, ronda_id: 0 }).eq('id', 1);
+            const o2 = document.getElementById('adm-o2').value.split(',').map(x => x.trim()).filter(x => x);
+            const o3 = document.getElementById('adm-o3').value.split(',').map(x => x.trim()).filter(x => x);
+            const cierreInput = document.getElementById('adm-cierre-apuestas').value;
+            const cierreISO = cierreInput ? new Date(cierreInput).toISOString() : null;
+
+            await sb.from('estado_juego').update({
+                opciones2: o2,
+                opciones3: o3,
+                correcta2: null,
+                correcta3: null,
+                ronda_id: 0,
+                cierre_apuestas: cierreISO
+            }).eq('id', 1);
+
             await sb.rpc('habilitar_recarga_global');
             alert("Ronda iniciada y créditos habilitados para todos.");
+            refrescar();
         }
-
-    
 
         async function refrescar() {
-    const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
-    const { data: rk } = await sb.from('jugadores').select('*').order('puntos', {ascending: false});
-            // --- CÁLCULO DE PORCENTAJES ---
-let conteoVotos = {};
-let totalVotantes = rk ? rk.filter(j => j.seleccion2).length : 0;
+            const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
+            const { data: rk } = await sb.from('jugadores').select('*').order('puntos', { ascending: false });
 
-if (totalVotantes > 0) {
-    rk.forEach(j => {
-        if(j.seleccion2) conteoVotos[j.seleccion2] = (conteoVotos[j.seleccion2] || 0) + 1;
-        if(j.seleccion3) conteoVotos[j.seleccion3] = (conteoVotos[j.seleccion3] || 0) + 1;
-    });
-}
+            // --- CÁLCULO DE PORCENTAJES CORRECTO ---
+            let conteoVotosC2 = {};
+            let conteoVotosC3 = {};
 
-const getPct = (opcion) => {
-    if (totalVotantes === 0 || !conteoVotos[opcion]) return "0%";
-    return Math.round((conteoVotos[opcion] / totalVotantes) * 100) + "%";
-};
-    const { data: jg } = await sb.from('estado_juego').select('*').single();
-    const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+            let totalVotantesC2 = rk ? rk.filter(j => j.seleccion2).length : 0;
+            let totalVotantesC3 = rk ? rk.filter(j => j.seleccion3).length : 0;
 
-    // Interfaz de créditos
-    if(yo) {
-        document.getElementById('num-creditos').innerText = yo.creditos;
-        document.getElementById('status-creditos').classList.toggle('hidden', yo.creditos === 0 && !yo.seleccion2);
-        document.getElementById('reclamar-ui').classList.toggle('hidden', !jg.permitir_reclamar || !yo.puede_reclamar);
-        
-        if(yo.seleccion2) {
-            document.getElementById('mi-eleccion-display').classList.remove('hidden');
-            document.getElementById('voto-guardado-texto').innerHTML = `${yo.seleccion2} (${yo.apuesta2}c) | ${yo.seleccion3} (${yo.apuesta3}c)`;
-        } else {
-            document.getElementById('mi-eleccion-display').classList.add('hidden');
+            if (rk) {
+                rk.forEach(j => {
+                    if (j.seleccion2) conteoVotosC2[j.seleccion2] = (conteoVotosC2[j.seleccion2] || 0) + 1;
+                    if (j.seleccion3) conteoVotosC3[j.seleccion3] = (conteoVotosC3[j.seleccion3] || 0) + 1;
+                });
+            }
+
+            const getPctC2 = (opcion) => {
+                if (totalVotantesC2 === 0 || !conteoVotosC2[opcion]) return "0%";
+                return Math.round((conteoVotosC2[opcion] / totalVotantesC2) * 100) + "%";
+            };
+
+            const getPctC3 = (opcion) => {
+                if (totalVotantesC3 === 0 || !conteoVotosC3[opcion]) return "0%";
+                return Math.round((conteoVotosC3[opcion] / totalVotantesC3) * 100) + "%";
+            };
+
+            const { data: jg } = await sb.from('estado_juego').select('*').single();
+            cierreApuestas = jg?.cierre_apuestas ? new Date(jg.cierre_apuestas) : null;
+            const ahora = new Date();
+            const apuestasCerradas = cierreApuestas && ahora >= cierreApuestas;
+
+            const { data: yo } = await sb.from('jugadores').select('*').eq('nombre', miNombre).single();
+
+            if (yo) {
+                document.getElementById('num-creditos').innerText = yo.creditos;
+                document.getElementById('status-creditos').classList.toggle('hidden', yo.creditos === 0 && !yo.seleccion2);
+                document.getElementById('reclamar-ui').classList.toggle('hidden', !jg.permitir_reclamar || !yo.puede_reclamar);
+
+                if (yo.seleccion2) {
+                    document.getElementById('mi-eleccion-display').classList.remove('hidden');
+                    document.getElementById('voto-guardado-texto').innerHTML = `${yo.seleccion2} (${yo.apuesta2}c) | ${yo.seleccion3} (${yo.apuesta3}c)`;
+                } else {
+                    document.getElementById('mi-eleccion-display').classList.add('hidden');
+                }
+            }
+
+            document.getElementById('info-content-user').innerHTML = st.map(s =>
+                `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`
+            ).join('');
+
+            document.getElementById('ranking-list').innerHTML = rk.map(j =>
+                `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`
+            ).join('');
+
+            if (esAdmin) {
+                document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
+                document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
+            }
+
+            const btn = document.getElementById('btn-votar');
+            const votosContainer = document.getElementById('votos-ui');
+
+            if (jg.ronda_id === 1) {
+                votosContainer.classList.remove('hidden');
+                document.getElementById('render-o2').innerHTML = `Ganadores: ${jg.correcta2 || 'Pendiente'}`;
+                document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3 || 'Pendiente'}`;
+                btn.classList.add('hidden');
+            }
+            else if (jg.opciones2?.length > 0 && !yo?.seleccion2) {
+                votosContainer.classList.remove('hidden');
+
+                if (apuestasCerradas) {
+                    document.getElementById('render-o2').innerHTML = `<div style="color:#dc2626; font-weight:bold;">⛔ Apuestas cerradas</div>`;
+                    document.getElementById('render-o3').innerHTML = `<div style="color:#dc2626; font-weight:bold;">⛔ Apuestas cerradas</div>`;
+                    document.getElementById('controles-c2').classList.add('hidden');
+                    document.getElementById('controles-c3').classList.add('hidden');
+                    btn.classList.add('hidden');
+                } else {
+                    document.getElementById('render-o2').innerHTML =
+                        `<div class="options-grid">` +
+                        jg.opciones2.map(o => {
+                            const safeO = String(o).replace(/'/g, "\\'");
+                            return `
+                                <div class="option-card ${eleccionC2 === o ? 'selected' : ''}" onclick="marcarOpcion('c2', '${safeO}', this)">
+                                    <span>${o}</span>
+                                    <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPctC2(o)}</span>
+                                </div>`;
+                        }).join('') +
+                        `</div>`;
+
+                    document.getElementById('render-o3').innerHTML =
+                        `<div class="options-grid">` +
+                        jg.opciones3.map(o => {
+                            const safeO = String(o).replace(/'/g, "\\'");
+                            return `
+                                <div class="option-card ${eleccionC3 === o ? 'selected' : ''}" onclick="marcarOpcion('c3', '${safeO}', this)">
+                                    <span>${o}</span>
+                                    <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPctC3(o)}</span>
+                                </div>`;
+                        }).join('') +
+                        `</div>`;
+
+                    actualizarRestricciones();
+                }
+            }
+            else {
+                votosContainer.classList.add('hidden');
+            }
+
+            if (esAdmin && rk) {
+                const select = document.getElementById('adm-select-jugador');
+                const valorGuardado = select.value;
+                select.innerHTML = '<option value="">Selecciona un jugador...</option>' +
+                    rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
+                select.value = valorGuardado;
+            }
+
+            if (esAdmin && st) {
+                const selectSt = document.getElementById('adm-select-stats');
+                const valorSt = selectSt.value;
+                selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' +
+                    st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
+                selectSt.value = valorSt;
+            }
+
+            const cierreInfo = document.getElementById('cierre-info');
+            if (cierreApuestas) {
+                cierreInfo.classList.remove('hidden');
+                cierreInfo.innerHTML = `⏳ Cierre de apuestas: <b>${cierreApuestas.toLocaleString()}</b>`;
+            } else {
+                cierreInfo.classList.add('hidden');
+            }
+
+            if (esAdmin && jg?.cierre_apuestas) {
+                const dt = new Date(jg.cierre_apuestas);
+                const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16);
+
+                document.getElementById('adm-cierre-apuestas').value = local;
+            }
         }
-    }
 
-    // Tablas
-    document.getElementById('info-content-user').innerHTML = st.map(s => `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`).join('');
-    document.getElementById('ranking-list').innerHTML = rk.map(j => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`).join('');
+        async function cargarDatosEstadistica() {
+            const nombre = document.getElementById('adm-select-stats').value;
+            if (!nombre) {
+                document.getElementById('info-sujeto').value = "";
+                return;
+            }
 
-    // Admin UI
-    if(esAdmin) {
-        document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-        document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-    }
+            const { data } = await sb.from('estadisticas').select('*').eq('sujeto', nombre).single();
+            if (data) {
+                document.getElementById('info-sujeto').value = data.sujeto;
+                document.getElementById('info-goles').value = data.dato1;
+                document.getElementById('info-asist').value = data.dato4;
+                document.getElementById('info-am').value = data.dato2;
+                document.getElementById('info-ro').value = data.dato3;
+            }
+        }
 
-    // --- SECCIÓN DE VOTACIÓN CORREGIDA ---
-    const btn = document.getElementById('btn-votar');
-    const votosContainer = document.getElementById('votos-ui');
+        async function eliminarEstadistica() {
+            const nombre = document.getElementById('adm-select-stats').value;
+            if (!nombre) return alert("Selecciona un registro para borrar");
 
-    if(jg.ronda_id === 1) {
-        votosContainer.classList.remove('hidden'); // Mostramos para ver resultados
-        document.getElementById('render-o2').innerHTML = `Ganadores: ${jg.correcta2 || 'Pendiente'}`;
-        document.getElementById('render-o3').innerHTML = `Ganadores: ${jg.correcta3 || 'Pendiente'}`;
-        btn.classList.add('hidden');
-    } 
-    else if(jg.opciones2?.length > 0 && !yo?.seleccion2) {
-        // ¡ESTA ES LA LÍNEA QUE FALTABA!
-        votosContainer.classList.remove('hidden'); 
+            if (confirm(`¿Borrar las estadísticas de ${nombre}? No afectará a sus puntos en el ranking.`)) {
+                await sb.from('estadisticas').delete().eq('sujeto', nombre);
+                alert("Estadística eliminada");
+                refrescar();
+            }
+        }
 
-        // Render Categoría 2
-        document.getElementById('render-o2').innerHTML = `<div class="options-grid">` + 
-            // Reemplaza el bloque de jg.opciones2.map por este:
-jg.opciones2.map(o => `
-    <div class="option-card ${eleccionC2 === o ? 'selected' : ''}" onclick="marcarOpcion('c2', '${o}', this)">
-        <span>${o}</span>
-        <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPct(o)}</span>
-    </div>`).join('')
-
-        // Render Categoría 3
-        document.getElementById('render-o3').innerHTML = `<div class="options-grid">` + 
-            // Reemplaza el bloque de jg.opciones3.map por este:
-jg.opciones3.map(o => `
-    <div class="option-card ${eleccionC3 === o ? 'selected' : ''}" onclick="marcarOpcion('c3', '${o}', this)">
-        <span>${o}</span>
-        <span style="margin-left:auto; font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px;">${getPct(o)}</span>
-    </div>`).join('')
-
-        // El botón de votar se controla con la función actualizarRestricciones()
-    } 
-    else {
-        // Si no hay opciones o el usuario ya votó, ocultamos todo el bloque
-        votosContainer.classList.add('hidden');
-    }
-
-    // Selectores de Admin (final de la función)
-    if (esAdmin && rk) {
-        const select = document.getElementById('adm-select-jugador');
-        const valorGuardado = select.value;
-        select.innerHTML = '<option value="">Selecciona un jugador...</option>' + 
-        rk.map(j => `<option value="${j.nombre}">${j.nombre} (${j.puntos} pts)</option>`).join('');
-        select.value = valorGuardado;
-    }
-    if (esAdmin && st) {
-        const selectSt = document.getElementById('adm-select-stats');
-        const valorSt = selectSt.value;
-        selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' + 
-            st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
-        selectSt.value = valorSt;
-    }
-}
-        // Esta función rellena los campos automáticamente al seleccionar un jugador
-async function cargarDatosEstadistica() {
-    const nombre = document.getElementById('adm-select-stats').value;
-    if (!nombre) {
-        document.getElementById('info-sujeto').value = "";
-        return;
-    }
-    
-    // Buscamos los datos actuales en la tabla para facilitar la edición
-    const { data } = await sb.from('estadisticas').select('*').eq('sujeto', nombre).single();
-    if (data) {
-        document.getElementById('info-sujeto').value = data.sujeto;
-        document.getElementById('info-goles').value = data.dato1;
-        document.getElementById('info-asist').value = data.dato4;
-        document.getElementById('info-am').value = data.dato2;
-        document.getElementById('info-ro').value = data.dato3;
-    }
-}
-
-async function eliminarEstadistica() {
-    const nombre = document.getElementById('adm-select-stats').value;
-    if (!nombre) return alert("Selecciona un registro para borrar");
-    
-    if (confirm(`¿Borrar las estadísticas de ${nombre}? No afectará a sus puntos en el ranking.`)) {
-        await sb.from('estadisticas').delete().eq('sujeto', nombre);
-        alert("Estadística eliminada");
-        refrescar();
-    }
-}
         async function modificarJugador() {
-    const nombre = document.getElementById('adm-select-jugador').value;
-    const nuevosPuntos = document.getElementById('adm-edit-puntos').value;
-    const nuevosCreditos = document.getElementById('adm-edit-creditos').value;
+            const nombre = document.getElementById('adm-select-jugador').value;
+            const nuevosPuntos = document.getElementById('adm-edit-puntos').value;
+            const nuevosCreditos = document.getElementById('adm-edit-creditos').value;
 
-    if (!nombre) return alert("Selecciona un jugador");
+            if (!nombre) return alert("Selecciona un jugador");
 
-    const actualizaciones = {};
-    if (nuevosPuntos !== "") actualizaciones.puntos = parseInt(nuevosPuntos);
-    if (nuevosCreditos !== "") actualizaciones.creditos = parseInt(nuevosCreditos);
+            const actualizaciones = {};
+            if (nuevosPuntos !== "") actualizaciones.puntos = parseInt(nuevosPuntos);
+            if (nuevosCreditos !== "") actualizaciones.creditos = parseInt(nuevosCreditos);
 
-    const { error } = await sb.from('jugadores').update(actualizaciones).eq('nombre', nombre);
-    
-    if (error) alert("Error: " + error.message);
-    else {
-        alert("Jugador actualizado correctamente");
-        refrescar();
-    }
-}
+            const { error } = await sb.from('jugadores').update(actualizaciones).eq('nombre', nombre);
 
-async function eliminarJugador() {
-    const nombre = document.getElementById('adm-select-jugador').value;
-    if (!nombre) return;
-    
-    if (confirm(`¿ESTÁS SEGURO? Esto borrará a @${nombre} y todos sus puntos permanentemente.`)) {
-        await sb.from('jugadores').delete().eq('nombre', nombre);
-        alert("Jugador eliminado");
-        refrescar();
-    }
-}
+            if (error) alert("Error: " + error.message);
+            else {
+                alert("Jugador actualizado correctamente");
+                refrescar();
+            }
+        }
+
+        async function eliminarJugador() {
+            const nombre = document.getElementById('adm-select-jugador').value;
+            if (!nombre) return;
+
+            if (confirm(`¿ESTÁS SEGURO? Esto borrará a @${nombre} y todos sus puntos permanentemente.`)) {
+                await sb.from('jugadores').delete().eq('nombre', nombre);
+                alert("Jugador eliminado");
+                refrescar();
+            }
+        }
 
         async function guardarFila() {
             const s = document.getElementById('info-sujeto').value;
-            await sb.from('estadisticas').upsert({ 
-                sujeto: s, 
-                dato1: document.getElementById('info-goles').value, 
-                dato4: document.getElementById('info-asist').value, 
-                dato2: document.getElementById('info-am').value, 
-                dato3: document.getElementById('info-ro').value 
+            await sb.from('estadisticas').upsert({
+                sujeto: s,
+                dato1: document.getElementById('info-goles').value,
+                dato4: document.getElementById('info-asist').value,
+                dato2: document.getElementById('info-am').value,
+                dato3: document.getElementById('info-ro').value
             }, { onConflict: 'sujeto' });
             alert("Datos actualizados");
             refrescar();
         }
 
         async function puntuarSeleccionados() {
-    const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
-    const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
-    
-    if(w2.length === 0 && w3.length === 0) return alert("Selecciona al menos un ganador.");
+            const w2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
+            const w3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
 
-    if(confirm("¿Repartir puntos? Esto sumará los aciertos al ranking y limpiará las apuestas.")) {
-        const { error } = await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
-        if(error) {
-            alert("Error: " + error.message);
-        } else {
-            alert("¡Puntos repartidos con éxito!");
-            // ESTA LÍNEA ES CLAVE:
-            await refrescar(); 
+            if (w2.length === 0 && w3.length === 0) return alert("Selecciona al menos un ganador.");
+
+            if (confirm("¿Repartir puntos? Esto sumará los aciertos al ranking y limpiará las apuestas.")) {
+                const { error } = await sb.rpc('validar_y_puntuar', { c2: w2, c3: w3 });
+                if (error) {
+                    alert("Error: " + error.message);
+                } else {
+                    alert("¡Puntos repartidos con éxito!");
+                    await refrescar();
+                }
+            }
         }
-    }
-}
 
         function iniciar() {
             refrescar();
-            setInterval(refrescar, 60000);
+            setInterval(refrescar, 10000);
         }
+
         function marcarEfecto(el, name) {
-    // Busca todas las opciones del mismo grupo (c2 o c3) y les quita el color
-    const cards = el.parentElement.querySelectorAll('.option-card');
-    cards.forEach(c => c.classList.remove('selected'));
-    
-    // Se lo pone solo a la que acabamos de tocar
-    el.classList.add('selected');
-}
-        // Variables globales de control
-// --- VARIABLES GLOBALES (Mantenlas igual) ---
-let eleccionC2 = "";
-let eleccionC3 = "";
-let apuestaC2 = 0;
-let apuestaC3 = 0;
-
-function marcarOpcion(grupo, valor, el) {
-    if (grupo === 'c2') eleccionC2 = valor;
-    if (grupo === 'c3') eleccionC3 = valor;
-
-    const cards = el.parentElement.querySelectorAll('.option-card');
-    cards.forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-
-    document.getElementById(`controles-${grupo}`).classList.remove('hidden');
-    actualizarRestricciones();
-}
-
-// --- FUNCIÓN ACTUALIZADA: SELECCIONAR PUNTOS ---
-function seleccionarPuntos(grupo, cantidad, el) {
-    // Si el botón está deshabilitado por la lógica de 5 créditos, no hacer nada
-    if (el.disabled) return;
-
-    if (grupo === 'c2') apuestaC2 = cantidad;
-    if (grupo === 'c3') apuestaC3 = cantidad;
-
-    // Resaltar botón de número dentro de su propio grupo
-    document.querySelectorAll(`.${grupo}-btn`).forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-
-    actualizarRestricciones();
-}
-
-// --- FUNCIÓN ACTUALIZADA: RESTRICCIONES INTELIGENTES ---
-function actualizarRestricciones() {
-    const total = apuestaC2 + apuestaC3;
-    const displayTotal = document.getElementById('suma-total');
-    const btnVotar = document.getElementById('btn-votar');
-    
-    // 1. Mostrar el contador de créditos
-    if (apuestaC2 > 0 || apuestaC3 > 0) {
-        document.getElementById('resumen-apuesta').classList.remove('hidden');
-        displayTotal.innerText = total;
-    }
-
-    // 2. LÓGICA DE BLOQUEO: Deshabilitar botones que sumen > 5
-    // Bloquear botones en Categoría 3 basados en C2
-    document.querySelectorAll('.c3-btn').forEach(btn => {
-        const valorBtn = parseInt(btn.innerText);
-        // Si ya elegí algo en C2, deshabilito lo que me pase de 5
-        btn.disabled = (apuestaC2 > 0 && (apuestaC2 + valorBtn > 5));
-    });
-
-    // Bloquear botones en Categoría 2 basados en C3
-    document.querySelectorAll('.c2-btn').forEach(btn => {
-        const valorBtn = parseInt(btn.innerText);
-        btn.disabled = (apuestaC3 > 0 && (apuestaC3 + valorBtn > 5));
-    });
-
-    // 3. VALIDACIÓN PARA MOSTRAR BOTÓN DE ENVÍO
-    // Solo aparece si la suma es EXACTAMENTE 5 y ambos jugadores están elegidos
-    if (total === 5 && eleccionC2 && eleccionC3) {
-        displayTotal.style.color = "#22c55e"; // Verde
-        btnVotar.classList.remove('hidden');
-    } else {
-        // Naranja si falta, rojo si se pasa (aunque el bloqueo evita que se pase)
-        displayTotal.style.color = total > 5 ? "#ef4444" : "#f59e0b"; 
-        btnVotar.classList.add('hidden');
-    }
-}
-
-async function votar() {
-    if (apuestaC2 + apuestaC3 !== 5) {
-        return alert("La suma de créditos debe ser exactamente 5.");
-    }
-
-    const pl = document.getElementById('porra-l').value;
-    const pv = document.getElementById('porra-v').value;
-
-    if (pl === "" || pv === "") {
-        return alert("Por favor, introduce un marcador para la porra.");
-    }
-
-    if (confirm(`Confirmar apuesta:\n- C2: ${eleccionC2} (${apuestaC2}c)\n- C3: ${eleccionC3} (${apuestaC3}c)\n- Porra: ${pl} - ${pv}`)) {
-        const { error } = await sb.from('jugadores')
-            .update({ 
-                seleccion2: eleccionC2, 
-                seleccion3: eleccionC3, 
-                apuesta2: apuestaC2, 
-                apuesta3: apuestaC3, 
-                porra_l: parseInt(pl), // Guardamos marcador local
-                porra_v: parseInt(pv), // Guardamos marcador visitante
-                creditos: 0,
-                puede_reclamar: false 
-            })
-            .eq('nombre', miNombre);
-
-        if (!error) {
-            alert("¡Apuesta y Porra enviadas!");
-            location.reload();
-        } else {
-            alert("Error: " + error.message);
+            const cards = el.parentElement.querySelectorAll('.option-card');
+            cards.forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
         }
-    }
-}
-        async function habilitarCreditos() {
-    if(confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
-        const { error } = await sb.rpc('habilitar_recarga_global');
-        if(!error) {
-            alert("¡Grifo abierto! Los jugadores ya pueden ver el botón de 'Recibir 5 créditos'.");
-        } else {
-            alert("Error al habilitar créditos: " + error.message);
+
+        function marcarOpcion(grupo, valor, el) {
+            if (cierreApuestas && new Date() >= cierreApuestas) return;
+
+            if (grupo === 'c2') eleccionC2 = valor;
+            if (grupo === 'c3') eleccionC3 = valor;
+
+            const cards = el.parentElement.querySelectorAll('.option-card');
+            cards.forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+
+            document.getElementById(`controles-${grupo}`).classList.remove('hidden');
+            actualizarRestricciones();
         }
-    }
-}
-        async function validarPorra() {
-    const resL = parseInt(document.getElementById('final-l').value);
-    const resV = parseInt(document.getElementById('final-v').value);
 
-    if (isNaN(resL) || isNaN(resV)) return alert("Pon el resultado final del partido");
+        function seleccionarPuntos(grupo, cantidad, el) {
+            if (el.disabled) return;
+            if (cierreApuestas && new Date() >= cierreApuestas) return;
 
-    if (confirm(`¿Repartir 10 puntos para el marcador ${resL}-${resV}?`)) {
-        // 1. Buscamos quiénes acertaron exactamente
-        const { data: ganadores, error } = await sb
-            .from('jugadores')
-            .select('nombre, puntos')
-            .eq('porra_l', resL)
-            .eq('porra_v', resV);
+            if (grupo === 'c2') apuestaC2 = cantidad;
+            if (grupo === 'c3') apuestaC3 = cantidad;
 
-        if (error) return alert("Error: " + error.message);
+            document.querySelectorAll(`.${grupo}-btn`).forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
 
-        // 2. Sumamos 10 puntos a cada ganador
-        if (ganadores.length > 0) {
-            for (const g of ganadores) {
-                await sb.from('jugadores')
-                    .update({ puntos: g.puntos + 10 })
-                    .eq('nombre', g.nombre);
+            actualizarRestricciones();
+        }
+
+        function actualizarRestricciones() {
+            const total = apuestaC2 + apuestaC3;
+            const displayTotal = document.getElementById('suma-total');
+            const btnVotar = document.getElementById('btn-votar');
+            const apuestasCerradas = cierreApuestas && new Date() >= cierreApuestas;
+
+            if (apuestaC2 > 0 || apuestaC3 > 0) {
+                document.getElementById('resumen-apuesta').classList.remove('hidden');
+                displayTotal.innerText = total;
             }
-            alert(`¡Se han entregado 10 puntos a ${ganadores.length} acertantes!`);
-        } else {
-            alert("Nadie acertó el marcador exacto.");
+
+            document.querySelectorAll('.c3-btn').forEach(btn => {
+                const valorBtn = parseInt(btn.innerText);
+                btn.disabled = apuestasCerradas || (apuestaC2 > 0 && (apuestaC2 + valorBtn > 5));
+            });
+
+            document.querySelectorAll('.c2-btn').forEach(btn => {
+                const valorBtn = parseInt(btn.innerText);
+                btn.disabled = apuestasCerradas || (apuestaC3 > 0 && (apuestaC3 + valorBtn > 5));
+            });
+
+            if (apuestasCerradas) {
+                displayTotal.style.color = "#dc2626";
+                btnVotar.classList.add('hidden');
+                return;
+            }
+
+            if (total === 5 && eleccionC2 && eleccionC3) {
+                displayTotal.style.color = "#22c55e";
+                btnVotar.classList.remove('hidden');
+            } else {
+                displayTotal.style.color = total > 5 ? "#ef4444" : "#f59e0b";
+                btnVotar.classList.add('hidden');
+            }
         }
 
-        // 3. Limpiamos las porras de todos para la próxima semana
-        await sb.from('jugadores').update({ porra_l: null, porra_v: null }).not('nombre', 'is', null);
-        refrescar();
-    }
-}
-        
+        async function votar() {
+            if (cierreApuestas && new Date() >= cierreApuestas) {
+                return alert("Las apuestas ya están cerradas.");
+            }
+
+            if (apuestaC2 + apuestaC3 !== 5) {
+                return alert("La suma de créditos debe ser exactamente 5.");
+            }
+
+            const pl = document.getElementById('porra-l').value;
+            const pv = document.getElementById('porra-v').value;
+
+            if (pl === "" || pv === "") {
+                return alert("Por favor, introduce un marcador para la porra.");
+            }
+
+            if (confirm(`Confirmar apuesta:\n- C2: ${eleccionC2} (${apuestaC2}c)\n- C3: ${eleccionC3} (${apuestaC3}c)\n- Porra: ${pl} - ${pv}`)) {
+                const { error } = await sb.from('jugadores')
+                    .update({
+                        seleccion2: eleccionC2,
+                        seleccion3: eleccionC3,
+                        apuesta2: apuestaC2,
+                        apuesta3: apuestaC3,
+                        porra_l: parseInt(pl),
+                        porra_v: parseInt(pv),
+                        creditos: 0,
+                        puede_reclamar: false
+                    })
+                    .eq('nombre', miNombre);
+
+                if (!error) {
+                    alert("¡Apuesta y Porra enviadas!");
+                    location.reload();
+                } else {
+                    alert("Error: " + error.message);
+                }
+            }
+        }
+
+        async function habilitarCreditos() {
+            if (confirm("¿Quieres permitir que todos los jugadores reclamen 5 créditos ahora?")) {
+                const { error } = await sb.rpc('habilitar_recarga_global');
+                if (!error) {
+                    alert("¡Grifo abierto! Los jugadores ya pueden ver el botón de 'Recibir 5 créditos'.");
+                } else {
+                    alert("Error al habilitar créditos: " + error.message);
+                }
+            }
+        }
+
+        async function validarPorra() {
+            const resL = parseInt(document.getElementById('final-l').value);
+            const resV = parseInt(document.getElementById('final-v').value);
+
+            if (isNaN(resL) || isNaN(resV)) return alert("Pon el resultado final del partido");
+
+            if (confirm(`¿Repartir 10 puntos para el marcador ${resL}-${resV}?`)) {
+                const { data: ganadores, error } = await sb
+                    .from('jugadores')
+                    .select('nombre, puntos')
+                    .eq('porra_l', resL)
+                    .eq('porra_v', resV);
+
+                if (error) return alert("Error: " + error.message);
+
+                if (ganadores.length > 0) {
+                    for (const g of ganadores) {
+                        await sb.from('jugadores')
+                            .update({ puntos: g.puntos + 10 })
+                            .eq('nombre', g.nombre);
+                    }
+                    alert(`¡Se han entregado 10 puntos a ${ganadores.length} acertantes!`);
+                } else {
+                    alert("Nadie acertó el marcador exacto.");
+                }
+
+                await sb.from('jugadores').update({ porra_l: null, porra_v: null }).not('nombre', 'is', null);
+                refrescar();
+            }
+        }
     </script>
 </body>
 </html>
-
-
-
-
