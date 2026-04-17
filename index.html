@@ -277,11 +277,10 @@
                 </div>
             </div>
 
-            <div id="cierre-info" class="hidden" style="text-align:center; margin-top:10px; font-size:12px; color:#666;"></div>
-            <div id="countdown-info" class="hidden" style="text-align:center; margin-top:6px; font-size:14px; font-weight:bold; color:var(--primary);"></div>
-
             <button id="btn-votar" onclick="votar()" class="hidden" style="background:#22c55e; margin-top:15px;">ENVIAR APUESTA</button>
         </div>
+         <div id="cierre-info" class="hidden" style="text-align:center; margin-top:10px; font-size:12px; color:#666;"></div>
+            <div id="countdown-info" class="hidden" style="text-align:center; margin-top:6px; font-size:14px; font-weight:bold; color:var(--primary);"></div>
 
         <div style="margin-top:20px;">
             <h4>🏆 RANKING GLOBAL</h4>
@@ -525,15 +524,24 @@
             }
 
          const cierreInfo = document.getElementById('cierre-info');
-if (cierreApuestas) {
+const countdownEl = document.getElementById('countdown-info');
+const hayRondaActiva = jg.opciones2?.length > 0 && jg.ronda_id !== 1;
+
+if (cierreApuestas && hayRondaActiva) {
     cierreInfo.classList.remove('hidden');
     cierreInfo.innerHTML = `⏳ Cierre de apuestas: <b>${cierreApuestas.toLocaleString()}</b>`;
+    iniciarCountdown();
 } else {
     cierreInfo.classList.add('hidden');
     cierreInfo.innerHTML = "";
-}
+    countdownEl.classList.add('hidden');
+    countdownEl.innerHTML = "";
 
-iniciarCountdown();
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+}
 
             if (esAdmin) {
     const inputCierre = document.getElementById('adm-cierre-apuestas');
