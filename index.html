@@ -364,25 +364,36 @@
             }
         }
 
-        async function lanzarRonda() {
-            const o2 = document.getElementById('adm-o2').value.split(',').map(x => x.trim()).filter(x => x);
-            const o3 = document.getElementById('adm-o3').value.split(',').map(x => x.trim()).filter(x => x);
-            const cierreInput = document.getElementById('adm-cierre-apuestas').value;
-            const cierreISO = cierreInput ? new Date(cierreInput).toISOString() : null;
+      async function lanzarRonda() {
+    const o2 = document.getElementById('adm-o2').value.split(',').map(x => x.trim()).filter(x => x);
+    const o3 = document.getElementById('adm-o3').value.split(',').map(x => x.trim()).filter(x => x);
+    const cierreInput = document.getElementById('adm-cierre-apuestas').value;
 
-            await sb.from('estado_juego').update({
-                opciones2: o2,
-                opciones3: o3,
-                correcta2: null,
-                correcta3: null,
-                ronda_id: 0,
-                cierre_apuestas: cierreISO
-            }).eq('id', 1);
+    let cierreISO = null;
 
-            await sb.rpc('habilitar_recarga_global');
-            alert("Ronda iniciada y créditos habilitados para todos.");
-            refrescar();
+    if (cierreInput) {
+        const fechaCierre = new Date(cierreInput);
+        if (fechaCierre > new Date()) {
+            cierreISO = fechaCierre.toISOString();
         }
+    }
+
+    await sb.from('estado_juego').update({
+        opciones2: o2,
+        opciones3: o3,
+        correcta2: null,
+        correcta3: null,
+        ronda_id: 0,
+        cierre_apuestas: cierreISO
+    }).eq('id', 1);
+
+    await sb.rpc('habilitar_recarga_global');
+
+    document.getElementById('adm-cierre-apuestas').value = "";
+
+    alert("Ronda iniciada y créditos habilitados para todos.");
+    refrescar();
+}
 
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
@@ -519,14 +530,25 @@
                 cierreInfo.classList.add('hidden');
             }
 
-            if (esAdmin && jg?.cierre_apuestas) {
-                const dt = new Date(jg.cierre_apuestas);
-                const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-                    .toISOString()
-                    .slice(0, 16);
+            if (esAdmin) {
+    const inputCierre = document.getElementById('adm-cierre-apuestas');
 
-                document.getElementById('adm-cierre-apuestas').value = local;
-            }
+    if (jg?.cierre_apuestas) {
+        const dt = new Date(jg.cierre_apuestas);
+
+        if (dt > new Date()) {
+            const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
+
+            inputCierre.value = local;
+        } else {
+            inputCierre.value = "";
+        }
+    } else {
+        inputCierre.value = "";
+    }
+}
         }
 
         async function cargarDatosEstadistica() {
