@@ -114,7 +114,7 @@
 <body>
     <div id="duende-animacion">
         <video id="video-duende" playsinline preload="auto">
-            <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/Firefly%20quiero%20que%20el%20elfo%20entregue%20las%20monedas%20308054.mp4" type="video/mp4">
+           <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/v2_watermarked-529ad57f-04a4-4c0e-949a-12187bb4f07d.mp4?v=2" type="video/mp4">
             Tu navegador no soporta video.
         </video>
     </div>
@@ -353,13 +353,17 @@
                     });
                 }
 
-                video.onended = () => {
-                    duendeContenedor.classList.remove('duende-visible');
-                };
+               video.onended = () => {
+    duendeContenedor.classList.remove('duende-visible');
+    video.pause();
+    video.currentTime = 0;
+};
 
-                setTimeout(() => {
-                    duendeContenedor.classList.remove('duende-visible');
-                }, 8000);
+setTimeout(() => {
+    duendeContenedor.classList.remove('duende-visible');
+    video.pause();
+    video.currentTime = 0;
+}, 3000);
 
                 refrescar();
             }
