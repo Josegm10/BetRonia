@@ -453,9 +453,23 @@
             ).join('');
 
             if (esAdmin) {
-                document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `<label><input type="checkbox" class="check-w2" value="${o}"> ${o}</label>`).join('');
-                document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `<label><input type="checkbox" class="check-w3" value="${o}"> ${o}</label>`).join('');
-            }
+    const seleccionadosW2 = Array.from(document.querySelectorAll('.check-w2:checked')).map(cb => cb.value);
+    const seleccionadosW3 = Array.from(document.querySelectorAll('.check-w3:checked')).map(cb => cb.value);
+
+    document.getElementById('admin-check-o2').innerHTML = jg.opciones2.map(o => `
+        <label>
+            <input type="checkbox" class="check-w2" value="${o}" ${seleccionadosW2.includes(o) ? 'checked' : ''}>
+            ${o}
+        </label>
+    `).join('');
+
+    document.getElementById('admin-check-o3').innerHTML = jg.opciones3.map(o => `
+        <label>
+            <input type="checkbox" class="check-w3" value="${o}" ${seleccionadosW3.includes(o) ? 'checked' : ''}>
+            ${o}
+        </label>
+    `).join('');
+}
 
             const btn = document.getElementById('btn-votar');
             const votosContainer = document.getElementById('votos-ui');
