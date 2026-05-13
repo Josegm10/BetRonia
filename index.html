@@ -483,7 +483,7 @@ setTimeout(() => {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: rk } = await sb.from('jugadores').select('*').order('puntos', { ascending: false });
             const { data: clasif } = await sb
-    .from('clasificacion')
+    .from('clasificacion_fase_de_grupos')
     .select('*')
     .order('pts', { ascending: false })
     .order('dg', { ascending: false })
@@ -1010,7 +1010,7 @@ if (cierreApuestas && hayRondaActiva) {
     }
 
     const { data } = await sb
-        .from('clasificacion')
+        .from('clasificacion_fase_de_grupos')
         .select('*')
         .eq('equipo', equipo)
         .single();
@@ -1049,7 +1049,7 @@ async function guardarClasificacion() {
     };
 
     const { error } = await sb
-        .from('clasificacion')
+        .from('clasificacion_fase_de_grupos')
         .upsert(datos, { onConflict: 'equipo' });
 
     if (error) {
@@ -1067,7 +1067,7 @@ async function eliminarClasificacion() {
 
     if (confirm(`¿Borrar a ${equipo} de la clasificación?`)) {
         const { error } = await sb
-            .from('clasificacion')
+            .from('clasificacion_fase_de_grupos')
             .delete()
             .eq('equipo', equipo);
 
