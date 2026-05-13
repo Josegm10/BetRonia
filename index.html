@@ -109,6 +109,38 @@
             height: 100%;
             object-fit: contain;
         }
+        .clasificacion-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 15px;
+    background: white;
+}
+
+.clasificacion-table th {
+    background: #111827;
+    color: white;
+    padding: 10px 6px;
+    border: 1px solid #111827;
+    text-align: center;
+}
+
+.clasificacion-table td {
+    padding: 10px 6px;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    font-weight: 500;
+}
+
+.clasificacion-table td:nth-child(1),
+.clasificacion-table td:nth-child(10) {
+    font-weight: bold;
+}
+
+.clasificacion-table td:nth-child(2) {
+    text-align: left;
+    font-weight: bold;
+}
     </style>
 </head>
 <body>
@@ -149,6 +181,33 @@
             <button onclick="guardarFila()" style="background:#22c55e">GUARDAR ESTADÍSTICAS</button>
             <button onclick="eliminarEstadistica()" class="btn-del" style="width:100%; margin-top:5px;">BORRAR ESTADÍSTICA</button>
         </div>
+
+        <div class="admin-section">
+    <h4>Clasificación del Grupo</h4>
+
+    <select id="adm-select-clasif" style="width:100%; margin-bottom:5px;" onchange="cargarDatosClasificacion()">
+        <option value="">-- Nuevo equipo / Editar existente --</option>
+    </select>
+
+    <input type="text" id="clasif-equipo" placeholder="Nombre del equipo">
+
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="clasif-j" placeholder="J">
+        <input type="number" id="clasif-g" placeholder="G">
+        <input type="number" id="clasif-e" placeholder="E">
+        <input type="number" id="clasif-p" placeholder="P">
+    </div>
+
+    <div style="display:flex; gap:5px;">
+        <input type="number" id="clasif-gf" placeholder="GF">
+        <input type="number" id="clasif-gc" placeholder="GC">
+        <input type="number" id="clasif-dg" placeholder="DG">
+        <input type="number" id="clasif-pts" placeholder="Pts">
+    </div>
+
+    <button onclick="guardarClasificacion()" style="background:#22c55e">GUARDAR EQUIPO</button>
+    <button onclick="eliminarClasificacion()" class="btn-del" style="width:100%; margin-top:5px;">BORRAR EQUIPO</button>
+</div>
 
         <div class="admin-section">
             <h4>2. Configurar Ronda</h4>
@@ -215,6 +274,27 @@
             <strong>TU APUESTA:</strong>
             <div id="voto-guardado-texto" style="font-size: 14px; margin-top: 5px;"></div>
         </div>
+        <div class="card" style="border:none; background:#f8fafc; padding:10px; width:100%; margin-top:15px;">
+    <h4 style="font-size:22px;">📋 CLASIFICACIÓN</h4>
+
+    <table class="clasificacion-table">
+        <thead>
+            <tr>
+                <th>Pos</th>
+                <th>Equipo</th>
+                <th>J</th>
+                <th>G</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DG</th>
+                <th>Pts</th>
+            </tr>
+        </thead>
+        <tbody id="clasificacion-content-user"></tbody>
+    </table>
+</div>
 
         <div class="card" style="border:none; background:#fffde7; padding:10px; width:100%; margin:0;">
             <h4>📊 ESTADÍSTICAS</h4>
@@ -402,6 +482,12 @@ setTimeout(() => {
         async function refrescar() {
             const { data: st } = await sb.from('estadisticas').select('*').order('sujeto');
             const { data: rk } = await sb.from('jugadores').select('*').order('puntos', { ascending: false });
+            const { data: clasif } = await sb
+    .from('clasificacion')
+    .select('*')
+    .order('pts', { ascending: false })
+    .order('dg', { ascending: false })
+    .order('gf', { ascending: false });
 
             // --- CÁLCULO DE PORCENTAJES CORRECTO ---
             let conteoVotosC2 = {};
@@ -450,6 +536,20 @@ setTimeout(() => {
             document.getElementById('info-content-user').innerHTML = st.map(s =>
                 `<tr><td><b>${s.sujeto}</b></td><td>${s.dato1||0}</td><td>${s.dato4||0}</td><td><span class="am">${s.dato2||0}</span></td><td><span class="ro">${s.dato3||0}</span></td></tr>`
             ).join('');
+            document.getElementById('clasificacion-content-user').innerHTML = clasif.map((e, index) =>
+    `<tr>
+        <td>${index + 1}</td>
+        <td>${e.equipo}</td>
+        <td>${e.j || 0}</td>
+        <td>${e.g || 0}</td>
+        <td>${e.e || 0}</td>
+        <td>${e.p || 0}</td>
+        <td>${e.gf || 0}</td>
+        <td>${e.gc || 0}</td>
+        <td>${e.dg || 0}</td>
+        <td>${e.pts || 0}</td>
+    </tr>`
+).join('');
 
             document.getElementById('ranking-list').innerHTML = rk.map(j =>
                 `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>@${j.nombre}</span><b>${j.puntos} Pts</b></div>`
@@ -538,6 +638,15 @@ setTimeout(() => {
                 selectSt.innerHTML = '<option value="">-- Nuevo Jugador / Editar existente --</option>' +
                     st.map(s => `<option value="${s.sujeto}">${s.sujeto}</option>`).join('');
                 selectSt.value = valorSt;
+                if (esAdmin && clasif) {
+    const selectClasif = document.getElementById('adm-select-clasif');
+    const valorClasif = selectClasif.value;
+
+    selectClasif.innerHTML = '<option value="">-- Nuevo equipo / Editar existente --</option>' +
+        clasif.map(e => `<option value="${e.equipo}">${e.equipo} (${e.pts} pts)</option>`).join('');
+
+    selectClasif.value = valorClasif;
+}
             }
 
          const cierreInfo = document.getElementById('cierre-info');
@@ -884,6 +993,92 @@ if (cierreApuestas && hayRondaActiva) {
                 refrescar();
             }
         }
+        async function cargarDatosClasificacion() {
+    const equipo = document.getElementById('adm-select-clasif').value;
+
+    if (!equipo) {
+        document.getElementById('clasif-equipo').value = "";
+        document.getElementById('clasif-j').value = "";
+        document.getElementById('clasif-g').value = "";
+        document.getElementById('clasif-e').value = "";
+        document.getElementById('clasif-p').value = "";
+        document.getElementById('clasif-gf').value = "";
+        document.getElementById('clasif-gc').value = "";
+        document.getElementById('clasif-dg').value = "";
+        document.getElementById('clasif-pts').value = "";
+        return;
+    }
+
+    const { data } = await sb
+        .from('clasificacion')
+        .select('*')
+        .eq('equipo', equipo)
+        .single();
+
+    if (data) {
+        document.getElementById('clasif-equipo').value = data.equipo;
+        document.getElementById('clasif-j').value = data.j;
+        document.getElementById('clasif-g').value = data.g;
+        document.getElementById('clasif-e').value = data.e;
+        document.getElementById('clasif-p').value = data.p;
+        document.getElementById('clasif-gf').value = data.gf;
+        document.getElementById('clasif-gc').value = data.gc;
+        document.getElementById('clasif-dg').value = data.dg;
+        document.getElementById('clasif-pts').value = data.pts;
+    }
+}
+
+async function guardarClasificacion() {
+    const equipo = document.getElementById('clasif-equipo').value.trim();
+
+    if (!equipo) return alert("Introduce el nombre del equipo");
+
+    const gf = parseInt(document.getElementById('clasif-gf').value) || 0;
+    const gc = parseInt(document.getElementById('clasif-gc').value) || 0;
+
+    const datos = {
+        equipo: equipo,
+        j: parseInt(document.getElementById('clasif-j').value) || 0,
+        g: parseInt(document.getElementById('clasif-g').value) || 0,
+        e: parseInt(document.getElementById('clasif-e').value) || 0,
+        p: parseInt(document.getElementById('clasif-p').value) || 0,
+        gf: gf,
+        gc: gc,
+        dg: parseInt(document.getElementById('clasif-dg').value) || (gf - gc),
+        pts: parseInt(document.getElementById('clasif-pts').value) || 0
+    };
+
+    const { error } = await sb
+        .from('clasificacion')
+        .upsert(datos, { onConflict: 'equipo' });
+
+    if (error) {
+        alert("Error: " + error.message);
+    } else {
+        alert("Clasificación actualizada");
+        refrescar();
+    }
+}
+
+async function eliminarClasificacion() {
+    const equipo = document.getElementById('adm-select-clasif').value;
+
+    if (!equipo) return alert("Selecciona un equipo para borrar");
+
+    if (confirm(`¿Borrar a ${equipo} de la clasificación?`)) {
+        const { error } = await sb
+            .from('clasificacion')
+            .delete()
+            .eq('equipo', equipo);
+
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Equipo eliminado");
+            refrescar();
+        }
+    }
+}
     </script>
 </body>
 </html>
