@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Betronia - Cuotas automáticas</title>
+    <title>Betronia V3 - Mercados automáticos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -116,6 +116,77 @@
             margin: 0 0 8px;
             padding-bottom: 6px;
             border-bottom: 1px solid #dbe4e1;
+        }
+
+        .market-section {
+            margin: 14px 0;
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #dbe4e1;
+            text-align: left;
+        }
+
+        .market-section > h3 {
+            margin: 0 0 12px;
+            color: var(--primary);
+        }
+
+        .market-group {
+            margin: 12px 0;
+        }
+
+        .market-group-title {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .exact-score-box {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .exact-score-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .exact-score-row select { margin: 4px 0; }
+
+        details.player-details {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            margin: 9px 0;
+            overflow: hidden;
+        }
+
+        details.player-details summary {
+            cursor: pointer;
+            padding: 12px;
+            font-weight: 800;
+            color: var(--primary);
+            list-style-position: inside;
+        }
+
+        .player-markets-body { padding: 0 10px 10px; }
+
+        .position-badge {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: #e0f2fe;
+            color: #075985;
+            font-size: 10px;
         }
 
         .markets-grid {
@@ -352,7 +423,9 @@
             align-items: center;
         }
 
-        #duende-animacion.duende-visible { display: flex; }
+        #duende-animacion.duende-visible {
+            display: flex;
+        }
 
         #video-duende {
             width: 100%;
@@ -432,8 +505,13 @@
         <div class="admin-section">
             <h4>1. Estadísticas históricas</h4>
 
-            <select id="adm-select-stats" onchange="cargarDatosEstadistica()">
-                <option value="">-- Nuevo jugador / Editar existente --</option>
+            <select
+                id="adm-select-stats"
+                onchange="cargarDatosEstadistica()"
+            >
+                <option value="">
+                    -- Nuevo jugador / Editar existente --
+                </option>
             </select>
 
             <input
@@ -441,6 +519,16 @@
                 id="info-sujeto"
                 placeholder="Nombre del jugador"
             >
+
+            <select id="info-posicion">
+                <option value="campo">
+                    Jugador de campo
+                </option>
+
+                <option value="portero">
+                    Portero
+                </option>
+            </select>
 
             <div class="row">
                 <input
@@ -479,13 +567,49 @@
                     min="0"
                     placeholder="Rojas"
                 >
+
+                <input
+                    type="number"
+                    id="info-faltas"
+                    min="0"
+                    placeholder="Faltas"
+                >
             </div>
 
-            <button onclick="guardarFila()" class="btn-success">
+            <div class="row">
+                <input
+                    type="number"
+                    id="info-paradas"
+                    min="0"
+                    placeholder="Paradas"
+                >
+
+                <input
+                    type="number"
+                    id="info-remates"
+                    min="0"
+                    placeholder="Remates"
+                >
+
+                <input
+                    type="number"
+                    id="info-remates-puerta"
+                    min="0"
+                    placeholder="Remates a puerta"
+                >
+            </div>
+
+            <button
+                onclick="guardarFila()"
+                class="btn-success"
+            >
                 GUARDAR ESTADÍSTICAS
             </button>
 
-            <button onclick="eliminarEstadistica()" class="btn-del">
+            <button
+                onclick="eliminarEstadistica()"
+                class="btn-del"
+            >
                 BORRAR ESTADÍSTICA
             </button>
         </div>
@@ -497,6 +621,12 @@
                 type="text"
                 id="adm-jornada-nombre"
                 placeholder="Ej.: Jornada 4 - Detrónia vs Rival"
+            >
+
+            <input
+                type="text"
+                id="adm-rival"
+                placeholder="Nombre del equipo rival"
             >
 
             <label
@@ -693,7 +823,7 @@
 
         <div id="mercados-ui" class="inner-card">
             <h3 style="margin-top:0;">
-                ⚽ CUOTAS DEL PARTIDO
+                ⚽ MERCADOS DE APUESTAS
             </h3>
 
             <div id="mercados-content"></div>
@@ -779,21 +909,17 @@
                 <table class="info-table-user">
                     <thead>
                         <tr>
-                            <th rowspan="2">Jugador</th>
-                            <th rowspan="2">PJ</th>
-                            <th rowspan="2">Gol</th>
-                            <th rowspan="2">Asist.</th>
-                            <th colspan="2">Tarjetas</th>
-                        </tr>
-
-                        <tr>
-                            <th style="background:#ffeb3b;">
-                                AM
-                            </th>
-
-                            <th style="background:#f44336; color:white;">
-                                RO
-                            </th>
+                            <th>Jugador</th>
+                            <th>Pos.</th>
+                            <th>PJ</th>
+                            <th>Gol</th>
+                            <th>Asist.</th>
+                            <th>AM</th>
+                            <th>RO</th>
+                            <th>Faltas</th>
+                            <th>Paradas</th>
+                            <th>Remates</th>
+                            <th>A puerta</th>
                         </tr>
                     </thead>
 
@@ -809,23 +935,30 @@
     </div>
 
     <script>
-        const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
+        const SB_URL =
+            'https://jvjzqodxumblrkiisfva.supabase.co';
 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
+        const SB_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
 
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+        const sb = supabase.createClient(
+            SB_URL,
+            SB_KEY
+        );
 
         let miNombre = '';
         let esAdmin = false;
         let jornadaActual = null;
         let mercadosActuales = [];
         let resultadosActuales = [];
+        let resultadoPartidoActual = null;
         let apuestasUsuario = [];
         let creditosUsuario = 0;
         let mercadosSeleccionados = new Set();
         let creditosApostar = 1;
         let countdownInterval = null;
         let adminJugadoresRonda = [];
+        let jugadoresAbiertos = new Set();
 
         function escapeHtml(valor) {
             return String(valor ?? '')
@@ -845,7 +978,10 @@
 
         function numero(valor, defecto = 0) {
             const n = Number.parseInt(valor, 10);
-            return Number.isFinite(n) ? n : defecto;
+
+            return Number.isFinite(n)
+                ? n
+                : defecto;
         }
 
         function cuotaTexto(valor) {
@@ -854,7 +990,9 @@
 
         function fechaLocal(valor) {
             if (!valor) return '';
-            return new Date(valor).toLocaleString('es-ES');
+
+            return new Date(valor)
+                .toLocaleString('es-ES');
         }
 
         async function entrar() {
@@ -863,18 +1001,27 @@
             );
 
             if (!miNombre) {
-                return alert('Introduce tu usuario de Instagram.');
+                return alert(
+                    'Introduce tu usuario de Instagram.'
+                );
             }
 
             const { error } = await sb
                 .from('jugadores')
                 .upsert(
-                    { nombre: miNombre },
-                    { onConflict: 'nombre' }
+                    {
+                        nombre: miNombre
+                    },
+                    {
+                        onConflict: 'nombre'
+                    }
                 );
 
             if (error) {
-                return alert('No se pudo acceder: ' + error.message);
+                return alert(
+                    'No se pudo acceder: ' +
+                    error.message
+                );
             }
 
             document
@@ -885,14 +1032,18 @@
                 .getElementById('game-ui')
                 .classList.remove('hidden');
 
-            document.getElementById('user-display').innerText =
-                '@' + miNombre;
+            document.getElementById(
+                'user-display'
+            ).innerText = '@' + miNombre;
 
             iniciar();
         }
 
         function accesoAdmin() {
-            if (prompt('Clave:') === 'idemodetronia') {
+            if (
+                prompt('Clave:') ===
+                'idemodetronia'
+            ) {
                 esAdmin = true;
 
                 document
@@ -907,7 +1058,9 @@
                     .getElementById('game-ui')
                     .classList.remove('hidden');
 
-                document.getElementById('user-display').innerText =
+                document.getElementById(
+                    'user-display'
+                ).innerText =
                     'Vista de administrador';
 
                 iniciar();
@@ -932,14 +1085,28 @@
                 sb
                     .from('jugadores')
                     .select('*')
-                    .order('puntos', { ascending: false }),
+                    .order(
+                        'puntos',
+                        { ascending: false }
+                    ),
 
                 sb
-                    .from('clasificacion_fase_de_grupos')
+                    .from(
+                        'clasificacion_fase_de_grupos'
+                    )
                     .select('*')
-                    .order('pts', { ascending: false })
-                    .order('dg', { ascending: false })
-                    .order('gf', { ascending: false }),
+                    .order(
+                        'pts',
+                        { ascending: false }
+                    )
+                    .order(
+                        'dg',
+                        { ascending: false }
+                    )
+                    .order(
+                        'gf',
+                        { ascending: false }
+                    ),
 
                 sb
                     .from('estado_juego')
@@ -950,8 +1117,14 @@
                 sb
                     .from('jornadas')
                     .select('*')
-                    .neq('estado', 'liquidada')
-                    .order('id', { ascending: false })
+                    .neq(
+                        'estado',
+                        'liquidada'
+                    )
+                    .order(
+                        'id',
+                        { ascending: false }
+                    )
                     .limit(1)
                     .maybeSingle()
             ];
@@ -964,17 +1137,29 @@
                 jornadaRes
             ] = await Promise.all(basePromises);
 
-            if (stRes.error) console.error(stRes.error);
-            if (rkRes.error) console.error(rkRes.error);
-            if (clasifRes.error) console.error(clasifRes.error);
-            if (jornadaRes.error) console.error(jornadaRes.error);
+            if (stRes.error) {
+                console.error(stRes.error);
+            }
+
+            if (rkRes.error) {
+                console.error(rkRes.error);
+            }
+
+            if (clasifRes.error) {
+                console.error(clasifRes.error);
+            }
+
+            if (jornadaRes.error) {
+                console.error(jornadaRes.error);
+            }
 
             const st = stRes.data || [];
             const rk = rkRes.data || [];
             const clasif = clasifRes.data || [];
             const estadoJuego = estadoRes.data;
 
-            jornadaActual = jornadaRes.data || null;
+            jornadaActual =
+                jornadaRes.data || null;
 
             let yo = null;
 
@@ -986,7 +1171,11 @@
                     .maybeSingle();
 
                 yo = yoRes.data || null;
-                creditosUsuario = numero(yo?.creditos, 0);
+
+                creditosUsuario = numero(
+                    yo?.creditos,
+                    0
+                );
             } else {
                 creditosUsuario = 0;
             }
@@ -996,23 +1185,50 @@
                     sb
                         .from('mercados')
                         .select('*')
-                        .eq('jornada_id', jornadaActual.id)
+                        .eq(
+                            'jornada_id',
+                            jornadaActual.id
+                        )
+                        .order('categoria')
                         .order('jugador')
                         .order('tipo_evento'),
 
                     sb
                         .from('resultados_jornada')
                         .select('*')
-                        .eq('jornada_id', jornadaActual.id)
+                        .eq(
+                            'jornada_id',
+                            jornadaActual.id
+                        ),
+
+                    sb
+                        .from(
+                            'resultado_partido_jornada'
+                        )
+                        .select('*')
+                        .eq(
+                            'jornada_id',
+                            jornadaActual.id
+                        )
+                        .maybeSingle()
                 ];
 
-                const consultasRes = await Promise.all(consultas);
+                const consultasRes =
+                    await Promise.all(consultas);
 
-                mercadosActuales = consultasRes[0].data || [];
-                resultadosActuales = consultasRes[1].data || [];
+                mercadosActuales =
+                    consultasRes[0].data || [];
+
+                resultadosActuales =
+                    consultasRes[1].data || [];
+
+                resultadoPartidoActual =
+                    consultasRes[2].data || null;
             } else {
                 mercadosActuales = [];
                 resultadosActuales = [];
+                resultadoPartidoActual = null;
+
                 mercadosSeleccionados.clear();
             }
 
@@ -1023,29 +1239,42 @@
                         'id,usuario,jornada_id,creditos_apostados,cuota_total,premio_potencial,estado,created_at,apuesta_selecciones(descripcion,cuota,resultado)'
                     )
                     .eq('usuario', miNombre)
-                    .order('created_at', { ascending: false })
+                    .order(
+                        'created_at',
+                        { ascending: false }
+                    )
                     .limit(20);
 
-                apuestasUsuario = apuestasRes.data || [];
+                apuestasUsuario =
+                    apuestasRes.data || [];
             } else {
                 apuestasUsuario = [];
             }
 
             const idsDisponibles = new Set(
-                mercadosActuales.map(m => Number(m.id))
-            );
-
-            mercadosSeleccionados = new Set(
-                [...mercadosSeleccionados].filter(
-                    id => idsDisponibles.has(Number(id))
+                mercadosActuales.map(
+                    m => Number(m.id)
                 )
             );
 
-            document.getElementById('num-creditos').innerText =
-                creditosUsuario;
+            mercadosSeleccionados = new Set(
+                [...mercadosSeleccionados]
+                    .filter(
+                        id =>
+                            idsDisponibles.has(
+                                Number(id)
+                            )
+                    )
+            );
+
+            document.getElementById(
+                'num-creditos'
+            ).innerText = creditosUsuario;
 
             document
-                .getElementById('status-creditos')
+                .getElementById(
+                    'status-creditos'
+                )
                 .classList.toggle(
                     'hidden',
                     !miNombre && esAdmin
@@ -1053,15 +1282,20 @@
 
             if (yo && estadoJuego) {
                 document
-                    .getElementById('reclamar-ui')
+                    .getElementById(
+                        'reclamar-ui'
+                    )
                     .classList.toggle(
                         'hidden',
-                        !estadoJuego.permitir_reclamar ||
+                        !estadoJuego
+                            .permitir_reclamar ||
                         !yo.puede_reclamar
                     );
             } else {
                 document
-                    .getElementById('reclamar-ui')
+                    .getElementById(
+                        'reclamar-ui'
+                    )
                     .classList.add('hidden');
             }
 
@@ -1074,7 +1308,12 @@
             renderMisApuestas();
 
             if (esAdmin) {
-                renderSelectoresAdmin(st, rk, clasif);
+                renderSelectoresAdmin(
+                    st,
+                    rk,
+                    clasif
+                );
+
                 renderAdminJornada();
             }
         }
@@ -1087,18 +1326,37 @@
                     <td>
                         <b>${escapeHtml(s.sujeto)}</b>
                     </td>
+
+                    <td>
+                        ${escapeHtml(
+                            s.posicion === 'portero'
+                                ? 'POR'
+                                : 'CAM'
+                        )}
+                    </td>
+
                     <td>${numero(s.partidos)}</td>
                     <td>${numero(s.dato1)}</td>
                     <td>${numero(s.dato4)}</td>
+
                     <td>
                         <span class="am">
                             ${numero(s.dato2)}
                         </span>
                     </td>
+
                     <td>
                         <span class="ro">
                             ${numero(s.dato3)}
                         </span>
+                    </td>
+
+                    <td>${numero(s.faltas)}</td>
+                    <td>${numero(s.paradas)}</td>
+                    <td>${numero(s.remates)}</td>
+
+                    <td>
+                        ${numero(s.remates_puerta)}
                     </td>
                 </tr>
             `).join('');
@@ -1107,95 +1365,137 @@
         function renderClasificacion(clasif) {
             document.getElementById(
                 'clasificacion-content-user'
-            ).innerHTML = clasif.map((e, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${escapeHtml(e.equipo)}</td>
-                    <td>${numero(e.j)}</td>
-                    <td>${numero(e.g)}</td>
-                    <td>${numero(e.e)}</td>
-                    <td>${numero(e.p)}</td>
-                    <td>${numero(e.gf)}</td>
-                    <td>${numero(e.gc)}</td>
-                    <td>${numero(e.dg)}</td>
-                    <td>
-                        <b>${numero(e.pts)}</b>
-                    </td>
-                </tr>
-            `).join('');
+            ).innerHTML = clasif.map(
+                (e, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(e.equipo)}</td>
+                        <td>${numero(e.j)}</td>
+                        <td>${numero(e.g)}</td>
+                        <td>${numero(e.e)}</td>
+                        <td>${numero(e.p)}</td>
+                        <td>${numero(e.gf)}</td>
+                        <td>${numero(e.gc)}</td>
+                        <td>${numero(e.dg)}</td>
+
+                        <td>
+                            <b>${numero(e.pts)}</b>
+                        </td>
+                    </tr>
+                `
+            ).join('');
         }
 
         function renderRanking(rk) {
             document.getElementById(
                 'ranking-list'
-            ).innerHTML = rk.map((j, index) => `
-                <div class="ranking-line">
-                    <span>
-                        ${index + 1}. @${escapeHtml(j.nombre)}
-                    </span>
+            ).innerHTML = rk.map(
+                (j, index) => `
+                    <div class="ranking-line">
+                        <span>
+                            ${index + 1}.
+                            @${escapeHtml(j.nombre)}
+                        </span>
 
-                    <b>
-                        ${numero(j.puntos)} Pts
-                    </b>
-                </div>
-            `).join('');
+                        <b>
+                            ${numero(j.puntos)} Pts
+                        </b>
+                    </div>
+                `
+            ).join('');
         }
 
         function apuestasCerradas() {
             return (
                 !jornadaActual ||
-                jornadaActual.estado !== 'abierta' ||
+                jornadaActual.estado !==
+                    'abierta' ||
                 new Date() >=
-                    new Date(jornadaActual.cierre_apuestas)
+                    new Date(
+                        jornadaActual
+                            .cierre_apuestas
+                    )
             );
         }
 
         function renderJornada() {
             const info =
-                document.getElementById('jornada-info');
+                document.getElementById(
+                    'jornada-info'
+                );
 
             const countdown =
-                document.getElementById('countdown-info');
+                document.getElementById(
+                    'countdown-info'
+                );
 
             if (countdownInterval) {
-                clearInterval(countdownInterval);
+                clearInterval(
+                    countdownInterval
+                );
+
                 countdownInterval = null;
             }
 
             if (!jornadaActual) {
                 info.classList.remove('hidden');
-                info.className = 'notice notice-info';
+
+                info.className =
+                    'notice notice-info';
 
                 info.innerHTML =
                     'Todavía no hay una jornada de apuestas activa.';
 
                 countdown.classList.add('hidden');
+
                 return;
             }
 
             info.classList.remove('hidden');
 
-            info.className = apuestasCerradas()
-                ? 'notice notice-danger'
-                : 'notice notice-info';
+            info.className =
+                apuestasCerradas()
+                    ? 'notice notice-danger'
+                    : 'notice notice-info';
 
             info.innerHTML = `
-                <b>${escapeHtml(jornadaActual.nombre)}</b>
+                <b>
+                    ${escapeHtml(
+                        jornadaActual.nombre
+                    )}
+                </b>
                 <br>
+
+                Rival:
+                ${escapeHtml(
+                    jornadaActual.rival ||
+                    'Rival'
+                )}
+                <br>
+
                 Cierre:
-                ${fechaLocal(jornadaActual.cierre_apuestas)}
+                ${fechaLocal(
+                    jornadaActual
+                        .cierre_apuestas
+                )}
             `;
 
-            countdown.classList.remove('hidden');
+            countdown.classList.remove(
+                'hidden'
+            );
 
             const actualizar = () => {
                 const diff =
-                    new Date(jornadaActual.cierre_apuestas) -
+                    new Date(
+                        jornadaActual
+                            .cierre_apuestas
+                    ) -
                     new Date();
 
                 if (
                     diff <= 0 ||
-                    jornadaActual.estado !== 'abierta'
+                    jornadaActual.estado !==
+                        'abierta'
                 ) {
                     countdown.innerHTML =
                         '⛔ Apuestas cerradas';
@@ -1204,7 +1504,9 @@
                         'var(--danger)';
 
                     if (countdownInterval) {
-                        clearInterval(countdownInterval);
+                        clearInterval(
+                            countdownInterval
+                        );
                     }
 
                     countdownInterval = null;
@@ -1223,11 +1525,16 @@
                     Math.floor(diff / 1000);
 
                 const horas =
-                    Math.floor(segundosTotales / 3600);
+                    Math.floor(
+                        segundosTotales / 3600
+                    );
 
                 const minutos =
                     Math.floor(
-                        (segundosTotales % 3600) / 60
+                        (
+                            segundosTotales %
+                            3600
+                        ) / 60
                     );
 
                 const segundos =
@@ -1249,25 +1556,91 @@
             actualizar();
 
             countdownInterval =
-                setInterval(actualizar, 1000);
+                setInterval(
+                    actualizar,
+                    1000
+                );
+        }
+
+        function mercadoPorId(id) {
+            return mercadosActuales.find(
+                m =>
+                    Number(m.id) ===
+                    Number(id)
+            );
+        }
+
+        function renderTarjetasMercado(
+            mercados
+        ) {
+            if (!mercados.length) {
+                return '';
+            }
+
+            const cerradas =
+                apuestasCerradas();
+
+            return `
+                <div class="markets-grid">
+                    ${mercados.map(m => {
+                        const seleccionado =
+                            mercadosSeleccionados
+                                .has(
+                                    Number(m.id)
+                                );
+
+                        return `
+                            <div
+                                class="market-card
+                                    ${
+                                        seleccionado
+                                            ? 'selected'
+                                            : ''
+                                    }
+                                    ${
+                                        cerradas
+                                            ? 'disabled'
+                                            : ''
+                                    }"
+                                onclick="toggleMercado(${Number(m.id)})"
+                            >
+                                <span>
+                                    ${escapeHtml(
+                                        m.descripcion
+                                    )}
+                                </span>
+
+                                <span class="odd">
+                                    ${cuotaTexto(
+                                        m.cuota
+                                    )}
+                                </span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function renderMercados() {
             const contenedor =
-                document.getElementById('mercados-content');
+                document.getElementById(
+                    'mercados-content'
+                );
 
             if (!jornadaActual) {
                 contenedor.innerHTML = `
                     <div class="notice notice-info">
-                        Las cuotas aparecerán cuando el administrador
-                        abra una jornada.
+                        Las cuotas aparecerán cuando el administrador abra una jornada.
                     </div>
                 `;
 
                 return;
             }
 
-            if (mercadosActuales.length === 0) {
+            if (
+                mercadosActuales.length === 0
+            ) {
                 contenedor.innerHTML = `
                     <div class="notice notice-danger">
                         La jornada no contiene mercados.
@@ -1277,61 +1650,396 @@
                 return;
             }
 
-            const grupos = new Map();
+            const partido =
+                mercadosActuales.filter(
+                    m =>
+                        m.categoria ===
+                        'partido'
+                );
 
-            mercadosActuales.forEach(m => {
-                if (!grupos.has(m.jugador)) {
-                    grupos.set(m.jugador, []);
-                }
+            const gruposPartido = [
+                [
+                    'Resultado del equipo',
+                    partido.filter(
+                        m =>
+                            m.tipo_evento ===
+                            'resultado_equipo'
+                    )
+                ],
+                [
+                    'Ambos equipos marcan',
+                    partido.filter(
+                        m =>
+                            m.tipo_evento ===
+                            'ambos_marcan'
+                    )
+                ],
+                [
+                    'Ambos equipos reciben tarjeta',
+                    partido.filter(
+                        m =>
+                            m.tipo_evento ===
+                            'ambos_tarjeta'
+                    )
+                ],
+                [
+                    'Total de goles',
+                    partido.filter(
+                        m =>
+                            m.tipo_evento ===
+                            'total_goles'
+                    )
+                ],
+                [
+                    'Total de tarjetas',
+                    partido.filter(
+                        m =>
+                            m.tipo_evento ===
+                            'total_tarjetas'
+                    )
+                ]
+            ];
 
-                grupos.get(m.jugador).push(m);
-            });
+            const exactoSeleccionado =
+                mercadosElegidos().find(
+                    m =>
+                        m.tipo_evento ===
+                        'resultado_exacto'
+                );
 
-            const cerradas = apuestasCerradas();
+            const opcionesGoles =
+                [0, 1, 2, 3, 4, 5]
+                    .map(
+                        n =>
+                            `<option value="${n}">${n}</option>`
+                    )
+                    .join('');
+
+            const htmlPartido = `
+                <div class="market-section">
+                    <h3>🏟️ Partido</h3>
+
+                    ${gruposPartido.map(
+                        ([titulo, mercados]) =>
+                            mercados.length
+                                ? `
+                                    <div class="market-group">
+                                        <span class="market-group-title">
+                                            ${titulo}
+                                        </span>
+
+                                        ${renderTarjetasMercado(
+                                            mercados
+                                        )}
+                                    </div>
+                                `
+                                : ''
+                    ).join('')}
+
+                    <div class="market-group">
+                        <span class="market-group-title">
+                            Resultado exacto
+                        </span>
+
+                        <div class="exact-score-box">
+                            <div class="exact-score-row">
+                                <select
+                                    id="exacto-equipo"
+                                    onchange="actualizarCuotaExacta()"
+                                >
+                                    ${opcionesGoles}
+                                </select>
+
+                                <b>-</b>
+
+                                <select
+                                    id="exacto-rival"
+                                    onchange="actualizarCuotaExacta()"
+                                >
+                                    ${opcionesGoles}
+                                </select>
+                            </div>
+
+                            <button
+                                id="btn-exacto"
+                                onclick="agregarResultadoExacto()"
+                                ${
+                                    apuestasCerradas()
+                                        ? 'disabled'
+                                        : ''
+                                }
+                            >
+                                AÑADIR RESULTADO EXACTO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const jugadores = new Map();
+
+            mercadosActuales
+                .filter(
+                    m =>
+                        m.categoria ===
+                            'jugador' &&
+                        m.jugador
+                )
+                .forEach(m => {
+                    if (
+                        !jugadores.has(
+                            m.jugador
+                        )
+                    ) {
+                        jugadores.set(
+                            m.jugador,
+                            []
+                        );
+                    }
+
+                    jugadores
+                        .get(m.jugador)
+                        .push(m);
+                });
+
+            const htmlJugadores = `
+                <div class="market-section">
+                    <h3>👟 Jugadores</h3>
+
+                    ${[
+                        ...jugadores.entries()
+                    ].map(
+                        ([jugador, mercados]) => `
+                            <details
+                                class="player-details"
+                                data-jugador="${escapeHtml(jugador)}"
+                                ontoggle="recordarJugadorAbierto(this)"
+                                ${
+                                    jugadoresAbiertos
+                                        .has(jugador)
+                                            ? 'open'
+                                            : ''
+                                }
+                            >
+                                <summary>
+                                    ${escapeHtml(jugador)}
+                                </summary>
+
+                                <div class="player-markets-body">
+                                    ${renderTarjetasMercado(
+                                        mercados
+                                    )}
+                                </div>
+                            </details>
+                        `
+                    ).join('')}
+                </div>
+            `;
 
             contenedor.innerHTML =
-                [...grupos.entries()]
-                    .map(([jugador, mercados]) => `
-                        <div class="market-player">
-                            <h4>
-                                ${escapeHtml(jugador)}
-                            </h4>
+                htmlPartido +
+                htmlJugadores;
 
-                            <div class="markets-grid">
-                                ${mercados.map(m => {
-                                    const seleccionado =
-                                        mercadosSeleccionados.has(
-                                            Number(m.id)
-                                        );
+            if (exactoSeleccionado) {
+                document.getElementById(
+                    'exacto-equipo'
+                ).value = String(
+                    exactoSeleccionado
+                        .goles_equipo
+                );
 
-                                    return `
-                                        <div
-                                            class="market-card
-                                                ${seleccionado ? 'selected' : ''}
-                                                ${cerradas ? 'disabled' : ''}"
-                                            onclick="toggleMercado(${Number(m.id)})"
-                                        >
-                                            <span>
-                                                ${escapeHtml(
-                                                    m.descripcion
-                                                        .replace(
-                                                            m.jugador,
-                                                            ''
-                                                        )
-                                                        .trim()
-                                                )}
-                                            </span>
+                document.getElementById(
+                    'exacto-rival'
+                ).value = String(
+                    exactoSeleccionado
+                        .goles_rival
+                );
+            }
 
-                                            <span class="odd">
-                                                ${cuotaTexto(m.cuota)}
-                                            </span>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `)
-                    .join('');
+            actualizarCuotaExacta();
+        }
+
+        function recordarJugadorAbierto(
+            detalle
+        ) {
+            const jugador =
+                detalle.dataset.jugador;
+
+            if (detalle.open) {
+                jugadoresAbiertos.add(
+                    jugador
+                );
+            } else {
+                jugadoresAbiertos.delete(
+                    jugador
+                );
+            }
+        }
+
+        function actualizarCuotaExacta() {
+            const selectEquipo =
+                document.getElementById(
+                    'exacto-equipo'
+                );
+
+            const selectRival =
+                document.getElementById(
+                    'exacto-rival'
+                );
+
+            const boton =
+                document.getElementById(
+                    'btn-exacto'
+                );
+
+            if (
+                !selectEquipo ||
+                !selectRival ||
+                !boton
+            ) {
+                return;
+            }
+
+            const ge = numero(
+                selectEquipo.value
+            );
+
+            const gr = numero(
+                selectRival.value
+            );
+
+            const mercado =
+                mercadosActuales.find(
+                    m =>
+                        m.tipo_evento ===
+                            'resultado_exacto' &&
+                        numero(
+                            m.goles_equipo
+                        ) === ge &&
+                        numero(
+                            m.goles_rival
+                        ) === gr
+                );
+
+            boton.innerText = mercado
+                ? `AÑADIR ${ge}-${gr} · CUOTA ${cuotaTexto(mercado.cuota)}`
+                : 'MARCADOR NO DISPONIBLE';
+
+            boton.disabled =
+                apuestasCerradas() ||
+                !mercado;
+        }
+
+        function agregarResultadoExacto() {
+            if (apuestasCerradas()) {
+                return;
+            }
+
+            const golesEquipo = numero(
+                document.getElementById(
+                    'exacto-equipo'
+                ).value
+            );
+
+            const golesRival = numero(
+                document.getElementById(
+                    'exacto-rival'
+                ).value
+            );
+
+            const mercado =
+                mercadosActuales.find(
+                    m =>
+                        m.tipo_evento ===
+                            'resultado_exacto' &&
+                        numero(
+                            m.goles_equipo
+                        ) === golesEquipo &&
+                        numero(
+                            m.goles_rival
+                        ) === golesRival
+                );
+
+            if (!mercado) {
+                return alert(
+                    'Ese marcador no está disponible.'
+                );
+            }
+
+            toggleMercado(
+                Number(mercado.id)
+            );
+        }
+
+        function mercadoCompatibleConExacto(
+            exacto,
+            mercado
+        ) {
+            if (!exacto || !mercado) {
+                return true;
+            }
+
+            const ge = numero(
+                exacto.goles_equipo
+            );
+
+            const gr = numero(
+                exacto.goles_rival
+            );
+
+            if (
+                mercado.tipo_evento ===
+                'resultado_equipo'
+            ) {
+                const resultado =
+                    ge > gr
+                        ? 'gana'
+                        : ge === gr
+                            ? 'empata'
+                            : 'pierde';
+
+                return (
+                    mercado.opcion ===
+                    resultado
+                );
+            }
+
+            if (
+                mercado.tipo_evento ===
+                'ambos_marcan'
+            ) {
+                const ambos =
+                    ge > 0 && gr > 0
+                        ? 'si'
+                        : 'no';
+
+                return (
+                    mercado.opcion ===
+                    ambos
+                );
+            }
+
+            if (
+                mercado.tipo_evento ===
+                'total_goles'
+            ) {
+                const total = ge + gr;
+
+                return (
+                    mercado.opcion ===
+                    'mas'
+                        ? total >
+                            Number(
+                                mercado.linea
+                            )
+                        : total <
+                            Number(
+                                mercado.linea
+                            )
+                );
+            }
+
+            return true;
         }
 
         function toggleMercado(id) {
@@ -1341,35 +2049,147 @@
 
             const idNumero = Number(id);
 
-            if (mercadosSeleccionados.has(idNumero)) {
-                mercadosSeleccionados.delete(idNumero);
-            } else {
-                if (mercadosSeleccionados.size >= 8) {
+            const nuevo =
+                mercadoPorId(idNumero);
+
+            if (!nuevo) {
+                return;
+            }
+
+            if (
+                mercadosSeleccionados.has(
+                    idNumero
+                )
+            ) {
+                mercadosSeleccionados.delete(
+                    idNumero
+                );
+
+                renderMercados();
+                renderBoleto();
+
+                return;
+            }
+
+            if (
+                mercadosSeleccionados.size >= 8
+            ) {
+                return alert(
+                    'Una combinada puede tener como máximo 8 selecciones.'
+                );
+            }
+
+            const seleccionadas =
+                mercadosElegidos();
+
+            const mismoGrupo =
+                seleccionadas.find(
+                    m =>
+                        m
+                            .grupo_incompatibilidad ===
+                        nuevo
+                            .grupo_incompatibilidad
+                );
+
+            if (mismoGrupo) {
+                mercadosSeleccionados.delete(
+                    Number(mismoGrupo.id)
+                );
+            }
+
+            const exacto =
+                nuevo.tipo_evento ===
+                'resultado_exacto'
+                    ? nuevo
+                    : seleccionadas.find(
+                        m =>
+                            m.tipo_evento ===
+                            'resultado_exacto'
+                    );
+
+            if (exacto) {
+                const aComprobar =
+                    nuevo.tipo_evento ===
+                    'resultado_exacto'
+                        ? seleccionadas.filter(
+                            m =>
+                                m.tipo_evento !==
+                                'resultado_exacto'
+                        )
+                        : [nuevo];
+
+                const contradice =
+                    aComprobar.find(
+                        m =>
+                            !mercadoCompatibleConExacto(
+                                exacto,
+                                m
+                            )
+                    );
+
+                if (contradice) {
                     return alert(
-                        'Una combinada puede tener como máximo 8 selecciones.'
+                        `La selección "${contradice.descripcion}" contradice el resultado exacto.`
                     );
                 }
-
-                mercadosSeleccionados.add(idNumero);
             }
+
+            mercadosSeleccionados.add(
+                idNumero
+            );
 
             renderMercados();
             renderBoleto();
         }
 
         function eliminarDelBoleto(id) {
-            mercadosSeleccionados.delete(Number(id));
+            mercadosSeleccionados.delete(
+                Number(id)
+            );
+
             renderMercados();
             renderBoleto();
         }
 
         function mercadosElegidos() {
             return mercadosActuales.filter(
-                m => mercadosSeleccionados.has(Number(m.id))
+                m =>
+                    mercadosSeleccionados.has(
+                        Number(m.id)
+                    )
             );
         }
 
-        function seleccionarStake(cantidad) {
+        function calcularCuotaBoleto(
+            seleccionadas
+        ) {
+            const producto =
+                seleccionadas.reduce(
+                    (total, m) =>
+                        total *
+                        Number(m.cuota),
+                    1
+                );
+
+            const ajuste = Math.max(
+                0.65,
+                1 -
+                0.05 *
+                (
+                    seleccionadas.length -
+                    1
+                )
+            );
+
+            return Math.min(
+                producto * ajuste,
+                100
+            );
+        }
+
+        function seleccionarStake(
+            cantidad
+        ) {
             if (
                 cantidad < 1 ||
                 cantidad > creditosUsuario
@@ -1378,98 +2198,134 @@
             }
 
             creditosApostar = cantidad;
+
             renderBoleto();
         }
 
         function renderBoleto() {
-            const seleccionadas = mercadosElegidos();
+            const seleccionadas =
+                mercadosElegidos();
 
             const lista =
-                document.getElementById('boleto-selecciones');
+                document.getElementById(
+                    'boleto-selecciones'
+                );
 
             const stakeContainer =
-                document.getElementById('stake-container');
+                document.getElementById(
+                    'stake-container'
+                );
 
             const stakeGrid =
-                document.getElementById('stake-grid');
+                document.getElementById(
+                    'stake-grid'
+                );
 
             const resumen =
-                document.getElementById('boleto-resumen');
+                document.getElementById(
+                    'boleto-resumen'
+                );
 
             const boton =
-                document.getElementById('btn-apostar');
+                document.getElementById(
+                    'btn-apostar'
+                );
 
-            if (seleccionadas.length === 0) {
+            if (
+                seleccionadas.length === 0
+            ) {
                 lista.innerHTML = `
                     <p style="font-size:13px; color:#64748b;">
-                        Pulsa una o varias cuotas para crear
-                        tu apuesta.
+                        Pulsa una o varias cuotas para crear tu apuesta.
                     </p>
                 `;
 
-                stakeContainer.classList.add('hidden');
-                resumen.classList.add('hidden');
+                stakeContainer.classList.add(
+                    'hidden'
+                );
+
+                resumen.classList.add(
+                    'hidden'
+                );
+
                 boton.disabled = true;
 
                 return;
             }
 
-            lista.innerHTML = seleccionadas.map(m => `
-                <div class="slip-line">
-                    <span>
-                        ${escapeHtml(m.descripcion)}
-                    </span>
+            lista.innerHTML =
+                seleccionadas.map(m => `
+                    <div class="slip-line">
+                        <span>
+                            ${escapeHtml(
+                                m.descripcion
+                            )}
+                        </span>
 
-                    <span>
-                        <b>${cuotaTexto(m.cuota)}</b>
+                        <span>
+                            <b>
+                                ${cuotaTexto(
+                                    m.cuota
+                                )}
+                            </b>
 
-                        <button
-                            class="remove-selection"
-                            onclick="eliminarDelBoleto(${Number(m.id)})"
-                        >
-                            ×
-                        </button>
-                    </span>
-                </div>
-            `).join('');
+                            <button
+                                class="remove-selection"
+                                onclick="eliminarDelBoleto(${Number(m.id)})"
+                            >
+                                ×
+                            </button>
+                        </span>
+                    </div>
+                `).join('');
 
-            stakeContainer.classList.remove('hidden');
+            stakeContainer.classList.remove(
+                'hidden'
+            );
 
-            const maxCreditos =
-                Math.min(5, creditosUsuario);
+            const maxCreditos = Math.min(
+                5,
+                creditosUsuario
+            );
 
             if (
                 maxCreditos > 0 &&
                 creditosApostar > maxCreditos
             ) {
-                creditosApostar = maxCreditos;
+                creditosApostar =
+                    maxCreditos;
             }
 
             if (maxCreditos === 0) {
                 creditosApostar = 0;
             }
 
-            stakeGrid.innerHTML = [1, 2, 3, 4, 5]
-                .map(c => `
-                    <button
-                        class="stake-btn
-                            ${creditosApostar === c ? 'active' : ''}"
-                        onclick="seleccionarStake(${c})"
-                        ${c > maxCreditos ? 'disabled' : ''}
-                    >
-                        ${c}
-                    </button>
-                `)
-                .join('');
+            stakeGrid.innerHTML =
+                [1, 2, 3, 4, 5]
+                    .map(c => `
+                        <button
+                            class="stake-btn
+                            ${
+                                creditosApostar === c
+                                    ? 'active'
+                                    : ''
+                            }"
+                            onclick="seleccionarStake(${c})"
+                            ${
+                                c > maxCreditos
+                                    ? 'disabled'
+                                    : ''
+                            }
+                        >
+                            ${c}
+                        </button>
+                    `)
+                    .join('');
 
-            const cuotaCalculada = Math.min(
-                seleccionadas.reduce(
-                    (total, m) =>
-                        total * Number(m.cuota),
-                    1
-                ),
-                100
-            );
+            const cuotaCalculada =
+                calcularCuotaBoleto(
+                    seleccionadas
+                );
 
             const premio =
                 creditosApostar > 0
@@ -1482,7 +2338,9 @@
                     )
                     : 0;
 
-            resumen.classList.remove('hidden');
+            resumen.classList.remove(
+                'hidden'
+            );
 
             resumen.innerHTML = `
                 <div class="summary-row">
@@ -1509,7 +2367,8 @@
             boton.disabled =
                 apuestasCerradas() ||
                 creditosApostar < 1 ||
-                creditosUsuario < creditosApostar ||
+                creditosUsuario <
+                    creditosApostar ||
                 !miNombre;
 
             boton.innerText =
@@ -1519,7 +2378,8 @@
         }
 
         async function confirmarApuesta() {
-            const seleccionadas = mercadosElegidos();
+            const seleccionadas =
+                mercadosElegidos();
 
             if (!miNombre) {
                 return alert(
@@ -1533,7 +2393,9 @@
                 );
             }
 
-            if (seleccionadas.length === 0) {
+            if (
+                seleccionadas.length === 0
+            ) {
                 return alert(
                     'Selecciona al menos una cuota.'
                 );
@@ -1541,33 +2403,34 @@
 
             if (
                 creditosApostar < 1 ||
-                creditosApostar > creditosUsuario
+                creditosApostar >
+                    creditosUsuario
             ) {
-                return alert('Créditos no válidos.');
+                return alert(
+                    'Créditos no válidos.'
+                );
             }
 
-            const cuotaTotal = Math.min(
-                seleccionadas.reduce(
-                    (total, m) =>
-                        total * Number(m.cuota),
-                    1
-                ),
-                100
-            );
+            const cuotaTotal =
+                calcularCuotaBoleto(
+                    seleccionadas
+                );
 
             const premio = Math.max(
                 1,
                 Math.round(
-                    cuotaTotal * creditosApostar
+                    cuotaTotal *
+                    creditosApostar
                 )
             );
 
-            const texto = seleccionadas
-                .map(
-                    m =>
-                        `• ${m.descripcion} (${cuotaTexto(m.cuota)})`
-                )
-                .join('\n');
+            const texto =
+                seleccionadas
+                    .map(
+                        m =>
+                            `• ${m.descripcion} (${cuotaTexto(m.cuota)})`
+                    )
+                    .join('\n');
 
             const aceptada = confirm(
                 `Confirmar apuesta:\n\n` +
@@ -1585,7 +2448,10 @@
                 'crear_apuesta',
                 {
                     p_usuario: miNombre,
-                    p_creditos: creditosApostar,
+
+                    p_creditos:
+                        creditosApostar,
+
                     p_mercado_ids:
                         seleccionadas.map(
                             m => Number(m.id)
@@ -1610,7 +2476,9 @@
 
         function renderMisApuestas() {
             const contenedor =
-                document.getElementById('mis-apuestas');
+                document.getElementById(
+                    'mis-apuestas'
+                );
 
             if (!miNombre) {
                 contenedor.innerHTML = `
@@ -1622,7 +2490,9 @@
                 return;
             }
 
-            if (apuestasUsuario.length === 0) {
+            if (
+                apuestasUsuario.length === 0
+            ) {
                 contenedor.innerHTML = `
                     <p style="font-size:13px; color:#64748b;">
                         Todavía no has enviado ninguna apuesta.
@@ -1635,48 +2505,64 @@
             contenedor.innerHTML =
                 apuestasUsuario.map(a => {
                     const selecciones =
-                        a.apuesta_selecciones || [];
+                        a.apuesta_selecciones ||
+                        [];
 
                     return `
                         <div class="bet-card">
                             <div class="bet-head">
                                 <b>
                                     Cuota
-                                    ${cuotaTexto(a.cuota_total)}
+                                    ${cuotaTexto(
+                                        a.cuota_total
+                                    )}
                                 </b>
 
                                 <span
                                     class="status
                                     status-${escapeHtml(a.estado)}"
                                 >
-                                    ${escapeHtml(a.estado)}
+                                    ${escapeHtml(
+                                        a.estado
+                                    )}
                                 </span>
                             </div>
 
-                            ${selecciones.map(s => `
-                                <div class="slip-line">
-                                    <span>
-                                        ${escapeHtml(s.descripcion)}
-                                    </span>
+                            ${selecciones.map(
+                                s => `
+                                    <div class="slip-line">
+                                        <span>
+                                            ${escapeHtml(
+                                                s.descripcion
+                                            )}
+                                        </span>
 
-                                    <span>
-                                        ${cuotaTexto(s.cuota)}
-                                        ${
-                                            s.resultado === true
-                                                ? '✅'
-                                                : s.resultado === false
-                                                    ? '❌'
-                                                    : ''
-                                        }
-                                    </span>
-                                </div>
-                            `).join('')}
+                                        <span>
+                                            ${cuotaTexto(
+                                                s.cuota
+                                            )}
+
+                                            ${
+                                                s.resultado ===
+                                                true
+                                                    ? '✅'
+                                                    : s.resultado ===
+                                                      false
+                                                        ? '❌'
+                                                        : ''
+                                            }
+                                        </span>
+                                    </div>
+                                `
+                            ).join('')}
 
                             <div class="summary-row">
                                 <span>Apostado</span>
 
                                 <b>
-                                    ${numero(a.creditos_apostados)}
+                                    ${numero(
+                                        a.creditos_apostados
+                                    )}
                                     créditos
                                 </b>
                             </div>
@@ -1685,7 +2571,9 @@
                                 <span>Premio</span>
 
                                 <b>
-                                    ${numero(a.premio_potencial)}
+                                    ${numero(
+                                        a.premio_potencial
+                                    )}
                                     puntos
                                 </b>
                             </div>
@@ -1707,7 +2595,9 @@
 
             const { error } = await sb.rpc(
                 'reclamar_creditos',
-                { user_nom: miNombre }
+                {
+                    user_nom: miNombre
+                }
             );
 
             if (error) {
@@ -1793,7 +2683,8 @@
                     </option>
                 `).join('');
 
-            selectJugador.value = valorJugador;
+            selectJugador.value =
+                valorJugador;
 
             const selectClasif =
                 document.getElementById(
@@ -1814,7 +2705,8 @@
                     </option>
                 `).join('');
 
-            selectClasif.value = valorClasif;
+            selectClasif.value =
+                valorClasif;
         }
 
         function renderAdminJornada() {
@@ -1853,6 +2745,7 @@
 
                 botonGuardar.disabled = true;
                 botonLiquidar.disabled = true;
+
                 adminJugadoresRonda = [];
 
                 return;
@@ -1868,37 +2761,114 @@
                     }"
                 >
                     <b>
-                        ${escapeHtml(jornadaActual.nombre)}
+                        ${escapeHtml(
+                            jornadaActual.nombre
+                        )}
                     </b>
+                    <br>
+
+                    Rival:
+                    ${escapeHtml(
+                        jornadaActual.rival ||
+                        'Rival'
+                    )}
                     <br>
 
                     ${mercadosActuales.length}
                     cuotas generadas · Cierre:
                     ${fechaLocal(
-                        jornadaActual.cierre_apuestas
+                        jornadaActual
+                            .cierre_apuestas
                     )}
                 </div>
             `;
 
             adminJugadoresRonda = [
                 ...new Set(
-                    mercadosActuales.map(
-                        m => m.jugador
-                    )
+                    mercadosActuales
+                        .filter(
+                            m =>
+                                m.categoria ===
+                                    'jugador' &&
+                                m.jugador
+                        )
+                        .map(
+                            m => m.jugador
+                        )
                 )
             ];
 
-            const mapaResultados = new Map(
-                resultadosActuales.map(
-                    r => [r.jugador, r]
-                )
-            );
+            const mapaResultados =
+                new Map(
+                    resultadosActuales.map(
+                        r => [
+                            r.jugador,
+                            r
+                        ]
+                    )
+                );
 
-            resultados.innerHTML =
-                adminJugadoresRonda.map(
+            const p =
+                resultadoPartidoActual ||
+                {};
+
+            resultados.innerHTML = `
+                <div
+                    class="result-row"
+                    style="background:#e0f2fe;"
+                >
+                    <strong>
+                        Resultado general:
+                        Detrónia vs
+                        ${escapeHtml(
+                            jornadaActual.rival ||
+                            'Rival'
+                        )}
+                    </strong>
+
+                    <div class="result-labels">
+                        <span>Goles DET</span>
+                        <span>Goles rival</span>
+                        <span>Tarj. DET</span>
+                        <span>Tarj. rival</span>
+                    </div>
+
+                    <div class="result-inputs">
+                        <input
+                            id="partido-ge"
+                            type="number"
+                            min="0"
+                            value="${numero(p.goles_equipo)}"
+                        >
+
+                        <input
+                            id="partido-gr"
+                            type="number"
+                            min="0"
+                            value="${numero(p.goles_rival)}"
+                        >
+
+                        <input
+                            id="partido-te"
+                            type="number"
+                            min="0"
+                            value="${numero(p.tarjetas_equipo)}"
+                        >
+
+                        <input
+                            id="partido-tr"
+                            type="number"
+                            min="0"
+                            value="${numero(p.tarjetas_rival)}"
+                        >
+                    </div>
+                </div>
+
+                ${adminJugadoresRonda.map(
                     (jugador, index) => {
                         const r =
-                            mapaResultados.get(jugador) ||
+                            mapaResultados
+                                .get(jugador) ||
                             {};
 
                         return `
@@ -1943,17 +2913,58 @@
                                         value="${numero(r.rojas)}"
                                     >
                                 </div>
+
+                                <div class="result-labels">
+                                    <span>Faltas</span>
+                                    <span>Paradas</span>
+                                    <span>Remates</span>
+                                    <span>A puerta</span>
+                                </div>
+
+                                <div class="result-inputs">
+                                    <input
+                                        id="res-f-${index}"
+                                        type="number"
+                                        min="0"
+                                        value="${numero(r.faltas)}"
+                                    >
+
+                                    <input
+                                        id="res-pd-${index}"
+                                        type="number"
+                                        min="0"
+                                        value="${numero(r.paradas)}"
+                                    >
+
+                                    <input
+                                        id="res-r-${index}"
+                                        type="number"
+                                        min="0"
+                                        value="${numero(r.remates)}"
+                                    >
+
+                                    <input
+                                        id="res-rp-${index}"
+                                        type="number"
+                                        min="0"
+                                        value="${numero(r.remates_puerta)}"
+                                    >
+                                </div>
                             </div>
                         `;
                     }
-                ).join('');
+                ).join('')}
+            `;
 
             botonGuardar.disabled =
-                jornadaActual.estado === 'liquidada' ||
-                adminJugadoresRonda.length === 0;
+                jornadaActual.estado ===
+                    'liquidada' ||
+                adminJugadoresRonda
+                    .length === 0;
 
             botonLiquidar.disabled =
-                jornadaActual.estado === 'liquidada' ||
+                jornadaActual.estado ===
+                    'liquidada' ||
                 !apuestasCerradas();
         }
 
@@ -1962,6 +2973,12 @@
                 document.getElementById(
                     'adm-jornada-nombre'
                 ).value.trim();
+
+            const rival =
+                document.getElementById(
+                    'adm-rival'
+                ).value.trim() ||
+                'Rival';
 
             const cierreInput =
                 document.getElementById(
@@ -1980,7 +2997,8 @@
                 );
             }
 
-            const cierre = new Date(cierreInput);
+            const cierre =
+                new Date(cierreInput);
 
             if (cierre <= new Date()) {
                 return alert(
@@ -1988,12 +3006,11 @@
                 );
             }
 
-            const confirmar = confirm(
-                'Se generarán automáticamente cuatro cuotas ' +
-                'por cada jugador de la tabla de estadísticas.'
+            const aceptado = confirm(
+                'Se generarán automáticamente los mercados del partido y todos los mercados disponibles de cada jugador.'
             );
 
-            if (!confirmar) {
+            if (!aceptado) {
                 return;
             }
 
@@ -2001,7 +3018,11 @@
                 'crear_jornada_con_mercados',
                 {
                     p_nombre: nombre,
-                    p_cierre: cierre.toISOString()
+
+                    p_cierre:
+                        cierre.toISOString(),
+
+                    p_rival: rival
                 }
             );
 
@@ -2018,19 +3039,21 @@
 
             if (recarga.error) {
                 alert(
-                    'La jornada se creó, pero no se pudo ' +
-                    'habilitar la recarga: ' +
+                    'La jornada se creó, pero no se pudo habilitar la recarga: ' +
                     recarga.error.message
                 );
             } else {
                 alert(
-                    'Jornada creada, cuotas generadas y ' +
-                    'créditos habilitados.'
+                    'Jornada creada, cuotas generadas y créditos habilitados.'
                 );
             }
 
             document.getElementById(
                 'adm-jornada-nombre'
+            ).value = '';
+
+            document.getElementById(
+                'adm-rival'
             ).value = '';
 
             document.getElementById(
@@ -2042,8 +3065,7 @@
 
         async function habilitarCreditos() {
             const aceptado = confirm(
-                '¿Permitir que todos los jugadores ' +
-                'reclamen 5 créditos?'
+                '¿Permitir que todos los jugadores reclamen 5 créditos?'
             );
 
             if (!aceptado) {
@@ -2056,13 +3078,13 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
             alert(
-                'Los jugadores ya pueden reclamar ' +
-                'sus créditos.'
+                'Los jugadores ya pueden reclamar sus créditos.'
             );
 
             await refrescar();
@@ -2072,6 +3094,32 @@
             if (!jornadaActual) {
                 return;
             }
+
+            const resultadoPartido = {
+                goles_equipo: numero(
+                    document.getElementById(
+                        'partido-ge'
+                    ).value
+                ),
+
+                goles_rival: numero(
+                    document.getElementById(
+                        'partido-gr'
+                    ).value
+                ),
+
+                tarjetas_equipo: numero(
+                    document.getElementById(
+                        'partido-te'
+                    ).value
+                ),
+
+                tarjetas_rival: numero(
+                    document.getElementById(
+                        'partido-tr'
+                    ).value
+                )
+            };
 
             const resultados =
                 adminJugadoresRonda.map(
@@ -2100,6 +3148,30 @@
                             document.getElementById(
                                 `res-ro-${index}`
                             ).value
+                        ),
+
+                        faltas: numero(
+                            document.getElementById(
+                                `res-f-${index}`
+                            ).value
+                        ),
+
+                        paradas: numero(
+                            document.getElementById(
+                                `res-pd-${index}`
+                            ).value
+                        ),
+
+                        remates: numero(
+                            document.getElementById(
+                                `res-r-${index}`
+                            ).value
+                        ),
+
+                        remates_puerta: numero(
+                            document.getElementById(
+                                `res-rp-${index}`
+                            ).value
                         )
                     })
                 );
@@ -2107,8 +3179,14 @@
             const { error } = await sb.rpc(
                 'guardar_resultados_jornada',
                 {
-                    p_jornada_id: jornadaActual.id,
-                    p_resultados: resultados
+                    p_jornada_id:
+                        jornadaActual.id,
+
+                    p_resultado_partido:
+                        resultadoPartido,
+
+                    p_resultados:
+                        resultados
                 }
             );
 
@@ -2120,8 +3198,7 @@
             }
 
             alert(
-                'Resultados guardados. Ya puedes liquidar ' +
-                'cuando haya terminado el plazo.'
+                'Resultado del partido y estadísticas de jugadores guardados.'
             );
 
             await refrescar();
@@ -2134,27 +3211,26 @@
 
             if (!apuestasCerradas()) {
                 return alert(
-                    'Todavía no ha llegado el cierre ' +
-                    'de apuestas.'
+                    'Todavía no ha llegado el cierre de apuestas.'
                 );
             }
 
             const aceptado = confirm(
-                '¿Liquidar todos los boletos, repartir los ' +
-                'puntos y sumar estos resultados al histórico? ' +
-                'Esta acción no se puede repetir.'
+                '¿Liquidar todos los boletos, repartir los puntos y sumar estos resultados al histórico? Esta acción no se puede repetir.'
             );
 
             if (!aceptado) {
                 return;
             }
 
-            const { data, error } = await sb.rpc(
-                'liquidar_jornada',
-                {
-                    p_jornada_id: jornadaActual.id
-                }
-            );
+            const { data, error } =
+                await sb.rpc(
+                    'liquidar_jornada',
+                    {
+                        p_jornada_id:
+                            jornadaActual.id
+                    }
+                );
 
             if (error) {
                 return alert(
@@ -2191,13 +3267,23 @@
                 'info-goles',
                 'info-asist',
                 'info-am',
-                'info-ro'
+                'info-ro',
+                'info-faltas',
+                'info-paradas',
+                'info-remates',
+                'info-remates-puerta'
             ];
 
             if (!nombre) {
                 campos.forEach(id => {
-                    document.getElementById(id).value = '';
+                    document.getElementById(
+                        id
+                    ).value = '';
                 });
+
+                document.getElementById(
+                    'info-posicion'
+                ).value = 'campo';
 
                 return;
             }
@@ -2210,7 +3296,8 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
@@ -2219,24 +3306,56 @@
             ).value = data.sujeto;
 
             document.getElementById(
+                'info-posicion'
+            ).value =
+                data.posicion || 'campo';
+
+            document.getElementById(
                 'info-partidos'
-            ).value = numero(data.partidos);
+            ).value =
+                numero(data.partidos);
 
             document.getElementById(
                 'info-goles'
-            ).value = numero(data.dato1);
+            ).value =
+                numero(data.dato1);
 
             document.getElementById(
                 'info-asist'
-            ).value = numero(data.dato4);
+            ).value =
+                numero(data.dato4);
 
             document.getElementById(
                 'info-am'
-            ).value = numero(data.dato2);
+            ).value =
+                numero(data.dato2);
 
             document.getElementById(
                 'info-ro'
-            ).value = numero(data.dato3);
+            ).value =
+                numero(data.dato3);
+
+            document.getElementById(
+                'info-faltas'
+            ).value =
+                numero(data.faltas);
+
+            document.getElementById(
+                'info-paradas'
+            ).value =
+                numero(data.paradas);
+
+            document.getElementById(
+                'info-remates'
+            ).value =
+                numero(data.remates);
+
+            document.getElementById(
+                'info-remates-puerta'
+            ).value =
+                numero(
+                    data.remates_puerta
+                );
         }
 
         async function guardarFila() {
@@ -2256,6 +3375,11 @@
                 .upsert(
                     {
                         sujeto,
+
+                        posicion:
+                            document.getElementById(
+                                'info-posicion'
+                            ).value,
 
                         partidos: numero(
                             document.getElementById(
@@ -2285,6 +3409,30 @@
                             document.getElementById(
                                 'info-ro'
                             ).value
+                        ),
+
+                        faltas: numero(
+                            document.getElementById(
+                                'info-faltas'
+                            ).value
+                        ),
+
+                        paradas: numero(
+                            document.getElementById(
+                                'info-paradas'
+                            ).value
+                        ),
+
+                        remates: numero(
+                            document.getElementById(
+                                'info-remates'
+                            ).value
+                        ),
+
+                        remates_puerta: numero(
+                            document.getElementById(
+                                'info-remates-puerta'
+                            ).value
                         )
                     },
                     {
@@ -2294,11 +3442,14 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
-            alert('Estadísticas actualizadas.');
+            alert(
+                'Estadísticas actualizadas.'
+            );
 
             await refrescar();
         }
@@ -2315,11 +3466,11 @@
                 );
             }
 
-            if (
-                !confirm(
-                    `¿Borrar las estadísticas de ${nombre}?`
-                )
-            ) {
+            const aceptado = confirm(
+                `¿Borrar las estadísticas de ${nombre}?`
+            );
+
+            if (!aceptado) {
                 return;
             }
 
@@ -2330,11 +3481,14 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
-            alert('Estadística eliminada.');
+            alert(
+                'Estadística eliminada.'
+            );
 
             await refrescar();
         }
@@ -2364,14 +3518,19 @@
             const cambios = {};
 
             if (puntos !== '') {
-                cambios.puntos = numero(puntos);
+                cambios.puntos =
+                    numero(puntos);
             }
 
             if (creditos !== '') {
-                cambios.creditos = numero(creditos);
+                cambios.creditos =
+                    numero(creditos);
             }
 
-            if (Object.keys(cambios).length === 0) {
+            if (
+                Object.keys(cambios)
+                    .length === 0
+            ) {
                 return alert(
                     'Introduce algún cambio.'
                 );
@@ -2384,11 +3543,14 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
-            alert('Jugador actualizado.');
+            alert(
+                'Jugador actualizado.'
+            );
 
             await refrescar();
         }
@@ -2405,11 +3567,11 @@
                 );
             }
 
-            if (
-                !confirm(
-                    `¿Eliminar permanentemente a @${nombre}?`
-                )
-            ) {
+            const aceptado = confirm(
+                `¿Eliminar permanentemente a @${nombre}?`
+            );
+
+            if (!aceptado) {
                 return;
             }
 
@@ -2420,11 +3582,14 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
-            alert('Jugador eliminado.');
+            alert(
+                'Jugador eliminado.'
+            );
 
             await refrescar();
         }
@@ -2449,21 +3614,26 @@
 
             if (!equipo) {
                 ids.forEach(id => {
-                    document.getElementById(id).value = '';
+                    document.getElementById(
+                        id
+                    ).value = '';
                 });
 
                 return;
             }
 
             const { data, error } = await sb
-                .from('clasificacion_fase_de_grupos')
+                .from(
+                    'clasificacion_fase_de_grupos'
+                )
                 .select('*')
                 .eq('equipo', equipo)
                 .single();
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
@@ -2483,7 +3653,8 @@
             ].forEach(campo => {
                 document.getElementById(
                     'clasif-' + campo
-                ).value = numero(data[campo]);
+                ).value =
+                    numero(data[campo]);
             });
         }
 
@@ -2559,7 +3730,9 @@
             };
 
             const { error } = await sb
-                .from('clasificacion_fase_de_grupos')
+                .from(
+                    'clasificacion_fase_de_grupos'
+                )
                 .upsert(
                     datos,
                     {
@@ -2569,11 +3742,14 @@
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
-            alert('Clasificación actualizada.');
+            alert(
+                'Clasificación actualizada.'
+            );
 
             await refrescar();
         }
@@ -2590,22 +3766,25 @@
                 );
             }
 
-            if (
-                !confirm(
-                    `¿Borrar a ${equipo} de la clasificación?`
-                )
-            ) {
+            const aceptado = confirm(
+                `¿Borrar a ${equipo} de la clasificación?`
+            );
+
+            if (!aceptado) {
                 return;
             }
 
             const { error } = await sb
-                .from('clasificacion_fase_de_grupos')
+                .from(
+                    'clasificacion_fase_de_grupos'
+                )
                 .delete()
                 .eq('equipo', equipo);
 
             if (error) {
                 return alert(
-                    'Error: ' + error.message
+                    'Error: ' +
+                    error.message
                 );
             }
 
