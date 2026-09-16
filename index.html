@@ -227,6 +227,63 @@
             opacity: .55;
         }
 
+        .admin-odds-group {
+            margin: 10px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .admin-odds-title {
+            background: #f1f5f9;
+            padding: 10px;
+            font-weight: 900;
+            font-size: 13px;
+            color: #334155;
+        }
+
+        .admin-odd-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .admin-odd-name {
+            font-weight: 700;
+            font-size: 12px;
+            min-width: 0;
+        }
+
+        .admin-odd-player {
+            font-size: 12px;
+            color: #475569;
+            margin-right: 5px;
+        }
+
+        .admin-odd-input {
+            width: 90px !important;
+            margin: 0 !important;
+            padding: 7px !important;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        .admin-odd-save {
+            width: auto !important;
+            margin: 0 !important;
+            padding: 7px 9px !important;
+            font-size: 11px !important;
+        }
+
+        .admin-odds-disabled {
+            opacity: .6;
+            pointer-events: none;
+        }
+
         .position-badge {
             display: inline-block;
             margin-left: 5px;
@@ -472,6 +529,19 @@
             <button onclick="lanzarNuevaJornada()" style="background:#2563eb;">CREAR JORNADA Y GENERAR CUOTAS</button>
             <button onclick="habilitarCreditos()" style="background:#8b5cf6;">🔓 HABILITAR RECARGA DE CRÉDITOS</button>
             <div id="admin-jornada-resumen"></div>
+        </div>
+
+
+        <div class="admin-section">
+            <h4>3. Gestionar cuotas</h4>
+            <p style="font-size:12px; margin-top:0;">
+                Las cuotas se generan automáticamente al crear la jornada. Aquí puedes ajustarlas manualmente.
+                Los cambios se aplican a la jornada actual.
+            </p>
+            <div id="admin-cuotas"></div>
+            <button id="btn-guardar-cuotas" onclick="guardarCuotasAdmin()" class="btn-success">
+                💾 GUARDAR TODAS LAS CUOTAS
+            </button>
         </div>
 
         <div class="admin-section">
@@ -761,6 +831,7 @@
             if (esAdmin) {
                 renderSelectoresAdmin(st, rk, clasif);
                 renderAdminJornada();
+                renderAdminCuotas();
             }
         }
 
@@ -1381,6 +1452,198 @@
 
             botonGuardar.disabled = jornadaActual.estado === 'liquidada' || adminJugadoresRonda.length === 0;
             botonLiquidar.disabled = jornadaActual.estado === 'liquidada' || !apuestasCerradas();
+        }
+
+
+        function etiquetaAdminMercado(m) {
+            if (m.categoria === 'jugador') {
+                const jugador = m.jugador ? escapeHtml(m.jugador) : '';
+                return `<span class="admin-odd-player">${jugador}</span>${escapeHtml(etiquetaOpcionJugador(m))}`;
+            }
+            if (m.tipo_evento === 'resultado_exacto') {
+                return `Marcador ${escapeHtml(m.opcion || '')}`;
+            }
+            return escapeHtml(m.opcion || nombreCategoriaJugador(m.tipo_evento) || 'Opción');
+        }
+
+        function nombreGrupoAdminMercado(m) {
+            if (m.categoria === 'partido') {
+                const nombres = {
+                    resultado_equipo: 'Resultado del equipo',
+                    resultado_exacto: 'Resultado exacto',
+                    ambos_marcan: 'Ambos equipos marcan',
+                    ambos_tarjeta: 'Ambos equipos reciben tarjeta',
+                    total_goles: 'Número de goles en el partido',
+                    total_tarjetas: 'Número de tarjetas en el partido'
+                };
+                return nombres[m.tipo_evento] || 'Partido';
+            }
+            return nombreCategoriaJugador(m.tipo_evento) || 'Jugadores';
+        }
+
+        function renderAdminCuotas() {
+            const cont = document.getElementById('admin-cuotas');
+            const boton = document.getElementById('btn-guardar-cuotas');
+            if (!cont || !boton) return;
+
+            if (!jornadaActual) {
+                cont.innerHTML = '<div class="notice notice-info">Crea primero una jornada para gestionar sus cuotas.</div>';
+                boton.disabled = true;
+                return;
+            }
+
+            if (!mercadosActuales.length) {
+                cont.innerHTML = '<div class="notice notice-danger">Esta jornada no tiene mercados.</div>';
+                boton.disabled = true;
+                return;
+            }
+
+            const bloqueado = jornadaActual.estado === 'liquidada' || apuestasCerradas();
+            boton.disabled = bloqueado;
+
+            const grupos = new Map();
+            mercadosActuales.forEach(m => {
+                const clave = `${m.categoria || 'partido'}|${m.tipo_evento || 'otro'}`;
+                if (!grupos.has(clave)) grupos.set(clave, []);
+                grupos.get(clave).push(m);
+            });
+
+            cont.innerHTML = [...grupos.entries()].map(([clave, lista]) => {
+                const titulo = nombreGrupoAdminMercado(lista[0]);
+                const ordenada = [...lista].sort((a,b) =>
+                    String(a.jugador || '').localeCompare(String(b.jugador || ''), 'es') ||
+                    String(a.opcion || '').localeCompare(String(b.opcion || ''), 'es')
+                );
+
+                return `
+                    <div class="admin-odds-group ${bloqueado ? 'admin-odds-disabled' : ''}">
+                        <div class="admin-odds-title">${escapeHtml(titulo)}</div>
+                        ${ordenada.map(m => `
+                            <div class="admin-odd-row">
+                                <div class="admin-odd-name">${etiquetaAdminMercado(m)}</div>
+                                <input
+                                    class="admin-odd-input"
+                                    type="number"
+                                    min="1.01"
+                                    max="1000"
+                                    step="0.01"
+                                    value="${Number(m.cuota || 1).toFixed(2)}"
+                                    data-mercado-id="${Number(m.id)}"
+                                    ${bloqueado ? 'disabled' : ''}
+                                >
+                                <button
+                                    type="button"
+                                    class="admin-odd-save"
+                                    onclick="guardarCuotaIndividual(${Number(m.id)})"
+                                    ${bloqueado ? 'disabled' : ''}
+                                >Guardar</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function guardarCuotaIndividual(id) {
+            if (!jornadaActual || !esAdmin) return;
+            if (jornadaActual.estado === 'liquidada' || apuestasCerradas()) {
+                return alert('Las cuotas ya están cerradas y no se pueden modificar.');
+            }
+
+            const input = document.querySelector(`.admin-odd-input[data-mercado-id="${Number(id)}"]`);
+            if (!input) return;
+
+            const cuota = Number(input.value);
+            if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
+                return alert('La cuota debe estar entre 1,01 y 1000.');
+            }
+
+            const { data: apuestas, error: errorApuestas } = await sb
+                .from('apuestas')
+                .select('id')
+                .eq('jornada_id', jornadaActual.id)
+                .limit(1);
+
+            if (errorApuestas) return alert('No se pudo comprobar si existen apuestas: ' + errorApuestas.message);
+            if (apuestas && apuestas.length) {
+                return alert('No puedes modificar cuotas porque ya existe al menos una apuesta en esta jornada.');
+            }
+
+            const { error } = await sb
+                .from('mercados')
+                .update({ cuota: Number(cuota.toFixed(2)) })
+                .eq('id', Number(id))
+                .eq('jornada_id', jornadaActual.id);
+
+            if (error) return alert('No se pudo guardar la cuota: ' + error.message);
+
+            const mercado = mercadosActuales.find(m => Number(m.id) === Number(id));
+            if (mercado) mercado.cuota = Number(cuota.toFixed(2));
+
+            renderAdminCuotas();
+            renderMercados();
+            renderBoleto();
+            alert('Cuota actualizada correctamente.');
+        }
+
+        async function guardarCuotasAdmin() {
+            if (!jornadaActual || !esAdmin) return;
+            if (jornadaActual.estado === 'liquidada' || apuestasCerradas()) {
+                return alert('Las cuotas ya están cerradas y no se pueden modificar.');
+            }
+
+            const { data: apuestas, error: errorApuestas } = await sb
+                .from('apuestas')
+                .select('id')
+                .eq('jornada_id', jornadaActual.id)
+                .limit(1);
+
+            if (errorApuestas) return alert('No se pudo comprobar si existen apuestas: ' + errorApuestas.message);
+            if (apuestas && apuestas.length) {
+                return alert('No puedes modificar las cuotas porque ya existe al menos una apuesta en esta jornada.');
+            }
+
+            const inputs = [...document.querySelectorAll('.admin-odd-input')];
+            const cambios = [];
+
+            for (const input of inputs) {
+                const id = Number(input.dataset.mercadoId);
+                const cuota = Number(input.value);
+
+                if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
+                    return alert(`La cuota del mercado ${id} no es válida. Usa un valor entre 1,01 y 1000.`);
+                }
+
+                cambios.push({
+                    id,
+                    cuota: Number(cuota.toFixed(2))
+                });
+            }
+
+            if (!cambios.length) return alert('No hay cuotas que guardar.');
+            if (!confirm(`¿Guardar las ${cambios.length} cuotas mostradas?`)) return;
+
+            const resultados = await Promise.all(
+                cambios.map(c =>
+                    sb.from('mercados')
+                        .update({ cuota: c.cuota })
+                        .eq('id', c.id)
+                        .eq('jornada_id', jornadaActual.id)
+                )
+            );
+
+            const fallo = resultados.find(r => r.error);
+            if (fallo) return alert('No se pudieron guardar todas las cuotas: ' + fallo.error.message);
+
+            cambios.forEach(c => {
+                const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
+                if (mercado) mercado.cuota = c.cuota;
+            });
+
+            renderAdminCuotas();
+            renderMercados();
+            renderBoleto();
+            alert('Todas las cuotas se han actualizado correctamente.');
         }
 
         async function lanzarNuevaJornada() {
