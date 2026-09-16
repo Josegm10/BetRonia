@@ -471,6 +471,106 @@
         @media (min-width: 480px) {
             .markets-grid { grid-template-columns: 1fr 1fr; }
         }
+        /* ===== Panel de mercados estilo casa de apuestas ===== */
+#mercados-ui {
+    background: #16191d;
+    border: 1px solid #2b3036;
+    padding: 14px;
+}
+#mercados-ui > h3 { color: #fff; }
+
+.market-section {
+    background: #1c1f23;
+    border: 1px solid #2b3036;
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+}
+.market-section > h3 {
+    margin: 0;
+    padding: 14px 16px;
+    color: #fff;
+    font-size: 16px;
+    border-bottom: 1px solid #2b3036;
+}
+
+.market-group { margin: 0; padding: 0 0 6px; }
+.market-group-title {
+    display: block;
+    padding: 14px 16px 6px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .2px;
+}
+
+.market-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+    font-size: 13px;
+}
+.market-table thead th {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #3a4048;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 9px 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+.market-table thead th:first-child { text-align: left; padding-left: 16px; }
+.market-table td {
+    border: none;
+    border-bottom: 1px solid #262b31;
+    padding: 0;
+    text-align: center;
+}
+.market-table td.market-row-name {
+    text-align: left;
+    padding: 12px 10px 12px 16px;
+    color: #fff;
+    font-weight: 800;
+    border-right: 1px solid #262b31;
+    white-space: nowrap;
+}
+
+.odd-cell {
+    width: 100%;
+    margin: 0;
+    padding: 15px 6px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: #00e08a;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.odd-cell:hover:not(:disabled) { background: #262b31; filter: none; }
+.odd-cell.selected { background: #00e08a; color: #07211a; }
+.odd-cell:disabled { opacity: .45; cursor: not-allowed; }
+.odd-empty {
+    display: block;
+    padding: 15px 6px;
+    color: #4b5563;
+    font-weight: 700;
+}
+
+.exact-score-box {
+    background: #23272c;
+    border: 1px solid #3a4048;
+    margin: 0 16px 14px;
+}
+.exact-score-box select {
+    background: #1c1f23;
+    color: #fff;
+    border-color: #3a4048;
+}
+.exact-score-box button { background: #00e08a; color: #07211a; }
+.market-section .notice { margin: 0 16px 14px; }
     </style>
 </head>
 <body>
@@ -937,21 +1037,7 @@
             return mercadosActuales.find(m => Number(m.id) === Number(id));
         }
 
-        function renderTarjetasMercado(mercados) {
-            if (!mercados.length) return '';
-            const cerradas = apuestasCerradas();
-
-            return `<div class="markets-grid">${mercados.map(m => {
-                const seleccionado = mercadosSeleccionados.has(Number(m.id));
-                return `
-                    <div class="market-card ${seleccionado ? 'selected' : ''} ${cerradas ? 'disabled' : ''}"
-                         onclick="toggleMercado(${Number(m.id)})">
-                        <span>${escapeHtml(m.descripcion)}</span>
-                        <span class="odd">${cuotaTexto(m.cuota)}</span>
-                    </div>
-                `;
-            }).join('')}</div>`;
-        }
+        
 
         function nombreCategoriaJugador(tipo) {
             const nombres = {
@@ -975,57 +1061,104 @@
             return m.descripcion;
         }
 
-        function renderMercadosJugadores(mercados) {
-            const tipos = [
-                'jugador_marca',
-                'jugador_asiste',
-                'goles_jugador',
-                'faltas_jugador',
-                'paradas_portero',
-                'jugador_tarjeta',
-                'remates_jugador',
-                'remates_puerta_jugador'
-            ];
+        function etiquetaOpcion(m) {
+    const nombres = { gana: 'Gana', empata: 'Empata', pierde: 'Pierde', si: 'Sí', no: 'No' };
+    if (m.opcion === 'mas') return `Más de ${m.linea}`;
+    if (m.opcion === 'menos') return `Menos de ${m.linea}`;
+    return nombres[m.opcion] || m.descripcion;
+}
 
-            return tipos.map(tipo => {
-                const delTipo = mercados.filter(m => m.tipo_evento === tipo);
-                if (!delTipo.length) return '';
+function ordenOpcion(opcion) {
+    const orden = { gana: 0, empata: 1, pierde: 2, si: 0, no: 1, mas: 0, menos: 1 };
+    return orden[opcion] ?? 9;
+}
 
-                const porJugador = new Map();
-                delTipo.forEach(m => {
-                    if (!porJugador.has(m.jugador)) porJugador.set(m.jugador, []);
-                    porJugador.get(m.jugador).push(m);
-                });
+function ordenarMercados(lista) {
+    return [...lista].sort((a, b) =>
+        (Number(a.linea || 0) - Number(b.linea || 0)) ||
+        (ordenOpcion(a.opcion) - ordenOpcion(b.opcion))
+    );
+}
 
-                return `
-                    <div class="market-group">
-                        <span class="market-group-title">${nombreCategoriaJugador(tipo)}</span>
-                        <div class="player-market-list">
-                            ${[...porJugador.entries()].map(([jugador, opciones]) => `
-                                <div class="player-market-row">
-                                    <span class="player-market-name">${escapeHtml(jugador)}</span>
-                                    <div class="player-market-options">
-                                        ${opciones.map(m => {
-                                            const seleccionado = mercadosSeleccionados.has(Number(m.id));
-                                            const cerrada = apuestasCerradas();
-                                            return `
-                                                <button type="button"
-                                                        class="player-option ${seleccionado ? 'selected' : ''} ${cerrada ? 'disabled' : ''}"
-                                                        onclick="toggleMercado(${Number(m.id)})"
-                                                        ${cerrada ? 'disabled' : ''}>
-                                                    <span class="option-label">${escapeHtml(etiquetaOpcionJugador(m))}</span>
-                                                    <span class="option-odd">${cuotaTexto(m.cuota)}</span>
-                                                </button>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+function botonCuota(m) {
+    if (!m) return '<span class="odd-empty">–</span>';
+    const seleccionado = mercadosSeleccionados.has(Number(m.id));
+    const cerrada = apuestasCerradas();
+    return `<button type="button"
+                    class="odd-cell ${seleccionado ? 'selected' : ''}"
+                    onclick="toggleMercado(${Number(m.id)})"
+                    ${cerrada ? 'disabled' : ''}>${cuotaTexto(m.cuota)}</button>`;
+}
+
+function renderTarjetasMercado(mercados) {
+    if (!mercados.length) return '';
+    const orden = ordenarMercados(mercados);
+
+    return `
+        <table class="market-table">
+            <thead>
+                <tr>${orden.map(m => `<th>${escapeHtml(etiquetaOpcion(m))}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+                <tr>${orden.map(m => `<td>${botonCuota(m)}</td>`).join('')}</tr>
+            </tbody>
+        </table>
+    `;
+}
+
+function renderMercadosJugadores(mercados) {
+    const tipos = [
+        'jugador_marca',
+        'jugador_asiste',
+        'goles_jugador',
+        'faltas_jugador',
+        'paradas_portero',
+        'jugador_tarjeta',
+        'remates_jugador',
+        'remates_puerta_jugador'
+    ];
+
+    return tipos.map(tipo => {
+        const delTipo = mercados.filter(m => m.tipo_evento === tipo);
+        if (!delTipo.length) return '';
+
+        // Columnas = opciones distintas de este mercado (Sí/No, Más de X/Menos de X...)
+        const columnas = [];
+        ordenarMercados(delTipo).forEach(m => {
+            const etiqueta = etiquetaOpcion(m);
+            if (!columnas.includes(etiqueta)) columnas.push(etiqueta);
+        });
+
+        // Filas = jugadores, en el orden en que llegan de la base de datos
+        const porJugador = new Map();
+        delTipo.forEach(m => {
+            if (!porJugador.has(m.jugador)) porJugador.set(m.jugador, new Map());
+            porJugador.get(m.jugador).set(etiquetaOpcion(m), m);
+        });
+
+        return `
+            <div class="market-group">
+                <span class="market-group-title">${nombreCategoriaJugador(tipo)}</span>
+                <table class="market-table">
+                    <thead>
+                        <tr>
+                            <th>Jugador</th>
+                            ${columnas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${[...porJugador.entries()].map(([jugador, opciones]) => `
+                            <tr>
+                                <td class="market-row-name">${escapeHtml(jugador)}</td>
+                                ${columnas.map(c => `<td>${botonCuota(opciones.get(c))}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }).join('');
+}
 
         function renderMercados() {
             const contenedor = document.getElementById('mercados-content');
