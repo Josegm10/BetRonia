@@ -1,2019 +1,1292 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Betronia V3 - Mercados automáticos</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #004d3d;
-            --accent: #c1ff00;
-            --bg: #f0f4f2;
-            --danger: #dc2626;
-            --warning: #f59e0b;
-            --success: #16a34a;
-            --muted: #64748b;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px;
-            margin: 0;
-            color: #111827;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid var(--primary);
-            width: 100%;
-            max-width: 520px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,.1);
-        }
-
-        .inner-card {
-            border: none;
-            background: #f8fafc;
-            padding: 12px;
-            width: 100%;
-            margin: 15px 0 0;
-            border-radius: 12px;
-        }
-
-        .status-gif {
-            width: 100%;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            height: 180px;
-            object-fit: cover;
-        }
-
-        input, button, textarea, select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 16px;
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: .2s;
-        }
-
-        button:hover:not(:disabled) { filter: brightness(1.08); }
-        button:disabled { opacity: .45; cursor: not-allowed; }
-
-        .hidden { display: none !important; }
-        .btn-del { background: #ef4444 !important; }
-        .btn-secondary { background: var(--muted); }
-        .btn-success { background: #22c55e; }
-        .btn-warning { background: var(--warning); }
-
-        .admin-section {
-            background: #f1f5f9;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: left;
-            border: 1px solid #cbd5e1;
-        }
-
-        .admin-section h4 { margin: 0 0 10px; }
-        .row { display: flex; gap: 6px; }
-        .row > * { min-width: 0; }
-
-        .vote-box {
-            background: #fffde7;
-            padding: 12px;
-            border-radius: 10px;
-            border-left: 5px solid var(--primary);
-            margin: 10px 0;
-            text-align: left;
-        }
-
-        .market-player {
-            margin: 14px 0;
-            text-align: left;
-        }
-
-        .market-player h4 {
-            margin: 0 0 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #dbe4e1;
-        }
-
-        .market-section {
-            margin: 14px 0;
-            padding: 12px;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid #dbe4e1;
-            text-align: left;
-        }
-
-        .market-section > h3 {
-            margin: 0 0 12px;
-            color: var(--primary);
-        }
-
-        .market-group {
-            margin: 12px 0;
-        }
-
-        .market-group-title {
-            display: block;
-            margin-bottom: 7px;
-            font-size: 13px;
-            font-weight: 800;
-            color: #334155;
-        }
-
-        .exact-score-box {
-            background: white;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-
-        .exact-score-row {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .exact-score-row select { margin: 4px 0; }
-
-        .player-market-list {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
-
-        .player-market-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 8px;
-            align-items: center;
-            padding: 9px 10px;
-            background: white;
-            border: 1px solid #d1d5db;
-            border-radius: 9px;
-        }
-
-        .player-market-name {
-            font-weight: 800;
-            color: #111827;
-            text-align: left;
-        }
-
-        .player-market-options {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 6px;
-        }
-
-        .player-option {
-            width: auto;
-            min-width: 82px;
-            margin: 0;
-            padding: 7px 8px;
-            border: 2px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
-            color: #111827;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .player-option .option-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .player-option .option-odd {
-            display: block;
-            font-size: 14px;
-            font-weight: 900;
-            color: var(--primary);
-        }
-
-        .player-option.selected {
-            border-color: var(--primary);
-            background: #dcfce7;
-        }
-
-        .player-option.disabled {
-            cursor: not-allowed;
-            opacity: .55;
-        }
-
-        .admin-odds-group {
-            margin: 10px 0;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .admin-odds-title {
-            background: #f1f5f9;
-            padding: 10px;
-            font-weight: 900;
-            font-size: 13px;
-            color: #334155;
-        }
-
-        .admin-odd-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
-            gap: 8px;
-            align-items: center;
-            padding: 8px 10px;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .admin-odd-name {
-            font-weight: 700;
-            font-size: 12px;
-            min-width: 0;
-        }
-
-        .admin-odd-player {
-            font-size: 12px;
-            color: #475569;
-            margin-right: 5px;
-        }
-
-        .admin-odd-input {
-            width: 90px !important;
-            margin: 0 !important;
-            padding: 7px !important;
-            text-align: center;
-            font-weight: 900;
-        }
-
-        .admin-odd-save {
-            width: auto !important;
-            margin: 0 !important;
-            padding: 7px 9px !important;
-            font-size: 11px !important;
-        }
-
-        .admin-odds-disabled {
-            opacity: .6;
-            pointer-events: none;
-        }
-
-        .position-badge {
-            display: inline-block;
-            margin-left: 5px;
-            padding: 2px 6px;
-            border-radius: 999px;
-            background: #e0f2fe;
-            color: #075985;
-            font-size: 10px;
-        }
-
-        .markets-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 8px;
-        }
-
-        .market-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            border: 2px solid #d1d5db;
-            border-radius: 10px;
-            padding: 11px;
-            background: white;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .market-card:hover { border-color: var(--primary); }
-        .market-card.selected {
-            border-color: var(--primary);
-            background: #dcfce7;
-            color: var(--primary);
-        }
-        .market-card.disabled { cursor: not-allowed; opacity: .55; }
-
-        .odd {
-            min-width: 58px;
-            text-align: center;
-            padding: 6px 8px;
-            border-radius: 8px;
-            background: #111827;
-            color: white;
-            font-weight: 800;
-        }
-
-        .slip-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-
-        .remove-selection {
-            width: auto;
-            padding: 4px 8px;
-            margin: 0;
-            background: var(--danger);
-            border-radius: 6px;
-            font-size: 12px;
-        }
-
-        .stake-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .stake-btn {
-            background: white;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-            padding: 8px 4px;
-            margin: 0;
-        }
-
-        .stake-btn.active {
-            color: white;
-            background: var(--primary);
-        }
-
-        .summary-box {
-            margin-top: 12px;
-            background: #ecfdf5;
-            border-radius: 10px;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-        }
-
-        .bet-card {
-            padding: 12px;
-            margin: 10px 0;
-            text-align: left;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            background: white;
-        }
-
-        .bet-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .status {
-            border-radius: 999px;
-            padding: 4px 8px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .status-pendiente { background: #fef3c7; color: #92400e; }
-        .status-ganada { background: #dcfce7; color: #166534; }
-        .status-perdida { background: #fee2e2; color: #991b1b; }
-
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; }
-        th { background: #111827; color: white; padding: 9px 6px; border: 1px solid #111827; }
-        td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; }
-        td:nth-child(2) { text-align: left; font-weight: bold; }
-
-        .info-table-user th { background: #fbc02d; color: #111827; }
-        .am { background: #ffeb3b; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
-        .ro { background: #f44336; color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
-
-        .ranking-line {
-            display: flex;
-            justify-content: space-between;
-            padding: 7px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .result-row {
-            background: white;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            padding: 10px;
-            margin: 8px 0;
-        }
-
-        .result-row strong { display: block; margin-bottom: 4px; }
-        .result-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-        .result-inputs input { text-align: center; padding: 8px 4px; }
-        .result-labels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; font-size: 10px; text-align: center; }
-
-        #duende-animacion {
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            background: black;
-            z-index: 10000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #duende-animacion.duende-visible { display: flex; }
-        #video-duende { width: 100%; height: 100%; object-fit: contain; }
-
-        .notice {
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px 0;
-            font-size: 13px;
-        }
-        .notice-info { background: #e0f2fe; color: #075985; }
-        .notice-danger { background: #fee2e2; color: #991b1b; }
-        .notice-success { background: #dcfce7; color: #166534; }
-
-        @media (min-width: 480px) {
-            .markets-grid { grid-template-columns: 1fr 1fr; }
-        }
-        /* ===== Panel de mercados estilo casa de apuestas ===== */
-#mercados-ui {
-    background: #16191d;
-    border: 1px solid #2b3036;
-    padding: 14px;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Betronia V4</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#004d3d; --accent:#c1ff00; --bg:#f0f4f2;
+  --danger:#dc2626; --warning:#f59e0b; --success:#16a34a; --muted:#64748b;
+  --dark:#16191d; --dark-2:#1c1f23; --dark-3:#23272c;
+  --line:#2b3036; --line-2:#3a4048; --odd:#00e08a;
 }
-#mercados-ui > h3 { color: #fff; }
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#111827;margin:0;padding:10px;
+     display:flex;flex-direction:column;align-items:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-.market-section {
-    background: #1c1f23;
-    border: 1px solid #2b3036;
-    border-radius: 12px;
-    padding: 0;
-    overflow: hidden;
-}
-.market-section > h3 {
-    margin: 0;
-    padding: 14px 16px;
-    color: #fff;
-    font-size: 16px;
-    border-bottom: 1px solid #2b3036;
-}
+.card{background:#fff;padding:20px;border-radius:15px;border:2px solid var(--primary);
+      width:100%;max-width:560px;margin-bottom:20px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+.inner-card{background:#f8fafc;padding:12px;margin:15px 0 0;border-radius:12px}
+.status-gif{width:100%;height:180px;object-fit:cover;border-radius:10px;margin-bottom:15px}
 
-.market-group { margin: 0; padding: 0 0 6px; }
-.market-group-title {
-    display: block;
-    padding: 14px 16px 6px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: .2px;
-}
+input,button,textarea,select{width:100%;padding:12px;margin:8px 0;border-radius:8px;
+      border:1px solid #cbd5e1;font-size:16px;font-family:inherit}
+button{background:var(--primary);color:#fff;border:none;font-weight:bold;cursor:pointer;transition:filter .15s}
+button:hover:not(:disabled){filter:brightness(1.08)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.hidden{display:none !important}
+.btn-del{background:#ef4444}
+.btn-secondary{background:var(--muted)}
+.btn-success{background:#22c55e}
+.btn-warning{background:var(--warning)}
+.btn-blue{background:#2563eb}
+.btn-purple{background:#8b5cf6}
+.btn-cyan{background:#0ea5e9}
+.btn-black{background:#000}
 
-.market-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: transparent;
-    font-size: 13px;
-}
-.market-table thead th {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #3a4048;
-    color: #cbd5e1;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 9px 6px;
-    text-align: center;
-    white-space: nowrap;
-}
-.market-table thead th:first-child { text-align: left; padding-left: 16px; }
-.market-table td {
-    border: none;
-    border-bottom: 1px solid #262b31;
-    padding: 0;
-    text-align: center;
-}
-.market-table td.market-row-name {
-    text-align: left;
-    padding: 12px 10px 12px 16px;
-    color: #fff;
-    font-weight: 800;
-    border-right: 1px solid #262b31;
-    white-space: nowrap;
-}
+.row{display:flex;gap:6px}
+.row>*{min-width:0}
 
-.odd-cell {
-    width: 100%;
-    margin: 0;
-    padding: 15px 6px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    color: #00e08a;
-    font-size: 15px;
-    font-weight: 800;
-    cursor: pointer;
-}
-.odd-cell:hover:not(:disabled) { background: #262b31; filter: none; }
-.odd-cell.selected { background: #00e08a; color: #07211a; }
-.odd-cell:disabled { opacity: .45; cursor: not-allowed; }
-.odd-empty {
-    display: block;
-    padding: 15px 6px;
-    color: #4b5563;
-    font-weight: 700;
-}
+/* ---------- Paneles de apuestas (tema oscuro) ---------- */
+.panel-dark{background:var(--dark);border:1px solid var(--line);border-radius:12px;
+            padding:0;margin:15px 0 0;overflow:hidden;text-align:left}
+.panel-dark>h3{margin:0;padding:14px 16px;color:#fff;font-size:16px;border-bottom:1px solid var(--line)}
 
-.exact-score-box {
-    background: #23272c;
-    border: 1px solid #3a4048;
-    margin: 0 16px 14px;
-}
-.exact-score-box select {
-    background: #1c1f23;
-    color: #fff;
-    border-color: #3a4048;
-}
-.exact-score-box button { background: #00e08a; color: #07211a; }
-.market-section .notice { margin: 0 16px 14px; }
-    </style>
+.market-section{border-bottom:1px solid var(--line)}
+.market-section:last-child{border-bottom:none}
+.market-section>h4{margin:0;padding:14px 16px 4px;color:#fff;font-size:15px}
+.market-group{padding-bottom:6px}
+.market-group-title{display:block;padding:14px 16px 6px;color:#fff;font-size:14px;font-weight:800}
+
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.market-table{width:100%;border-collapse:collapse;font-size:13px}
+.market-table th{border-bottom:1px solid var(--line-2);color:#cbd5e1;font-size:12px;font-weight:700;
+                 padding:9px 6px;text-align:center;white-space:nowrap}
+.market-table th:first-child{text-align:left;padding-left:16px}
+.market-table td{border-bottom:1px solid #262b31;padding:0;text-align:center}
+.market-table tr:last-child td{border-bottom:none}
+.market-row-name{text-align:left;padding:12px 10px 12px 16px;color:#fff;font-weight:800;
+                 border-right:1px solid #262b31;white-space:nowrap}
+.odd-cell{width:100%;min-width:74px;margin:0;padding:15px 6px;background:none;border:none;border-radius:0;
+          color:var(--odd);font-size:15px;font-weight:800;cursor:pointer}
+.odd-cell:hover:not(:disabled){background:#262b31;filter:none}
+.odd-cell.selected{background:var(--odd);color:#07211a}
+.odd-empty{display:block;padding:15px 6px;color:#4b5563;font-weight:700}
+
+.exact-box{margin:0 16px 16px;background:var(--dark-3);border:1px solid var(--line-2);border-radius:10px;padding:10px}
+.exact-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;color:#fff}
+.exact-box select{background:var(--dark-2);color:#fff;border-color:var(--line-2);margin:4px 0}
+.exact-box button{background:var(--odd);color:#07211a}
+
+/* ---------- Boleto ---------- */
+.slip-line{display:flex;justify-content:space-between;align-items:center;gap:8px;
+           padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;color:#e2e8f0}
+.slip-line b{color:var(--odd)}
+.slip-empty{padding:16px;color:#94a3b8;font-size:13px}
+.remove-selection{width:auto;padding:3px 9px;margin:0 0 0 8px;background:var(--danger);border-radius:6px;font-size:12px}
+.slip-body{padding:12px 16px 16px}
+.slip-body>strong{color:#fff;font-size:13px;display:block;margin-bottom:4px}
+.stake-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 12px}
+.stake-btn{background:none;color:var(--odd);border:2px solid var(--line-2);padding:9px 4px;margin:0}
+.stake-btn.active{background:var(--odd);color:#07211a;border-color:var(--odd)}
+.summary-box{background:var(--dark-3);border-radius:10px;padding:10px;font-size:14px;color:#e2e8f0}
+.summary-row{display:flex;justify-content:space-between;padding:4px 0}
+.summary-row b{color:#fff}
+.summary-row.destacado b{color:var(--odd)}
+#btn-apostar{background:var(--odd);color:#07211a;margin-top:12px}
+
+/* ---------- Mis apuestas ---------- */
+.bet-card{padding:12px;margin:10px 0;text-align:left;border:1px solid #d1d5db;border-radius:10px;background:#fff}
+.bet-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.bet-card .slip-line{color:#111827;border-bottom-color:#e5e7eb;padding:8px 0}
+.bet-card .slip-line b{color:var(--primary)}
+.bet-card .summary-row{color:#334155;font-size:13px}
+.bet-card .summary-row b{color:#111827}
+.status{border-radius:999px;padding:4px 8px;font-size:11px;font-weight:bold;text-transform:uppercase}
+.status-pendiente{background:#fef3c7;color:#92400e}
+.status-ganada{background:#dcfce7;color:#166534}
+.status-perdida{background:#fee2e2;color:#991b1b}
+
+/* ---------- Tablas claras ---------- */
+.table-wrap{overflow-x:auto}
+table.data{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+table.data th{background:#111827;color:#fff;padding:9px 6px;border:1px solid #111827}
+table.data td{padding:8px 6px;border:1px solid #e5e7eb;text-align:center}
+table.data td:first-child{text-align:left;font-weight:bold}
+.info-table th{background:#fbc02d;color:#111827;border-color:#fbc02d}
+.am{background:#ffeb3b;font-weight:bold;padding:2px 5px;border-radius:3px}
+.ro{background:#f44336;color:#fff;font-weight:bold;padding:2px 5px;border-radius:3px}
+.ranking-line{display:flex;justify-content:space-between;padding:7px;border-bottom:1px solid #e5e7eb}
+
+/* ---------- Admin ---------- */
+.admin-section{background:#f1f5f9;padding:15px;border-radius:10px;margin-bottom:15px;
+               text-align:left;border:1px solid #cbd5e1}
+.admin-section h4{margin:0 0 10px}
+.admin-hint{font-size:12px;margin:0 0 10px;color:#475569}
+.admin-odds-group{margin:10px 0;border:1px solid #d1d5db;border-radius:10px;overflow:hidden;background:#fff}
+.admin-odds-title{background:#f1f5f9;padding:10px;font-weight:900;font-size:13px;color:#334155}
+.admin-odd-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;
+               padding:8px 10px;border-top:1px solid #e5e7eb}
+.admin-odd-name{font-weight:700;font-size:12px;min-width:0}
+.admin-odd-player{color:#475569;margin-right:5px;font-weight:400}
+.admin-odd-input{width:92px !important;margin:0 !important;padding:7px !important;text-align:center;font-weight:900}
+.admin-odds-disabled{opacity:.6;pointer-events:none}
+.result-row{background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:10px;margin:8px 0}
+.result-row strong{display:block;margin-bottom:4px}
+.result-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.result-inputs input{text-align:center;padding:8px 4px}
+.result-labels{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;font-size:10px;text-align:center;color:#475569}
+
+/* ---------- Avisos y vídeo ---------- */
+.notice{padding:10px;border-radius:10px;margin:10px 0;font-size:13px}
+.notice-info{background:#e0f2fe;color:#075985}
+.notice-danger{background:#fee2e2;color:#991b1b}
+.notice-success{background:#dcfce7;color:#166534}
+.panel-dark .notice{margin:0 16px 16px}
+.panel-dark .notice-info{background:var(--dark-3);color:#cbd5e1}
+.panel-dark .notice-danger{background:#3b1213;color:#fca5a5}
+
+#avisos{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;
+        width:calc(100% - 24px);max-width:440px;display:flex;flex-direction:column;gap:8px}
+.toast{background:#111827;color:#fff;padding:12px 14px;border-radius:10px;font-size:14px;
+       box-shadow:0 8px 24px rgba(0,0,0,.25);border-left:5px solid var(--odd)}
+.toast.error{border-left-color:var(--danger)}
+.toast.warn{border-left-color:var(--warning)}
+@media (prefers-reduced-motion:no-preference){.toast{animation:subir .18s ease-out}}
+@keyframes subir{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+#video-overlay{position:fixed;inset:0;background:#000;z-index:10000;display:none;
+               justify-content:center;align-items:center}
+#video-overlay.visible{display:flex}
+#video-duende{width:100%;height:100%;object-fit:contain}
+</style>
 </head>
 <body>
-    <div id="duende-animacion">
-        <video id="video-duende" playsinline preload="auto">
-            <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/v2_watermarked-bc2b0776-b568-4f69-83ed-310ffac7c7da.mp4?v=3" type="video/mp4">
-            Tu navegador no soporta vídeo.
-        </video>
+
+<div id="avisos" aria-live="polite"></div>
+
+<div id="video-overlay">
+  <video id="video-duende" playsinline preload="none">
+    <source src="https://jvjzqodxumblrkiisfva.supabase.co/storage/v1/object/public/assets/v2_watermarked-bc2b0776-b568-4f69-83ed-310ffac7c7da.mp4?v=3" type="video/mp4">
+  </video>
+</div>
+
+<!-- ACCESO -->
+<div id="auth-ui" class="card">
+  <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" alt="Betronia" style="width:100%;border-radius:10px">
+  <input type="text" id="username" placeholder="@tu_instagram" autocomplete="username" enterkeyhint="go">
+  <button data-accion="entrar">Jugar</button>
+  <button data-accion="admin" class="btn-secondary" style="margin-top:10px;font-size:12px">Modo admin</button>
+</div>
+
+<!-- PANEL ADMIN -->
+<div id="admin-ui" class="card hidden">
+  <h3>Panel de administración</h3>
+
+  <div class="admin-section">
+    <h4>1. Estadísticas históricas</h4>
+    <select id="adm-select-stats" data-accion="cargar-estadistica">
+      <option value="">Nuevo jugador o editar existente</option>
+    </select>
+    <input type="text" id="info-sujeto" placeholder="Nombre del jugador">
+    <select id="info-posicion">
+      <option value="campo">Jugador de campo</option>
+      <option value="portero">Portero</option>
+    </select>
+    <div class="row">
+      <input type="number" id="info-partidos" min="0" placeholder="Partidos">
+      <input type="number" id="info-goles" min="0" placeholder="Goles">
+      <input type="number" id="info-asist" min="0" placeholder="Asistencias">
     </div>
-
-    <div id="auth-ui" class="card">
-        <img src="https://i.postimg.cc/FzXJKQQQ/Captura-de-pantalla-2026-02-02-113118.png" alt="Betronia" style="width:100%; border-radius:10px;">
-        <input type="text" id="username" placeholder="@tu_instagram" autocomplete="username">
-        <button onclick="entrar()">JUGAR</button>
-        <button onclick="accesoAdmin()" class="btn-secondary" style="margin-top:10px; font-size:12px;">MODO ADMIN</button>
+    <div class="row">
+      <input type="number" id="info-am" min="0" placeholder="Amarillas">
+      <input type="number" id="info-ro" min="0" placeholder="Rojas">
+      <input type="number" id="info-faltas" min="0" placeholder="Faltas">
     </div>
-
-    <div id="admin-ui" class="card hidden">
-        <h3>🛠️ PANEL MASTER</h3>
-
-        <div class="admin-section">
-            <h4>1. Estadísticas históricas</h4>
-            <select id="adm-select-stats" onchange="cargarDatosEstadistica()">
-                <option value="">-- Nuevo jugador / Editar existente --</option>
-            </select>
-            <input type="text" id="info-sujeto" placeholder="Nombre del jugador">
-            <select id="info-posicion">
-                <option value="campo">Jugador de campo</option>
-                <option value="portero">Portero</option>
-            </select>
-            <div class="row">
-                <input type="number" id="info-partidos" min="0" placeholder="Partidos">
-                <input type="number" id="info-goles" min="0" placeholder="Goles">
-                <input type="number" id="info-asist" min="0" placeholder="Asistencias">
-            </div>
-            <div class="row">
-                <input type="number" id="info-am" min="0" placeholder="Amarillas">
-                <input type="number" id="info-ro" min="0" placeholder="Rojas">
-                <input type="number" id="info-faltas" min="0" placeholder="Faltas">
-            </div>
-            <div class="row">
-                <input type="number" id="info-paradas" min="0" placeholder="Paradas">
-                <input type="number" id="info-remates" min="0" placeholder="Remates">
-                <input type="number" id="info-remates-puerta" min="0" placeholder="Remates a puerta">
-            </div>
-            <button onclick="guardarFila()" class="btn-success">GUARDAR ESTADÍSTICAS</button>
-            <button onclick="eliminarEstadistica()" class="btn-del">BORRAR ESTADÍSTICA</button>
-        </div>
-
-        <div class="admin-section">
-            <h4>2. Nueva jornada y cuotas</h4>
-            <input type="text" id="adm-jornada-nombre" placeholder="Ej.: Jornada 4 - Detrónia vs Rival">
-            <input type="text" id="adm-rival" placeholder="Nombre del equipo rival">
-            <label style="font-size:12px; font-weight:bold; display:block;">Cierre de apuestas</label>
-            <input type="datetime-local" id="adm-cierre-apuestas">
-            <button onclick="lanzarNuevaJornada()" style="background:#2563eb;">CREAR JORNADA Y GENERAR CUOTAS</button>
-            <button onclick="habilitarCreditos()" style="background:#8b5cf6;">🔓 HABILITAR RECARGA DE CRÉDITOS</button>
-            <div id="admin-jornada-resumen"></div>
-        </div>
-
-
-        <div class="admin-section">
-            <h4>3. Gestionar cuotas</h4>
-            <p style="font-size:12px; margin-top:0;">
-                Las cuotas se generan automáticamente al crear la jornada. Aquí puedes ajustarlas manualmente.
-                Los cambios se aplican a la jornada actual.
-            </p>
-            <div id="admin-cuotas"></div>
-            <button id="btn-guardar-cuotas" onclick="guardarCuotasAdmin()" class="btn-success">
-                💾 GUARDAR TODAS LAS CUOTAS
-            </button>
-        </div>
-
-        <div class="admin-section">
-            <h4>3. Resultado del partido</h4>
-            <p style="font-size:12px; margin-top:0;">Introduce lo que hizo cada jugador. Los ceros también deben guardarse.</p>
-            <div id="admin-resultados"></div>
-            <button id="btn-guardar-resultados" onclick="guardarResultadosRonda()" class="btn-success">GUARDAR RESULTADOS</button>
-            <button id="btn-liquidar" onclick="liquidarJornada()" class="btn-warning">LIQUIDAR APUESTAS Y REPARTIR PUNTOS</button>
-        </div>
-
-        <div class="admin-section">
-            <h4>4. Clasificación del grupo</h4>
-            <select id="adm-select-clasif" onchange="cargarDatosClasificacion()">
-                <option value="">-- Nuevo equipo / Editar existente --</option>
-            </select>
-            <input type="text" id="clasif-equipo" placeholder="Nombre del equipo">
-            <div class="row">
-                <input type="number" id="clasif-j" placeholder="J">
-                <input type="number" id="clasif-g" placeholder="G">
-                <input type="number" id="clasif-e" placeholder="E">
-                <input type="number" id="clasif-p" placeholder="P">
-            </div>
-            <div class="row">
-                <input type="number" id="clasif-gf" placeholder="GF">
-                <input type="number" id="clasif-gc" placeholder="GC">
-                <input type="number" id="clasif-dg" placeholder="DG">
-                <input type="number" id="clasif-pts" placeholder="Pts">
-            </div>
-            <button onclick="guardarClasificacion()" class="btn-success">GUARDAR EQUIPO</button>
-            <button onclick="eliminarClasificacion()" class="btn-del">BORRAR EQUIPO</button>
-        </div>
-
-        <div class="admin-section">
-            <h4>5. Ranking y créditos</h4>
-            <select id="adm-select-jugador"></select>
-            <div class="row">
-                <input type="number" id="adm-edit-puntos" placeholder="Puntos">
-                <input type="number" id="adm-edit-creditos" placeholder="Créditos">
-            </div>
-            <button onclick="modificarJugador()" style="background:#0ea5e9;">GUARDAR CAMBIOS</button>
-            <button onclick="eliminarJugador()" class="btn-del">ELIMINAR JUGADOR</button>
-        </div>
-
-        <button onclick="location.reload()" style="background:black;">CERRAR PANEL</button>
+    <div class="row">
+      <input type="number" id="info-paradas" min="0" placeholder="Paradas">
+      <input type="number" id="info-remates" min="0" placeholder="Remates">
+      <input type="number" id="info-remates-puerta" min="0" placeholder="A puerta">
     </div>
+    <button data-accion="guardar-estadistica" class="btn-success">Guardar estadísticas</button>
+    <button data-accion="borrar-estadistica" class="btn-del">Borrar estadística</button>
+  </div>
 
-    <div id="game-ui" class="card hidden">
-        <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif" alt="Estado Betronia">
-        <h3 id="user-display"></h3>
+  <div class="admin-section">
+    <h4>2. Nueva jornada</h4>
+    <input type="text" id="adm-jornada-nombre" placeholder="Ej.: Jornada 4 - Detrónia vs Rival">
+    <input type="text" id="adm-rival" placeholder="Nombre del equipo rival">
+    <label class="admin-hint" for="adm-cierre-apuestas">Cierre de apuestas</label>
+    <input type="datetime-local" id="adm-cierre-apuestas">
+    <button data-accion="crear-jornada" class="btn-blue">Crear jornada y generar cuotas</button>
+    <button data-accion="habilitar-creditos" class="btn-purple">Habilitar recarga de créditos</button>
+    <div id="admin-jornada-resumen"></div>
+  </div>
 
-        <div id="reclamar-ui" class="card hidden" style="background:var(--accent); color:black; border:none; padding:10px;">
-            <p style="margin:5px 0;">💰 ¡Créditos semanales listos!</p>
-            <button onclick="reclamar()" style="background:black;">RECIBIR 5 CRÉDITOS</button>
-        </div>
+  <div class="admin-section">
+    <h4>3. Ajustar cuotas</h4>
+    <p class="admin-hint">Las cuotas se generan solas al crear la jornada. Aquí puedes afinarlas mientras no haya ninguna apuesta registrada.</p>
+    <div id="admin-cuotas"></div>
+    <button id="btn-guardar-cuotas" data-accion="guardar-cuotas" class="btn-success">Guardar todas las cuotas</button>
+  </div>
 
-        <div id="status-creditos" class="vote-box" style="background:#e8f5e9;">
-            <b>Mis créditos: <span id="num-creditos">0</span></b>
-        </div>
+  <div class="admin-section">
+    <h4>4. Resultado del partido</h4>
+    <p class="admin-hint">Introduce lo que hizo cada jugador. Los ceros también cuentan, guárdalos.</p>
+    <div id="admin-resultados"></div>
+    <button id="btn-guardar-resultados" data-accion="guardar-resultados" class="btn-success">Guardar resultados</button>
+    <button id="btn-liquidar" data-accion="liquidar" class="btn-warning">Liquidar apuestas y repartir puntos</button>
+  </div>
 
-        <div id="jornada-info" class="notice notice-info hidden"></div>
-        <div id="countdown-info" class="hidden" style="text-align:center; margin:8px 0; font-size:14px; font-weight:bold; color:var(--primary);"></div>
-
-        <div id="mercados-ui" class="inner-card">
-            <h3 style="margin-top:0;">⚽ MERCADOS DE APUESTAS</h3>
-            <div id="mercados-content"></div>
-        </div>
-
-        <div id="boleto-ui" class="vote-box" style="background:#eefdf5;">
-            <h3 style="margin-top:0;">🎟️ TU BOLETO</h3>
-            <div id="boleto-selecciones"></div>
-            <div id="stake-container" class="hidden">
-                <strong style="font-size:13px;">Créditos que apuestas</strong>
-                <div id="stake-grid" class="stake-grid"></div>
-            </div>
-            <div id="boleto-resumen" class="summary-box hidden"></div>
-            <button id="btn-apostar" onclick="confirmarApuesta()" class="btn-success" disabled>CONFIRMAR APUESTA</button>
-        </div>
-
-        <div class="inner-card">
-            <h3 style="margin-top:0;">🧾 MIS APUESTAS</h3>
-            <div id="mis-apuestas"></div>
-        </div>
-
-        <div class="inner-card">
-            <h3>📋 CLASIFICACIÓN</h3>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Pos</th><th>Equipo</th><th>J</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clasificacion-content-user"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="inner-card" style="background:#fffde7;">
-            <h3>📊 ESTADÍSTICAS</h3>
-            <div class="table-wrap">
-                <table class="info-table-user">
-                    <thead>
-                        <tr>
-                            <th>Jugador</th><th>Pos.</th><th>PJ</th><th>Gol</th><th>Asist.</th>
-                            <th>AM</th><th>RO</th><th>Faltas</th><th>Paradas</th><th>Remates</th><th>A puerta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="info-content-user"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div style="margin-top:20px;">
-            <h3>🏆 RANKING GLOBAL</h3>
-            <div id="ranking-list"></div>
-        </div>
+  <div class="admin-section">
+    <h4>5. Clasificación del grupo</h4>
+    <select id="adm-select-clasif" data-accion="cargar-clasificacion">
+      <option value="">Nuevo equipo o editar existente</option>
+    </select>
+    <input type="text" id="clasif-equipo" placeholder="Nombre del equipo">
+    <div class="row">
+      <input type="number" id="clasif-j" placeholder="J"><input type="number" id="clasif-g" placeholder="G">
+      <input type="number" id="clasif-e" placeholder="E"><input type="number" id="clasif-p" placeholder="P">
     </div>
+    <div class="row">
+      <input type="number" id="clasif-gf" placeholder="GF"><input type="number" id="clasif-gc" placeholder="GC">
+      <input type="number" id="clasif-dg" placeholder="DG"><input type="number" id="clasif-pts" placeholder="Pts">
+    </div>
+    <button data-accion="guardar-clasificacion" class="btn-success">Guardar equipo</button>
+    <button data-accion="borrar-clasificacion" class="btn-del">Borrar equipo</button>
+  </div>
 
-    <script>
-        const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+  <div class="admin-section">
+    <h4>6. Ranking y créditos</h4>
+    <select id="adm-select-jugador"></select>
+    <div class="row">
+      <input type="number" id="adm-edit-puntos" placeholder="Puntos">
+      <input type="number" id="adm-edit-creditos" placeholder="Créditos">
+    </div>
+    <button data-accion="modificar-jugador" class="btn-cyan">Guardar cambios</button>
+    <button data-accion="eliminar-jugador" class="btn-del">Eliminar jugador</button>
+  </div>
 
-        let miNombre = '';
-        let esAdmin = false;
-        let jornadaActual = null;
-        let mercadosActuales = [];
-        let resultadosActuales = [];
-        let resultadoPartidoActual = null;
-        let apuestasUsuario = [];
-        let creditosUsuario = 0;
-        let mercadosSeleccionados = new Set();
-        let creditosApostar = 1;
-        let countdownInterval = null;
-        let adminJugadoresRonda = [];
+  <button data-accion="cerrar-panel" class="btn-black">Cerrar panel</button>
+</div>
 
-        function escapeHtml(valor) {
-            return String(valor ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
+<!-- JUEGO -->
+<div id="game-ui" class="card hidden">
+  <img id="display-gif" src="https://media1.tenor.com/m/Ayzh8aM2iKAAAAAd/novak-djokovic-goat.gif" class="status-gif" alt="">
+  <h3 id="user-display"></h3>
 
-        function normalizarUsuario(valor) {
-            return String(valor || '').trim().toLowerCase().replaceAll('@', '');
-        }
+  <div id="reclamar-ui" class="hidden" style="background:var(--accent);border-radius:12px;padding:12px;margin-bottom:12px">
+    <p style="margin:5px 0;font-weight:bold">Tus créditos semanales están listos</p>
+    <button data-accion="reclamar" class="btn-black">Recibir 5 créditos</button>
+  </div>
 
-        function numero(valor, defecto = 0) {
-            const n = Number.parseInt(valor, 10);
-            return Number.isFinite(n) ? n : defecto;
-        }
+  <div id="status-creditos" style="background:#e8f5e9;border-radius:12px;padding:12px;font-weight:bold">
+    Mis créditos: <span id="num-creditos">0</span>
+  </div>
 
-        function cuotaTexto(valor) {
-            return Number(valor || 0).toFixed(2);
-        }
+  <div id="jornada-info" class="notice notice-info hidden"></div>
+  <div id="countdown-info" class="hidden" style="margin:8px 0;font-size:14px;font-weight:bold;color:var(--primary)"></div>
 
-        function fechaLocal(valor) {
-            if (!valor) return '';
-            return new Date(valor).toLocaleString('es-ES');
-        }
+  <section class="panel-dark">
+    <h3>Mercados</h3>
+    <div id="mercados-content"></div>
+  </section>
 
-        async function entrar() {
-            miNombre = normalizarUsuario(document.getElementById('username').value);
-            if (!miNombre) return alert('Introduce tu usuario de Instagram.');
+  <section class="panel-dark">
+    <h3>Tu boleto</h3>
+    <div id="boleto-selecciones"></div>
+    <div class="slip-body">
+      <div id="stake-container" class="hidden">
+        <strong>Créditos que apuestas</strong>
+        <div id="stake-grid" class="stake-grid"></div>
+      </div>
+      <div id="boleto-resumen" class="summary-box hidden"></div>
+      <button id="btn-apostar" data-accion="confirmar-apuesta" disabled>Confirmar apuesta</button>
+    </div>
+  </section>
 
-            const { error } = await sb
-                .from('jugadores')
-                .upsert({ nombre: miNombre }, { onConflict: 'nombre' });
+  <div class="inner-card">
+    <h3 style="margin-top:0">Mis apuestas</h3>
+    <div id="mis-apuestas"></div>
+  </div>
 
-            if (error) return alert('No se pudo acceder: ' + error.message);
+  <div class="inner-card">
+    <h3>Clasificación</h3>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Pos</th><th>Equipo</th><th>J</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr></thead>
+        <tbody id="clasificacion-content"></tbody>
+      </table>
+    </div>
+  </div>
 
-            document.getElementById('auth-ui').classList.add('hidden');
-            document.getElementById('game-ui').classList.remove('hidden');
-            document.getElementById('user-display').innerText = '@' + miNombre;
-            iniciar();
-        }
+  <div class="inner-card" style="background:#fffde7">
+    <h3>Estadísticas</h3>
+    <div class="table-wrap">
+      <table class="data info-table">
+        <thead><tr><th>Jugador</th><th>Pos.</th><th>PJ</th><th>Gol</th><th>Asist.</th><th>AM</th><th>RO</th><th>Faltas</th><th>Paradas</th><th>Remates</th><th>A puerta</th></tr></thead>
+        <tbody id="info-content"></tbody>
+      </table>
+    </div>
+  </div>
 
-        function accesoAdmin() {
-            if (prompt('Clave:') === 'idemodetronia') {
-                esAdmin = true;
-                document.getElementById('auth-ui').classList.add('hidden');
-                document.getElementById('admin-ui').classList.remove('hidden');
-                document.getElementById('game-ui').classList.remove('hidden');
-                document.getElementById('user-display').innerText = 'Vista de administrador';
-                iniciar();
-            }
-        }
+  <div style="margin-top:20px">
+    <h3>Ranking global</h3>
+    <div id="ranking-list"></div>
+  </div>
+</div>
 
-        async function iniciar() {
-            await refrescar();
-            if (!esAdmin) setInterval(refrescar, 10000);
-        }
+<script>
+'use strict';
+(() => {
 
-        async function refrescar() {
-            const basePromises = [
-                sb.from('estadisticas').select('*').order('sujeto'),
-                sb.from('jugadores').select('*').order('puntos', { ascending: false }),
-                sb.from('clasificacion_fase_de_grupos').select('*')
-                    .order('pts', { ascending: false })
-                    .order('dg', { ascending: false })
-                    .order('gf', { ascending: false }),
-                sb.from('estado_juego').select('*').eq('id', 1).maybeSingle(),
-                sb.from('jornadas').select('*').neq('estado', 'liquidada')
-                    .order('id', { ascending: false }).limit(1).maybeSingle()
-            ];
+/* ============ Configuración ============ */
+const SB_URL = 'https://jvjzqodxumblrkiisfva.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2anpxb2R4dW1ibHJraWlzZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjY2ODUsImV4cCI6MjA4NTU0MjY4NX0.Y65rnPUEsIkiBZOx1WL2M4ukSr_kDsAq6quyfLOBMCU';
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
 
-            const [stRes, rkRes, clasifRes, estadoRes, jornadaRes] = await Promise.all(basePromises);
+const INTERVALO_REFRESCO = 15000;
+const MAX_SELECCIONES = 8;
+const MAX_STAKE = 5;
 
-            if (stRes.error) console.error(stRes.error);
-            if (rkRes.error) console.error(rkRes.error);
-            if (clasifRes.error) console.error(clasifRes.error);
-            if (jornadaRes.error) console.error(jornadaRes.error);
+const TIPOS_JUGADOR = [
+  'jugador_marca','jugador_asiste','goles_jugador','faltas_jugador',
+  'paradas_portero','jugador_tarjeta','remates_jugador','remates_puerta_jugador'
+];
 
-            const st = stRes.data || [];
-            const rk = rkRes.data || [];
-            const clasif = clasifRes.data || [];
-            const estadoJuego = estadoRes.data;
-            jornadaActual = jornadaRes.data || null;
+const NOMBRES_JUGADOR = {
+  jugador_marca:'Anotará', jugador_asiste:'Asistirá', goles_jugador:'Número de goles',
+  faltas_jugador:'Faltas', paradas_portero:'Paradas', jugador_tarjeta:'Verá tarjeta',
+  remates_jugador:'Remates', remates_puerta_jugador:'Remates a puerta'
+};
 
-            let yo = null;
-            if (miNombre) {
-                const yoRes = await sb.from('jugadores').select('*').eq('nombre', miNombre).maybeSingle();
-                yo = yoRes.data || null;
-                creditosUsuario = numero(yo?.creditos, 0);
-            } else {
-                creditosUsuario = 0;
-            }
+const NOMBRES_PARTIDO = {
+  resultado_equipo:'Resultado', resultado_exacto:'Resultado exacto',
+  ambos_marcan:'Ambos equipos marcan', ambos_tarjeta:'Ambos equipos ven tarjeta',
+  total_goles:'Total de goles', total_tarjetas:'Total de tarjetas'
+};
 
-            if (jornadaActual) {
-                const consultas = [
-                    sb.from('mercados').select('*').eq('jornada_id', jornadaActual.id)
-                        .order('categoria').order('jugador').order('tipo_evento'),
-                    sb.from('resultados_jornada').select('*').eq('jornada_id', jornadaActual.id),
-                    sb.from('resultado_partido_jornada').select('*')
-                        .eq('jornada_id', jornadaActual.id).maybeSingle()
-                ];
+const ETIQUETAS_OPCION = { gana:'Gana', empata:'Empata', pierde:'Pierde', si:'Sí', no:'No' };
+const ORDEN_OPCION = { gana:0, empata:1, pierde:2, si:0, no:1, mas:0, menos:1 };
 
-                const consultasRes = await Promise.all(consultas);
-                mercadosActuales = consultasRes[0].data || [];
-                resultadosActuales = consultasRes[1].data || [];
-                resultadoPartidoActual = consultasRes[2].data || null;
-            } else {
-                mercadosActuales = [];
-                resultadosActuales = [];
-                resultadoPartidoActual = null;
-                mercadosSeleccionados.clear();
-            }
+const CAMPOS_RESULTADO = [
+  ['goles','Goles'],['asistencias','Asist.'],['amarillas','AM'],['rojas','RO'],
+  ['faltas','Faltas'],['paradas','Paradas'],['remates','Remates'],['remates_puerta','A puerta']
+];
 
-            if (miNombre) {
-                const apuestasRes = await sb.from('apuestas')
-                    .select('id,usuario,jornada_id,creditos_apostados,cuota_total,premio_potencial,estado,created_at,apuesta_selecciones(descripcion,cuota,resultado)')
-                    .eq('usuario', miNombre)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                apuestasUsuario = apuestasRes.data || [];
-            } else {
-                apuestasUsuario = [];
-            }
+/* ============ Estado ============ */
+const estado = {
+  usuario:'', esAdmin:false, creditos:0,
+  jornada:null, mercados:[], mercadosPorId:new Map(),
+  resultados:[], resultadoPartido:null,
+  apuestas:[], estadisticas:[], ranking:[], clasificacion:[],
+  puedeReclamar:false,
+  seleccion:new Set(), stake:1,
+  jugadoresRonda:[]
+};
 
-            const idsDisponibles = new Set(mercadosActuales.map(m => Number(m.id)));
-            mercadosSeleccionados = new Set(
-                [...mercadosSeleccionados].filter(id => idsDisponibles.has(Number(id)))
-            );
+let temporizadorRefresco = null;
+let refrescando = false;
+const cachePintado = new Map();
 
-            document.getElementById('num-creditos').innerText = creditosUsuario;
-            document.getElementById('status-creditos').classList.toggle('hidden', !miNombre && esAdmin);
+/* ============ Utilidades ============ */
+const $ = id => document.getElementById(id);
 
-            if (yo && estadoJuego) {
-                document.getElementById('reclamar-ui').classList.toggle(
-                    'hidden',
-                    !estadoJuego.permitir_reclamar || !yo.puede_reclamar
-                );
-            } else {
-                document.getElementById('reclamar-ui').classList.add('hidden');
-            }
+function escapar(v){
+  return String(v ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+function normalizarUsuario(v){ return String(v||'').trim().toLowerCase().replaceAll('@',''); }
+function num(v, def=0){ const n = Number.parseInt(v,10); return Number.isFinite(n) ? n : def; }
+function cuota(v){ return Number(v||0).toFixed(2); }
+function fecha(v){ return v ? new Date(v).toLocaleString('es-ES') : ''; }
+function valor(id){ return $(id)?.value ?? ''; }
+function ponerValor(id,v){ const el=$(id); if(el) el.value = v; }
 
-            renderEstadisticas(st);
-            renderClasificacion(clasif);
-            renderRanking(rk);
-            renderJornada();
-            renderMercados();
-            renderBoleto();
-            renderMisApuestas();
-
-            if (esAdmin) {
-                renderSelectoresAdmin(st, rk, clasif);
-                renderAdminJornada();
-                renderAdminCuotas();
-            }
-        }
-
-        function renderEstadisticas(st) {
-            document.getElementById('info-content-user').innerHTML = st.map(s => `
-                <tr>
-                    <td><b>${escapeHtml(s.sujeto)}</b></td>
-                    <td>${escapeHtml(s.posicion === 'portero' ? 'POR' : 'CAM')}</td>
-                    <td>${numero(s.partidos)}</td>
-                    <td>${numero(s.dato1)}</td>
-                    <td>${numero(s.dato4)}</td>
-                    <td><span class="am">${numero(s.dato2)}</span></td>
-                    <td><span class="ro">${numero(s.dato3)}</span></td>
-                    <td>${numero(s.faltas)}</td>
-                    <td>${numero(s.paradas)}</td>
-                    <td>${numero(s.remates)}</td>
-                    <td>${numero(s.remates_puerta)}</td>
-                </tr>
-            `).join('');
-        }
-
-        function renderClasificacion(clasif) {
-            document.getElementById('clasificacion-content-user').innerHTML = clasif.map((e, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${escapeHtml(e.equipo)}</td>
-                    <td>${numero(e.j)}</td><td>${numero(e.g)}</td><td>${numero(e.e)}</td><td>${numero(e.p)}</td>
-                    <td>${numero(e.gf)}</td><td>${numero(e.gc)}</td><td>${numero(e.dg)}</td><td><b>${numero(e.pts)}</b></td>
-                </tr>
-            `).join('');
-        }
-
-        function renderRanking(rk) {
-            document.getElementById('ranking-list').innerHTML = rk.map((j, index) => `
-                <div class="ranking-line">
-                    <span>${index + 1}. @${escapeHtml(j.nombre)}</span>
-                    <b>${numero(j.puntos)} Pts</b>
-                </div>
-            `).join('');
-        }
-
-        function apuestasCerradas() {
-            return !jornadaActual
-                || jornadaActual.estado !== 'abierta'
-                || new Date() >= new Date(jornadaActual.cierre_apuestas);
-        }
-
-        function renderJornada() {
-            const info = document.getElementById('jornada-info');
-            const countdown = document.getElementById('countdown-info');
-
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-
-            if (!jornadaActual) {
-                info.classList.remove('hidden');
-                info.className = 'notice notice-info';
-                info.innerHTML = 'Todavía no hay una jornada de apuestas activa.';
-                countdown.classList.add('hidden');
-                return;
-            }
-
-            info.classList.remove('hidden');
-            info.className = apuestasCerradas() ? 'notice notice-danger' : 'notice notice-info';
-            info.innerHTML = `<b>${escapeHtml(jornadaActual.nombre)}</b><br>Rival: ${escapeHtml(jornadaActual.rival || 'Rival')}<br>Cierre: ${fechaLocal(jornadaActual.cierre_apuestas)}`;
-
-            countdown.classList.remove('hidden');
-
-            const actualizar = () => {
-                const diff = new Date(jornadaActual.cierre_apuestas) - new Date();
-                if (diff <= 0 || jornadaActual.estado !== 'abierta') {
-                    countdown.innerHTML = '⛔ Apuestas cerradas';
-                    countdown.style.color = 'var(--danger)';
-                    if (countdownInterval) clearInterval(countdownInterval);
-                    countdownInterval = null;
-                    renderMercados();
-                    renderBoleto();
-                    if (esAdmin) renderAdminJornada();
-                    return;
-                }
-
-                const segundosTotales = Math.floor(diff / 1000);
-                const horas = Math.floor(segundosTotales / 3600);
-                const minutos = Math.floor((segundosTotales % 3600) / 60);
-                const segundos = segundosTotales % 60;
-
-                countdown.style.color = segundosTotales <= 60
-                    ? 'var(--danger)'
-                    : segundosTotales <= 300 ? 'var(--warning)' : 'var(--primary)';
-
-                countdown.innerHTML = horas > 0
-                    ? `⏳ Quedan ${horas}h ${minutos}m ${segundos}s`
-                    : `⏳ Quedan ${minutos}m ${segundos}s`;
-            };
-
-            actualizar();
-            countdownInterval = setInterval(actualizar, 1000);
-        }
-
-        function mercadoPorId(id) {
-            return mercadosActuales.find(m => Number(m.id) === Number(id));
-        }
-
-        
-
-        function nombreCategoriaJugador(tipo) {
-            const nombres = {
-                jugador_marca: 'Marca al menos un gol',
-                jugador_asiste: 'Da al menos una asistencia',
-                goles_jugador: 'Número de goles',
-                faltas_jugador: 'Número de faltas',
-                paradas_portero: 'Número de paradas',
-                jugador_tarjeta: 'Recibe tarjeta',
-                remates_jugador: 'Número de remates',
-                remates_puerta_jugador: 'Número de remates a puerta'
-            };
-            return nombres[tipo] || tipo;
-        }
-
-        function etiquetaOpcionJugador(m) {
-            if (m.opcion === 'si') return 'Sí';
-            if (m.opcion === 'no') return 'No';
-            if (m.opcion === 'mas') return `Más de ${m.linea}`;
-            if (m.opcion === 'menos') return `Menos de ${m.linea}`;
-            return m.descripcion;
-        }
-
-        function etiquetaOpcion(m) {
-    const nombres = { gana: 'Gana', empata: 'Empata', pierde: 'Pierde', si: 'Sí', no: 'No' };
-    if (m.opcion === 'mas') return `Más de ${m.linea}`;
-    if (m.opcion === 'menos') return `Menos de ${m.linea}`;
-    return nombres[m.opcion] || m.descripcion;
+/** Escribe HTML solo si ha cambiado: evita repintar el DOM en cada sondeo. */
+function pintar(id, html){
+  if (cachePintado.get(id) === html) return false;
+  cachePintado.set(id, html);
+  const el = $(id);
+  if (el) el.innerHTML = html;
+  return true;
 }
 
-function ordenOpcion(opcion) {
-    const orden = { gana: 0, empata: 1, pierde: 2, si: 0, no: 1, mas: 0, menos: 1 };
-    return orden[opcion] ?? 9;
+function aviso(mensaje, tipo='ok'){
+  const div = document.createElement('div');
+  div.className = 'toast' + (tipo === 'ok' ? '' : ' ' + tipo);
+  div.textContent = mensaje;
+  $('avisos').appendChild(div);
+  setTimeout(() => div.remove(), 4000);
 }
 
-function ordenarMercados(lista) {
-    return [...lista].sort((a, b) =>
-        (Number(a.linea || 0) - Number(b.linea || 0)) ||
-        (ordenOpcion(a.opcion) - ordenOpcion(b.opcion))
-    );
+/** Envuelve una llamada a Supabase y avisa si falla. Devuelve null en error. */
+async function pedir(promesa, mensajeError){
+  const { data, error } = await promesa;
+  if (error){ aviso(`${mensajeError}: ${error.message}`, 'error'); return null; }
+  return data ?? null;
 }
 
-function botonCuota(m) {
-    if (!m) return '<span class="odd-empty">–</span>';
-    const seleccionado = mercadosSeleccionados.has(Number(m.id));
-    const cerrada = apuestasCerradas();
-    return `<button type="button"
-                    class="odd-cell ${seleccionado ? 'selected' : ''}"
-                    onclick="toggleMercado(${Number(m.id)})"
-                    ${cerrada ? 'disabled' : ''}>${cuotaTexto(m.cuota)}</button>`;
+/* ============ Carga de datos ============ */
+async function refrescar(){
+  if (refrescando) return;
+  refrescando = true;
+  try{
+    const [stats, ranking, clasif, estadoJuego, jornada, yo] = await Promise.all([
+      sb.from('estadisticas').select('*').order('sujeto'),
+      sb.from('jugadores').select('nombre,puntos').order('puntos',{ascending:false}),
+      sb.from('clasificacion_fase_de_grupos').select('*')
+        .order('pts',{ascending:false}).order('dg',{ascending:false}).order('gf',{ascending:false}),
+      sb.from('estado_juego').select('permitir_reclamar').eq('id',1).maybeSingle(),
+      sb.from('jornadas').select('*').neq('estado','liquidada')
+        .order('id',{ascending:false}).limit(1).maybeSingle(),
+      estado.usuario
+        ? sb.from('jugadores').select('creditos,puede_reclamar').eq('nombre',estado.usuario).maybeSingle()
+        : Promise.resolve({ data:null })
+    ]);
+
+    estado.estadisticas  = stats.data || [];
+    estado.ranking       = ranking.data || [];
+    estado.clasificacion = clasif.data || [];
+    estado.jornada       = jornada.data || null;
+    estado.creditos      = num(yo.data?.creditos, 0);
+    estado.puedeReclamar = Boolean(estadoJuego.data?.permitir_reclamar && yo.data?.puede_reclamar);
+
+    const jornadaId = estado.jornada?.id;
+    const [mercados, resultados, resultadoPartido, apuestas] = await Promise.all([
+      jornadaId ? sb.from('mercados').select('*').eq('jornada_id',jornadaId)
+                    .order('categoria').order('jugador').order('tipo_evento') : Promise.resolve({data:[]}),
+      jornadaId && estado.esAdmin
+        ? sb.from('resultados_jornada').select('*').eq('jornada_id',jornadaId) : Promise.resolve({data:[]}),
+      jornadaId && estado.esAdmin
+        ? sb.from('resultado_partido_jornada').select('*').eq('jornada_id',jornadaId).maybeSingle()
+        : Promise.resolve({data:null}),
+      estado.usuario
+        ? sb.from('apuestas')
+            .select('id,creditos_apostados,cuota_total,premio_potencial,estado,created_at,apuesta_selecciones(descripcion,cuota,resultado)')
+            .eq('usuario',estado.usuario).order('created_at',{ascending:false}).limit(20)
+        : Promise.resolve({data:[]})
+    ]);
+
+    estado.mercados         = mercados.data || [];
+    estado.mercadosPorId    = new Map(estado.mercados.map(m => [Number(m.id), m]));
+    estado.resultados       = resultados.data || [];
+    estado.resultadoPartido = resultadoPartido.data || null;
+    estado.apuestas         = apuestas.data || [];
+
+    // Descarta selecciones de mercados que ya no existen
+    for (const id of estado.seleccion) if (!estado.mercadosPorId.has(id)) estado.seleccion.delete(id);
+
+    render();
+  } finally {
+    refrescando = false;
+  }
 }
 
-function renderTarjetasMercado(mercados) {
-    if (!mercados.length) return '';
-    const orden = ordenarMercados(mercados);
-
-    return `
-        <table class="market-table">
-            <thead>
-                <tr>${orden.map(m => `<th>${escapeHtml(etiquetaOpcion(m))}</th>`).join('')}</tr>
-            </thead>
-            <tbody>
-                <tr>${orden.map(m => `<td>${botonCuota(m)}</td>`).join('')}</tr>
-            </tbody>
-        </table>
-    `;
+function programarRefresco(){
+  clearTimeout(temporizadorRefresco);
+  temporizadorRefresco = setTimeout(async () => {
+    if (!document.hidden) await refrescar();
+    programarRefresco();
+  }, INTERVALO_REFRESCO);
 }
 
-function renderMercadosJugadores(mercados) {
-    const tipos = [
-        'jugador_marca',
-        'jugador_asiste',
-        'goles_jugador',
-        'faltas_jugador',
-        'paradas_portero',
-        'jugador_tarjeta',
-        'remates_jugador',
-        'remates_puerta_jugador'
-    ];
+/* ============ Reglas de negocio ============ */
+function apuestasCerradas(){
+  const j = estado.jornada;
+  return !j || j.estado !== 'abierta' || new Date() >= new Date(j.cierre_apuestas);
+}
 
-    return tipos.map(tipo => {
-        const delTipo = mercados.filter(m => m.tipo_evento === tipo);
-        if (!delTipo.length) return '';
+function seleccionadas(){
+  return [...estado.seleccion].map(id => estado.mercadosPorId.get(id)).filter(Boolean);
+}
 
-        // Columnas = opciones distintas de este mercado (Sí/No, Más de X/Menos de X...)
-        const columnas = [];
-        ordenarMercados(delTipo).forEach(m => {
-            const etiqueta = etiquetaOpcion(m);
-            if (!columnas.includes(etiqueta)) columnas.push(etiqueta);
-        });
+function cuotaBoleto(lista){
+  const producto = lista.reduce((t,m) => t * Number(m.cuota), 1);
+  const ajuste = Math.max(0.65, 1 - 0.05 * (lista.length - 1));
+  return Math.min(producto * ajuste, 100);
+}
 
-        // Filas = jugadores, en el orden en que llegan de la base de datos
-        const porJugador = new Map();
-        delTipo.forEach(m => {
-            if (!porJugador.has(m.jugador)) porJugador.set(m.jugador, new Map());
-            porJugador.get(m.jugador).set(etiquetaOpcion(m), m);
-        });
+function premio(lista, stake){
+  return stake > 0 ? Math.max(1, Math.round(cuotaBoleto(lista) * stake)) : 0;
+}
 
-        return `
-            <div class="market-group">
-                <span class="market-group-title">${nombreCategoriaJugador(tipo)}</span>
-                <table class="market-table">
-                    <thead>
-                        <tr>
-                            <th>Jugador</th>
-                            ${columnas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${[...porJugador.entries()].map(([jugador, opciones]) => `
-                            <tr>
-                                <td class="market-row-name">${escapeHtml(jugador)}</td>
-                                ${columnas.map(c => `<td>${botonCuota(opciones.get(c))}</td>`).join('')}
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+function etiquetaOpcion(m){
+  if (m.opcion === 'mas') return `Más de ${m.linea}`;
+  if (m.opcion === 'menos') return `Menos de ${m.linea}`;
+  return ETIQUETAS_OPCION[m.opcion] || m.descripcion || m.opcion || '';
+}
+
+function ordenar(lista){
+  return [...lista].sort((a,b) =>
+    (Number(a.linea||0) - Number(b.linea||0)) ||
+    ((ORDEN_OPCION[a.opcion] ?? 9) - (ORDEN_OPCION[b.opcion] ?? 9)));
+}
+
+function compatibleConExacto(exacto, m){
+  if (!exacto || !m || m === exacto) return true;
+  const ge = num(exacto.goles_equipo), gr = num(exacto.goles_rival);
+  if (m.tipo_evento === 'resultado_equipo')
+    return m.opcion === (ge > gr ? 'gana' : ge === gr ? 'empata' : 'pierde');
+  if (m.tipo_evento === 'ambos_marcan')
+    return m.opcion === (ge > 0 && gr > 0 ? 'si' : 'no');
+  if (m.tipo_evento === 'total_goles')
+    return m.opcion === 'mas' ? (ge+gr) > Number(m.linea) : (ge+gr) < Number(m.linea);
+  return true;
+}
+
+function alternarMercado(id){
+  if (apuestasCerradas()) return;
+  const idn = Number(id);
+  const nuevo = estado.mercadosPorId.get(idn);
+  if (!nuevo) return;
+
+  if (estado.seleccion.delete(idn)){ sincronizarCuotas(); renderBoleto(); return; }
+
+  if (estado.seleccion.size >= MAX_SELECCIONES)
+    return aviso(`Una combinada admite como máximo ${MAX_SELECCIONES} selecciones.`, 'warn');
+
+  // Una sola opción por grupo incompatible
+  const actuales = seleccionadas();
+  const mismoGrupo = actuales.find(m => m.grupo_incompatibilidad === nuevo.grupo_incompatibilidad);
+  if (mismoGrupo) estado.seleccion.delete(Number(mismoGrupo.id));
+
+  const exacto = nuevo.tipo_evento === 'resultado_exacto'
+    ? nuevo : actuales.find(m => m.tipo_evento === 'resultado_exacto');
+
+  if (exacto){
+    const revisar = nuevo === exacto ? seleccionadas() : [nuevo];
+    const choque = revisar.find(m => !compatibleConExacto(exacto, m));
+    if (choque) return aviso(`"${choque.descripcion}" contradice el resultado exacto.`, 'warn');
+  }
+
+  estado.seleccion.add(idn);
+  sincronizarCuotas();
+  renderBoleto();
+}
+
+/* ============ Render ============ */
+function render(){
+  renderEstadisticas();
+  renderClasificacion();
+  renderRanking();
+  renderJornada();
+  renderMercados();
+  renderBoleto();
+  renderMisApuestas();
+
+  $('num-creditos').textContent = estado.creditos;
+  $('status-creditos').classList.toggle('hidden', !estado.usuario);
+  $('reclamar-ui').classList.toggle('hidden', !estado.puedeReclamar);
+
+  if (estado.esAdmin){
+    renderSelectoresAdmin();
+    renderAdminJornada();
+    renderAdminCuotas();
+  }
+}
+
+function renderEstadisticas(){
+  pintar('info-content', estado.estadisticas.map(s => `
+    <tr>
+      <td>${escapar(s.sujeto)}</td>
+      <td>${s.posicion === 'portero' ? 'POR' : 'CAM'}</td>
+      <td>${num(s.partidos)}</td><td>${num(s.dato1)}</td><td>${num(s.dato4)}</td>
+      <td><span class="am">${num(s.dato2)}</span></td>
+      <td><span class="ro">${num(s.dato3)}</span></td>
+      <td>${num(s.faltas)}</td><td>${num(s.paradas)}</td>
+      <td>${num(s.remates)}</td><td>${num(s.remates_puerta)}</td>
+    </tr>`).join(''));
+}
+
+function renderClasificacion(){
+  pintar('clasificacion-content', estado.clasificacion.map((e,i) => `
+    <tr>
+      <td>${i+1}</td><td>${escapar(e.equipo)}</td>
+      <td>${num(e.j)}</td><td>${num(e.g)}</td><td>${num(e.e)}</td><td>${num(e.p)}</td>
+      <td>${num(e.gf)}</td><td>${num(e.gc)}</td><td>${num(e.dg)}</td><td><b>${num(e.pts)}</b></td>
+    </tr>`).join(''));
+}
+
+function renderRanking(){
+  pintar('ranking-list', estado.ranking.map((j,i) => `
+    <div class="ranking-line"><span>${i+1}. @${escapar(j.nombre)}</span><b>${num(j.puntos)} pts</b></div>
+  `).join(''));
+}
+
+function renderJornada(){
+  const info = $('jornada-info'), j = estado.jornada;
+
+  if (!j){
+    info.classList.remove('hidden');
+    info.className = 'notice notice-info';
+    pintar('jornada-info', 'Todavía no hay ninguna jornada abierta.');
+    $('countdown-info').classList.add('hidden');
+    return;
+  }
+
+  info.classList.remove('hidden');
+  info.className = 'notice ' + (apuestasCerradas() ? 'notice-danger' : 'notice-info');
+  pintar('jornada-info',
+    `<b>${escapar(j.nombre)}</b><br>Rival: ${escapar(j.rival || 'Rival')}<br>Cierre: ${fecha(j.cierre_apuestas)}`);
+  $('countdown-info').classList.remove('hidden');
+  actualizarCuentaAtras();
+}
+
+/* Un único intervalo para toda la vida de la página. */
+let cerradoAnterior = null;
+function actualizarCuentaAtras(){
+  const el = $('countdown-info'), j = estado.jornada;
+  if (!j || el.classList.contains('hidden')) return;
+
+  const restante = new Date(j.cierre_apuestas) - Date.now();
+  const cerrado = apuestasCerradas();
+
+  if (cerrado){
+    el.textContent = 'Apuestas cerradas';
+    el.style.color = 'var(--danger)';
+  } else {
+    const s = Math.floor(restante/1000);
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), seg = s%60;
+    el.textContent = h > 0 ? `Quedan ${h} h ${m} min ${seg} s` : `Quedan ${m} min ${seg} s`;
+    el.style.color = s <= 60 ? 'var(--danger)' : s <= 300 ? 'var(--warning)' : 'var(--primary)';
+  }
+
+  // Al cruzar el cierre, repinta una sola vez
+  if (cerradoAnterior !== null && cerradoAnterior !== cerrado){
+    renderMercados(); renderBoleto();
+    if (estado.esAdmin){ renderAdminJornada(); renderAdminCuotas(); }
+  }
+  cerradoAnterior = cerrado;
+}
+
+function celdaCuota(m){
+  if (!m) return '<span class="odd-empty">–</span>';
+  const sel = estado.seleccion.has(Number(m.id)) ? ' selected' : '';
+  return `<button type="button" class="odd-cell${sel}" data-accion="mercado" data-id="${Number(m.id)}"
+            ${apuestasCerradas() ? 'disabled' : ''}>${cuota(m.cuota)}</button>`;
+}
+
+/** Fila única de opciones (mercados de partido). */
+function tablaSimple(lista){
+  const orden = ordenar(lista);
+  return `<div class="table-scroll"><table class="market-table">
+    <thead><tr>${orden.map(m => `<th>${escapar(etiquetaOpcion(m))}</th>`).join('')}</tr></thead>
+    <tbody><tr>${orden.map(m => `<td>${celdaCuota(m)}</td>`).join('')}</tr></tbody>
+  </table></div>`;
+}
+
+/** Rejilla jugador × opción (mercados de jugador). */
+function tablaJugadores(lista){
+  const columnas = [];
+  const filas = new Map();
+  for (const m of ordenar(lista)){
+    const etq = etiquetaOpcion(m);
+    if (!columnas.includes(etq)) columnas.push(etq);
+    if (!filas.has(m.jugador)) filas.set(m.jugador, new Map());
+    filas.get(m.jugador).set(etq, m);
+  }
+  return `<div class="table-scroll"><table class="market-table">
+    <thead><tr><th>Jugador</th>${columnas.map(c => `<th>${escapar(c)}</th>`).join('')}</tr></thead>
+    <tbody>${[...filas].map(([jugador, ops]) => `
+      <tr><td class="market-row-name">${escapar(jugador)}</td>
+      ${columnas.map(c => `<td>${celdaCuota(ops.get(c))}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function renderMercados(){
+  if (!estado.jornada)
+    return void pintar('mercados-content', '<div class="notice notice-info">Las cuotas aparecerán cuando se abra una jornada.</div>');
+  if (!estado.mercados.length)
+    return void pintar('mercados-content', '<div class="notice notice-danger">Esta jornada no tiene mercados.</div>');
+
+  const partido = estado.mercados.filter(m => m.categoria === 'partido');
+  const jugador = estado.mercados.filter(m => m.categoria === 'jugador' && m.jugador);
+  const exacto  = seleccionadas().find(m => m.tipo_evento === 'resultado_exacto');
+  const opciones = [0,1,2,3,4,5].map(n => `<option value="${n}">${n}</option>`).join('');
+
+  const gruposPartido = Object.keys(NOMBRES_PARTIDO)
+    .filter(t => t !== 'resultado_exacto')
+    .map(t => [NOMBRES_PARTIDO[t], partido.filter(m => m.tipo_evento === t)])
+    .filter(([,l]) => l.length);
+
+  const hayExactos = partido.some(m => m.tipo_evento === 'resultado_exacto');
+
+  const html = `
+    <section class="market-section">
+      <h4>Partido</h4>
+      ${gruposPartido.map(([titulo,lista]) => `
+        <div class="market-group"><span class="market-group-title">${titulo}</span>${tablaSimple(lista)}</div>
+      `).join('')}
+      ${hayExactos ? `
+        <div class="market-group">
+          <span class="market-group-title">Resultado exacto</span>
+          <div class="exact-box">
+            <div class="exact-row">
+              <select id="exacto-equipo" aria-label="Goles Detrónia">${opciones}</select>
+              <b>-</b>
+              <select id="exacto-rival" aria-label="Goles rival">${opciones}</select>
             </div>
-        `;
-    }).join('');
+            <button id="btn-exacto" data-accion="exacto">Añadir resultado exacto</button>
+          </div>
+        </div>` : ''}
+    </section>
+    <section class="market-section">
+      <h4>Jugadores</h4>
+      ${TIPOS_JUGADOR.map(t => {
+        const lista = jugador.filter(m => m.tipo_evento === t);
+        return lista.length
+          ? `<div class="market-group"><span class="market-group-title">${NOMBRES_JUGADOR[t]}</span>${tablaJugadores(lista)}</div>`
+          : '';
+      }).join('') || '<div class="notice notice-info">No hay mercados de jugadores en esta jornada.</div>'}
+    </section>`;
+
+  if (pintar('mercados-content', html) && exacto){
+    ponerValor('exacto-equipo', String(num(exacto.goles_equipo)));
+    ponerValor('exacto-rival',  String(num(exacto.goles_rival)));
+  }
+  actualizarBotonExacto();
 }
 
-        function renderMercados() {
-            const contenedor = document.getElementById('mercados-content');
-
-            if (!jornadaActual) {
-                contenedor.innerHTML = '<div class="notice notice-info">Las cuotas aparecerán cuando el administrador abra una jornada.</div>';
-                return;
-            }
-
-            if (mercadosActuales.length === 0) {
-                contenedor.innerHTML = '<div class="notice notice-danger">La jornada no contiene mercados.</div>';
-                return;
-            }
-
-            const partido = mercadosActuales.filter(m => m.categoria === 'partido');
-
-            const gruposPartido = [
-                ['Resultado del equipo', partido.filter(m => m.tipo_evento === 'resultado_equipo')],
-                ['Ambos equipos marcan', partido.filter(m => m.tipo_evento === 'ambos_marcan')],
-                ['Ambos equipos reciben tarjeta', partido.filter(m => m.tipo_evento === 'ambos_tarjeta')],
-                ['Total de goles', partido.filter(m => m.tipo_evento === 'total_goles')],
-                ['Total de tarjetas', partido.filter(m => m.tipo_evento === 'total_tarjetas')]
-            ];
-
-            const exactoSeleccionado = mercadosElegidos().find(m => m.tipo_evento === 'resultado_exacto');
-            const opcionesGoles = [0,1,2,3,4,5].map(n => `<option value="${n}">${n}</option>`).join('');
-
-            let htmlPartido = `
-                <div class="market-section">
-                    <h3>🏟️ Partido</h3>
-
-                    ${gruposPartido.map(([titulo, mercados]) => mercados.length ? `
-                        <div class="market-group">
-                            <span class="market-group-title">${titulo}</span>
-                            ${renderTarjetasMercado(mercados)}
-                        </div>
-                    ` : '').join('')}
-
-                    <div class="market-group">
-                        <span class="market-group-title">Resultado exacto</span>
-                        <div class="exact-score-box">
-                            <div class="exact-score-row">
-                                <select id="exacto-equipo" onchange="actualizarCuotaExacta()">${opcionesGoles}</select>
-                                <b>-</b>
-                                <select id="exacto-rival" onchange="actualizarCuotaExacta()">${opcionesGoles}</select>
-                            </div>
-                            <button id="btn-exacto" onclick="agregarResultadoExacto()" ${apuestasCerradas() ? 'disabled' : ''}>
-                                AÑADIR RESULTADO EXACTO
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            const jugadores = mercadosActuales.filter(
-                m => m.categoria === 'jugador' && m.jugador
-            );
-
-            const htmlJugadores = `
-                <div class="market-section">
-                    <h3>👟 Jugadores</h3>
-                    ${jugadores.length
-                        ? renderMercadosJugadores(jugadores)
-                        : '<div class="notice notice-info">No hay mercados de jugadores disponibles.</div>'}
-                </div>
-            `;
-
-            contenedor.innerHTML = htmlPartido + htmlJugadores;
-
-            if (exactoSeleccionado) {
-                document.getElementById('exacto-equipo').value = String(exactoSeleccionado.goles_equipo);
-                document.getElementById('exacto-rival').value = String(exactoSeleccionado.goles_rival);
-            }
-
-            actualizarCuotaExacta();
-        }
-
-        function actualizarCuotaExacta() {
-            const selectEquipo = document.getElementById('exacto-equipo');
-            const selectRival = document.getElementById('exacto-rival');
-            const boton = document.getElementById('btn-exacto');
-            if (!selectEquipo || !selectRival || !boton) return;
-
-            const ge = numero(selectEquipo.value);
-            const gr = numero(selectRival.value);
-            const mercado = mercadosActuales.find(m =>
-                m.tipo_evento === 'resultado_exacto' &&
-                numero(m.goles_equipo) === ge && numero(m.goles_rival) === gr
-            );
-
-            boton.innerText = mercado
-                ? `AÑADIR ${ge}-${gr} · CUOTA ${cuotaTexto(mercado.cuota)}`
-                : 'MARCADOR NO DISPONIBLE';
-            boton.disabled = apuestasCerradas() || !mercado;
-        }
-
-        function agregarResultadoExacto() {
-            if (apuestasCerradas()) return;
-            const golesEquipo = numero(document.getElementById('exacto-equipo').value);
-            const golesRival = numero(document.getElementById('exacto-rival').value);
-            const mercado = mercadosActuales.find(m =>
-                m.tipo_evento === 'resultado_exacto' &&
-                numero(m.goles_equipo) === golesEquipo &&
-                numero(m.goles_rival) === golesRival
-            );
-
-            if (!mercado) return alert('Ese marcador no está disponible.');
-            toggleMercado(Number(mercado.id));
-        }
-
-        function mercadoCompatibleConExacto(exacto, mercado) {
-            if (!exacto || !mercado) return true;
-            const ge = numero(exacto.goles_equipo);
-            const gr = numero(exacto.goles_rival);
-
-            if (mercado.tipo_evento === 'resultado_equipo') {
-                const resultado = ge > gr ? 'gana' : ge === gr ? 'empata' : 'pierde';
-                return mercado.opcion === resultado;
-            }
-
-            if (mercado.tipo_evento === 'ambos_marcan') {
-                const ambos = ge > 0 && gr > 0 ? 'si' : 'no';
-                return mercado.opcion === ambos;
-            }
-
-            if (mercado.tipo_evento === 'total_goles') {
-                const total = ge + gr;
-                return mercado.opcion === 'mas' ? total > Number(mercado.linea) : total < Number(mercado.linea);
-            }
-
-            return true;
-        }
-
-        function toggleMercado(id) {
-            if (apuestasCerradas()) return;
-            const idNumero = Number(id);
-            const nuevo = mercadoPorId(idNumero);
-            if (!nuevo) return;
-
-            if (mercadosSeleccionados.has(idNumero)) {
-                mercadosSeleccionados.delete(idNumero);
-                renderMercados();
-                renderBoleto();
-                return;
-            }
-
-            if (mercadosSeleccionados.size >= 8) {
-                return alert('Una combinada puede tener como máximo 8 selecciones.');
-            }
-
-            const seleccionadas = mercadosElegidos();
-            const mismoGrupo = seleccionadas.find(m => m.grupo_incompatibilidad === nuevo.grupo_incompatibilidad);
-            if (mismoGrupo) mercadosSeleccionados.delete(Number(mismoGrupo.id));
-
-            const exacto = nuevo.tipo_evento === 'resultado_exacto'
-                ? nuevo
-                : seleccionadas.find(m => m.tipo_evento === 'resultado_exacto');
-
-            if (exacto) {
-                const aComprobar = nuevo.tipo_evento === 'resultado_exacto'
-                    ? seleccionadas.filter(m => m.tipo_evento !== 'resultado_exacto')
-                    : [nuevo];
-
-                const contradice = aComprobar.find(m => !mercadoCompatibleConExacto(exacto, m));
-                if (contradice) {
-                    return alert(`La selección "${contradice.descripcion}" contradice el resultado exacto.`);
-                }
-            }
-
-            mercadosSeleccionados.add(idNumero);
-            renderMercados();
-            renderBoleto();
-        }
-
-        function eliminarDelBoleto(id) {
-            mercadosSeleccionados.delete(Number(id));
-            renderMercados();
-            renderBoleto();
-        }
-
-        function mercadosElegidos() {
-            return mercadosActuales.filter(m => mercadosSeleccionados.has(Number(m.id)));
-        }
-
-        function calcularCuotaBoleto(seleccionadas) {
-            const producto = seleccionadas.reduce((total, m) => total * Number(m.cuota), 1);
-            const ajuste = Math.max(0.65, 1 - 0.05 * (seleccionadas.length - 1));
-            return Math.min(producto * ajuste, 100);
-        }
-
-        function seleccionarStake(cantidad) {
-            if (cantidad < 1 || cantidad > creditosUsuario) return;
-            creditosApostar = cantidad;
-            renderBoleto();
-        }
-
-        function renderBoleto() {
-            const seleccionadas = mercadosElegidos();
-            const lista = document.getElementById('boleto-selecciones');
-            const stakeContainer = document.getElementById('stake-container');
-            const stakeGrid = document.getElementById('stake-grid');
-            const resumen = document.getElementById('boleto-resumen');
-            const boton = document.getElementById('btn-apostar');
-
-            if (seleccionadas.length === 0) {
-                lista.innerHTML = '<p style="font-size:13px; color:#64748b;">Pulsa una o varias cuotas para crear tu apuesta.</p>';
-                stakeContainer.classList.add('hidden');
-                resumen.classList.add('hidden');
-                boton.disabled = true;
-                return;
-            }
-
-            lista.innerHTML = seleccionadas.map(m => `
-                <div class="slip-line">
-                    <span>${escapeHtml(m.descripcion)}</span>
-                    <span><b>${cuotaTexto(m.cuota)}</b> <button class="remove-selection" onclick="eliminarDelBoleto(${Number(m.id)})">×</button></span>
-                </div>
-            `).join('');
-
-            stakeContainer.classList.remove('hidden');
-            const maxCreditos = Math.min(5, creditosUsuario);
-            if (maxCreditos > 0 && creditosApostar > maxCreditos) creditosApostar = maxCreditos;
-            if (maxCreditos === 0) creditosApostar = 0;
-
-            stakeGrid.innerHTML = [1,2,3,4,5].map(c => `
-                <button class="stake-btn ${creditosApostar === c ? 'active' : ''}"
-                        onclick="seleccionarStake(${c})"
-                        ${c > maxCreditos ? 'disabled' : ''}>${c}</button>
-            `).join('');
-
-            const cuotaCalculada = calcularCuotaBoleto(seleccionadas);
-            const premio = creditosApostar > 0 ? Math.max(1, Math.round(cuotaCalculada * creditosApostar)) : 0;
-
-            resumen.classList.remove('hidden');
-            resumen.innerHTML = `
-                <div class="summary-row"><span>Selecciones</span><b>${seleccionadas.length}</b></div>
-                <div class="summary-row"><span>Cuota total</span><b>${cuotaTexto(cuotaCalculada)}</b></div>
-                <div class="summary-row"><span>Créditos</span><b>${creditosApostar}</b></div>
-                <div class="summary-row"><span>Premio potencial</span><b>${premio} puntos</b></div>
-            `;
-
-            boton.disabled = apuestasCerradas() || creditosApostar < 1 || creditosUsuario < creditosApostar || !miNombre;
-            boton.innerText = creditosUsuario === 0 ? 'NO TIENES CRÉDITOS' : 'CONFIRMAR APUESTA';
-        }
-
-        async function confirmarApuesta() {
-            const seleccionadas = mercadosElegidos();
-            if (!miNombre) return alert('Accede como jugador para apostar.');
-            if (apuestasCerradas()) return alert('Las apuestas están cerradas.');
-            if (seleccionadas.length === 0) return alert('Selecciona al menos una cuota.');
-            if (creditosApostar < 1 || creditosApostar > creditosUsuario) return alert('Créditos no válidos.');
-
-            const cuotaTotal = calcularCuotaBoleto(seleccionadas);
-            const premio = Math.max(1, Math.round(cuotaTotal * creditosApostar));
-            const texto = seleccionadas.map(m => `• ${m.descripcion} (${cuotaTexto(m.cuota)})`).join('\n');
-
-            if (!confirm(`Confirmar apuesta:\n\n${texto}\n\nCuota total: ${cuotaTexto(cuotaTotal)}\nCréditos: ${creditosApostar}\nPremio potencial: ${premio} puntos`)) {
-                return;
-            }
-
-            const { error } = await sb.rpc('crear_apuesta', {
-                p_usuario: miNombre,
-                p_creditos: creditosApostar,
-                p_mercado_ids: seleccionadas.map(m => Number(m.id))
-            });
-
-            if (error) return alert('No se pudo registrar la apuesta: ' + error.message);
-
-            mercadosSeleccionados.clear();
-            creditosApostar = 1;
-            alert('¡Apuesta registrada!');
-            await refrescar();
-        }
-
-        function renderMisApuestas() {
-            const contenedor = document.getElementById('mis-apuestas');
-
-            if (!miNombre) {
-                contenedor.innerHTML = '<p style="font-size:13px;">Accede como jugador para ver tus boletos.</p>';
-                return;
-            }
-
-            if (apuestasUsuario.length === 0) {
-                contenedor.innerHTML = '<p style="font-size:13px; color:#64748b;">Todavía no has enviado ninguna apuesta.</p>';
-                return;
-            }
-
-            contenedor.innerHTML = apuestasUsuario.map(a => {
-                const selecciones = a.apuesta_selecciones || [];
-                return `
-                    <div class="bet-card">
-                        <div class="bet-head">
-                            <b>Cuota ${cuotaTexto(a.cuota_total)}</b>
-                            <span class="status status-${escapeHtml(a.estado)}">${escapeHtml(a.estado)}</span>
-                        </div>
-                        ${selecciones.map(s => `
-                            <div class="slip-line">
-                                <span>${escapeHtml(s.descripcion)}</span>
-                                <span>${cuotaTexto(s.cuota)} ${s.resultado === true ? '✅' : s.resultado === false ? '❌' : ''}</span>
-                            </div>
-                        `).join('')}
-                        <div class="summary-row"><span>Apostado</span><b>${numero(a.creditos_apostados)} créditos</b></div>
-                        <div class="summary-row"><span>Premio</span><b>${numero(a.premio_potencial)} puntos</b></div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function reclamar() {
-            const contenedor = document.getElementById('duende-animacion');
-            const video = document.getElementById('video-duende');
-            const { error } = await sb.rpc('reclamar_creditos', { user_nom: miNombre });
-
-            if (error) return alert('Aún no está disponible o ya has reclamado.');
-
-            contenedor.classList.add('duende-visible');
-            video.load();
-            video.currentTime = 0;
-            video.muted = false;
-            video.volume = 1;
-
-            const promesa = video.play();
-            if (promesa) {
-                promesa.catch(() => {
-                    video.muted = true;
-                    video.play();
-                });
-            }
-
-            const cerrarVideo = () => {
-                contenedor.classList.remove('duende-visible');
-                video.pause();
-                video.currentTime = 0;
-            };
-
-            video.onended = cerrarVideo;
-            setTimeout(cerrarVideo, 3000);
-            await refrescar();
-        }
-
-        function renderSelectoresAdmin(st, rk, clasif) {
-            const selectSt = document.getElementById('adm-select-stats');
-            const valorSt = selectSt.value;
-            selectSt.innerHTML = '<option value="">-- Nuevo jugador / Editar existente --</option>' +
-                st.map(s => `<option value="${escapeHtml(s.sujeto)}">${escapeHtml(s.sujeto)}</option>`).join('');
-            selectSt.value = valorSt;
-
-            const selectJugador = document.getElementById('adm-select-jugador');
-            const valorJugador = selectJugador.value;
-            selectJugador.innerHTML = '<option value="">Selecciona un jugador...</option>' +
-                rk.map(j => `<option value="${escapeHtml(j.nombre)}">${escapeHtml(j.nombre)} (${numero(j.puntos)} pts)</option>`).join('');
-            selectJugador.value = valorJugador;
-
-            const selectClasif = document.getElementById('adm-select-clasif');
-            const valorClasif = selectClasif.value;
-            selectClasif.innerHTML = '<option value="">-- Nuevo equipo / Editar existente --</option>' +
-                clasif.map(e => `<option value="${escapeHtml(e.equipo)}">${escapeHtml(e.equipo)} (${numero(e.pts)} pts)</option>`).join('');
-            selectClasif.value = valorClasif;
-        }
-
-        function renderAdminJornada() {
-            const resumen = document.getElementById('admin-jornada-resumen');
-            const resultados = document.getElementById('admin-resultados');
-            const botonGuardar = document.getElementById('btn-guardar-resultados');
-            const botonLiquidar = document.getElementById('btn-liquidar');
-
-            if (!jornadaActual) {
-                resumen.innerHTML = '<div class="notice notice-info">No hay jornada pendiente de liquidar.</div>';
-                resultados.innerHTML = '<div class="notice notice-info">Crea primero una jornada.</div>';
-                botonGuardar.disabled = true;
-                botonLiquidar.disabled = true;
-                adminJugadoresRonda = [];
-                return;
-            }
-
-            resumen.innerHTML = `
-                <div class="notice ${apuestasCerradas() ? 'notice-danger' : 'notice-success'}">
-                    <b>${escapeHtml(jornadaActual.nombre)}</b><br>
-                    Rival: ${escapeHtml(jornadaActual.rival || 'Rival')}<br>
-                    ${mercadosActuales.length} cuotas generadas · Cierre: ${fechaLocal(jornadaActual.cierre_apuestas)}
-                </div>
-            `;
-
-            adminJugadoresRonda = [...new Set(
-                mercadosActuales.filter(m => m.categoria === 'jugador' && m.jugador).map(m => m.jugador)
-            )];
-            const mapaResultados = new Map(resultadosActuales.map(r => [r.jugador, r]));
-            const p = resultadoPartidoActual || {};
-
-            resultados.innerHTML = `
-                <div class="result-row" style="background:#e0f2fe;">
-                    <strong>Resultado general: Detrónia vs ${escapeHtml(jornadaActual.rival || 'Rival')}</strong>
-                    <div class="result-labels"><span>Goles DET</span><span>Goles rival</span><span>Tarj. DET</span><span>Tarj. rival</span></div>
-                    <div class="result-inputs">
-                        <input id="partido-ge" type="number" min="0" value="${numero(p.goles_equipo)}">
-                        <input id="partido-gr" type="number" min="0" value="${numero(p.goles_rival)}">
-                        <input id="partido-te" type="number" min="0" value="${numero(p.tarjetas_equipo)}">
-                        <input id="partido-tr" type="number" min="0" value="${numero(p.tarjetas_rival)}">
-                    </div>
-                </div>
-                ${adminJugadoresRonda.map((jugador, index) => {
-                    const r = mapaResultados.get(jugador) || {};
-                    return `
-                        <div class="result-row">
-                            <strong>${escapeHtml(jugador)}</strong>
-                            <div class="result-labels"><span>Goles</span><span>Asist.</span><span>AM</span><span>RO</span></div>
-                            <div class="result-inputs">
-                                <input id="res-g-${index}" type="number" min="0" value="${numero(r.goles)}">
-                                <input id="res-a-${index}" type="number" min="0" value="${numero(r.asistencias)}">
-                                <input id="res-am-${index}" type="number" min="0" value="${numero(r.amarillas)}">
-                                <input id="res-ro-${index}" type="number" min="0" value="${numero(r.rojas)}">
-                            </div>
-                            <div class="result-labels"><span>Faltas</span><span>Paradas</span><span>Remates</span><span>A puerta</span></div>
-                            <div class="result-inputs">
-                                <input id="res-f-${index}" type="number" min="0" value="${numero(r.faltas)}">
-                                <input id="res-pd-${index}" type="number" min="0" value="${numero(r.paradas)}">
-                                <input id="res-r-${index}" type="number" min="0" value="${numero(r.remates)}">
-                                <input id="res-rp-${index}" type="number" min="0" value="${numero(r.remates_puerta)}">
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            `;
-
-            botonGuardar.disabled = jornadaActual.estado === 'liquidada' || adminJugadoresRonda.length === 0;
-            botonLiquidar.disabled = jornadaActual.estado === 'liquidada' || !apuestasCerradas();
-        }
-
-
-        function etiquetaAdminMercado(m) {
-            if (m.categoria === 'jugador') {
-                const jugador = m.jugador ? escapeHtml(m.jugador) : '';
-                return `<span class="admin-odd-player">${jugador}</span>${escapeHtml(etiquetaOpcionJugador(m))}`;
-            }
-            if (m.tipo_evento === 'resultado_exacto') {
-                return `Marcador ${escapeHtml(m.opcion || '')}`;
-            }
-            return escapeHtml(m.opcion || nombreCategoriaJugador(m.tipo_evento) || 'Opción');
-        }
-
-        function nombreGrupoAdminMercado(m) {
-            if (m.categoria === 'partido') {
-                const nombres = {
-                    resultado_equipo: 'Resultado del equipo',
-                    resultado_exacto: 'Resultado exacto',
-                    ambos_marcan: 'Ambos equipos marcan',
-                    ambos_tarjeta: 'Ambos equipos reciben tarjeta',
-                    total_goles: 'Número de goles en el partido',
-                    total_tarjetas: 'Número de tarjetas en el partido'
-                };
-                return nombres[m.tipo_evento] || 'Partido';
-            }
-            return nombreCategoriaJugador(m.tipo_evento) || 'Jugadores';
-        }
-
-        function renderAdminCuotas() {
-            const cont = document.getElementById('admin-cuotas');
-            const boton = document.getElementById('btn-guardar-cuotas');
-            if (!cont || !boton) return;
-
-            if (!jornadaActual) {
-                cont.innerHTML = '<div class="notice notice-info">Crea primero una jornada para gestionar sus cuotas.</div>';
-                boton.disabled = true;
-                return;
-            }
-
-            if (!mercadosActuales.length) {
-                cont.innerHTML = '<div class="notice notice-danger">Esta jornada no tiene mercados.</div>';
-                boton.disabled = true;
-                return;
-            }
-
-            const bloqueado = jornadaActual.estado === 'liquidada' || apuestasCerradas();
-            boton.disabled = bloqueado;
-
-            const grupos = new Map();
-            mercadosActuales.forEach(m => {
-                const clave = `${m.categoria || 'partido'}|${m.tipo_evento || 'otro'}`;
-                if (!grupos.has(clave)) grupos.set(clave, []);
-                grupos.get(clave).push(m);
-            });
-
-            cont.innerHTML = [...grupos.entries()].map(([clave, lista]) => {
-                const titulo = nombreGrupoAdminMercado(lista[0]);
-                const ordenada = [...lista].sort((a,b) =>
-                    String(a.jugador || '').localeCompare(String(b.jugador || ''), 'es') ||
-                    String(a.opcion || '').localeCompare(String(b.opcion || ''), 'es')
-                );
-
-                return `
-                    <div class="admin-odds-group ${bloqueado ? 'admin-odds-disabled' : ''}">
-                        <div class="admin-odds-title">${escapeHtml(titulo)}</div>
-                        ${ordenada.map(m => `
-                            <div class="admin-odd-row">
-                                <div class="admin-odd-name">${etiquetaAdminMercado(m)}</div>
-                                <input
-                                    class="admin-odd-input"
-                                    type="number"
-                                    min="1.01"
-                                    max="1000"
-                                    step="0.01"
-                                    value="${Number(m.cuota || 1).toFixed(2)}"
-                                    data-mercado-id="${Number(m.id)}"
-                                    ${bloqueado ? 'disabled' : ''}
-                                >
-                                <button
-                                    type="button"
-                                    class="admin-odd-save"
-                                    onclick="guardarCuotaIndividual(${Number(m.id)})"
-                                    ${bloqueado ? 'disabled' : ''}
-                                >Guardar</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function guardarCuotaIndividual(id) {
-            if (!jornadaActual || !esAdmin) return;
-            if (jornadaActual.estado === 'liquidada' || apuestasCerradas()) {
-                return alert('Las cuotas ya están cerradas y no se pueden modificar.');
-            }
-
-            const input = document.querySelector(`.admin-odd-input[data-mercado-id="${Number(id)}"]`);
-            if (!input) return;
-
-            const cuota = Number(input.value);
-            if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
-                return alert('La cuota debe estar entre 1,01 y 1000.');
-            }
-
-            const { data: apuestas, error: errorApuestas } = await sb
-                .from('apuestas')
-                .select('id')
-                .eq('jornada_id', jornadaActual.id)
-                .limit(1);
-
-            if (errorApuestas) return alert('No se pudo comprobar si existen apuestas: ' + errorApuestas.message);
-            if (apuestas && apuestas.length) {
-                return alert('No puedes modificar cuotas porque ya existe al menos una apuesta en esta jornada.');
-            }
-
-            const { error } = await sb
-                .from('mercados')
-                .update({ cuota: Number(cuota.toFixed(2)) })
-                .eq('id', Number(id))
-                .eq('jornada_id', jornadaActual.id);
-
-            if (error) return alert('No se pudo guardar la cuota: ' + error.message);
-
-            const mercado = mercadosActuales.find(m => Number(m.id) === Number(id));
-            if (mercado) mercado.cuota = Number(cuota.toFixed(2));
-
-            renderAdminCuotas();
-            renderMercados();
-            renderBoleto();
-            alert('Cuota actualizada correctamente.');
-        }
-
-        async function guardarCuotasAdmin() {
-            if (!jornadaActual || !esAdmin) return;
-            if (jornadaActual.estado === 'liquidada' || apuestasCerradas()) {
-                return alert('Las cuotas ya están cerradas y no se pueden modificar.');
-            }
-
-            const { data: apuestas, error: errorApuestas } = await sb
-                .from('apuestas')
-                .select('id')
-                .eq('jornada_id', jornadaActual.id)
-                .limit(1);
-
-            if (errorApuestas) return alert('No se pudo comprobar si existen apuestas: ' + errorApuestas.message);
-            if (apuestas && apuestas.length) {
-                return alert('No puedes modificar las cuotas porque ya existe al menos una apuesta en esta jornada.');
-            }
-
-            const inputs = [...document.querySelectorAll('.admin-odd-input')];
-            const cambios = [];
-
-            for (const input of inputs) {
-                const id = Number(input.dataset.mercadoId);
-                const cuota = Number(input.value);
-
-                if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
-                    return alert(`La cuota del mercado ${id} no es válida. Usa un valor entre 1,01 y 1000.`);
-                }
-
-                cambios.push({
-                    id,
-                    cuota: Number(cuota.toFixed(2))
-                });
-            }
-
-            if (!cambios.length) return alert('No hay cuotas que guardar.');
-            if (!confirm(`¿Guardar las ${cambios.length} cuotas mostradas?`)) return;
-
-            const resultados = await Promise.all(
-                cambios.map(c =>
-                    sb.from('mercados')
-                        .update({ cuota: c.cuota })
-                        .eq('id', c.id)
-                        .eq('jornada_id', jornadaActual.id)
-                )
-            );
-
-            const fallo = resultados.find(r => r.error);
-            if (fallo) return alert('No se pudieron guardar todas las cuotas: ' + fallo.error.message);
-
-            cambios.forEach(c => {
-                const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
-                if (mercado) mercado.cuota = c.cuota;
-            });
-
-            renderAdminCuotas();
-            renderMercados();
-            renderBoleto();
-            alert('Todas las cuotas se han actualizado correctamente.');
-        }
-
-        async function lanzarNuevaJornada() {
-            const nombre = document.getElementById('adm-jornada-nombre').value.trim();
-            const rival = document.getElementById('adm-rival').value.trim() || 'Rival';
-            const cierreInput = document.getElementById('adm-cierre-apuestas').value;
-
-            if (!nombre) return alert('Introduce el nombre de la jornada.');
-            if (!cierreInput) return alert('Introduce la fecha de cierre.');
-
-            const cierre = new Date(cierreInput);
-            if (cierre <= new Date()) return alert('La fecha de cierre debe ser futura.');
-
-            if (!confirm('Se generarán automáticamente los mercados del partido y todos los mercados disponibles de cada jugador.')) return;
-
-            const { error } = await sb.rpc('crear_jornada_con_mercados', {
-                p_nombre: nombre,
-                p_cierre: cierre.toISOString(),
-                p_rival: rival
-            });
-
-            if (error) return alert('Error al crear la jornada: ' + error.message);
-
-            const recarga = await sb.rpc('habilitar_recarga_global');
-            if (recarga.error) {
-                alert('La jornada se creó, pero no se pudo habilitar la recarga: ' + recarga.error.message);
-            } else {
-                alert('Jornada creada, cuotas generadas y créditos habilitados.');
-            }
-
-            document.getElementById('adm-jornada-nombre').value = '';
-            document.getElementById('adm-rival').value = '';
-            document.getElementById('adm-cierre-apuestas').value = '';
-            await refrescar();
-        }
-
-        async function habilitarCreditos() {
-            if (!confirm('¿Permitir que todos los jugadores reclamen 5 créditos?')) return;
-            const { error } = await sb.rpc('habilitar_recarga_global');
-            if (error) return alert('Error: ' + error.message);
-            alert('Los jugadores ya pueden reclamar sus créditos.');
-            await refrescar();
-        }
-
-        async function guardarResultadosRonda() {
-            if (!jornadaActual) return;
-
-            const resultadoPartido = {
-                goles_equipo: numero(document.getElementById('partido-ge').value),
-                goles_rival: numero(document.getElementById('partido-gr').value),
-                tarjetas_equipo: numero(document.getElementById('partido-te').value),
-                tarjetas_rival: numero(document.getElementById('partido-tr').value)
-            };
-
-            const resultados = adminJugadoresRonda.map((jugador, index) => ({
-                jugador,
-                goles: numero(document.getElementById(`res-g-${index}`).value),
-                asistencias: numero(document.getElementById(`res-a-${index}`).value),
-                amarillas: numero(document.getElementById(`res-am-${index}`).value),
-                rojas: numero(document.getElementById(`res-ro-${index}`).value),
-                faltas: numero(document.getElementById(`res-f-${index}`).value),
-                paradas: numero(document.getElementById(`res-pd-${index}`).value),
-                remates: numero(document.getElementById(`res-r-${index}`).value),
-                remates_puerta: numero(document.getElementById(`res-rp-${index}`).value)
-            }));
-
-            const { error } = await sb.rpc('guardar_resultados_jornada', {
-                p_jornada_id: jornadaActual.id,
-                p_resultado_partido: resultadoPartido,
-                p_resultados: resultados
-            });
-
-            if (error) return alert('Error al guardar resultados: ' + error.message);
-            alert('Resultado del partido y estadísticas de jugadores guardados.');
-            await refrescar();
-        }
-
-        async function liquidarJornada() {
-            if (!jornadaActual) return;
-            if (!apuestasCerradas()) return alert('Todavía no ha llegado el cierre de apuestas.');
-            if (!confirm('¿Liquidar todos los boletos, repartir los puntos y sumar estos resultados al histórico? Esta acción no se puede repetir.')) return;
-
-            const { data, error } = await sb.rpc('liquidar_jornada', {
-                p_jornada_id: jornadaActual.id
-            });
-
-            if (error) return alert('No se pudo liquidar: ' + error.message);
-
-            const resultado = Array.isArray(data) ? data[0] : data;
-            alert(`Jornada liquidada.\nApuestas ganadas: ${numero(resultado?.apuestas_ganadas)}\nPuntos repartidos: ${numero(resultado?.puntos_repartidos)}`);
-            await refrescar();
-        }
-
-        async function cargarDatosEstadistica() {
-            const nombre = document.getElementById('adm-select-stats').value;
-            const campos = [
-                'info-sujeto','info-partidos','info-goles','info-asist','info-am','info-ro',
-                'info-faltas','info-paradas','info-remates','info-remates-puerta'
-            ];
-
-            if (!nombre) {
-                campos.forEach(id => document.getElementById(id).value = '');
-                document.getElementById('info-posicion').value = 'campo';
-                return;
-            }
-
-            const { data, error } = await sb.from('estadisticas').select('*').eq('sujeto', nombre).single();
-            if (error) return alert('Error: ' + error.message);
-
-            document.getElementById('info-sujeto').value = data.sujeto;
-            document.getElementById('info-posicion').value = data.posicion || 'campo';
-            document.getElementById('info-partidos').value = numero(data.partidos);
-            document.getElementById('info-goles').value = numero(data.dato1);
-            document.getElementById('info-asist').value = numero(data.dato4);
-            document.getElementById('info-am').value = numero(data.dato2);
-            document.getElementById('info-ro').value = numero(data.dato3);
-            document.getElementById('info-faltas').value = numero(data.faltas);
-            document.getElementById('info-paradas').value = numero(data.paradas);
-            document.getElementById('info-remates').value = numero(data.remates);
-            document.getElementById('info-remates-puerta').value = numero(data.remates_puerta);
-        }
-
-        async function guardarFila() {
-            const sujeto = document.getElementById('info-sujeto').value.trim();
-            if (!sujeto) return alert('Introduce el nombre del jugador.');
-
-            const { error } = await sb.from('estadisticas').upsert({
-                sujeto,
-                posicion: document.getElementById('info-posicion').value,
-                partidos: numero(document.getElementById('info-partidos').value),
-                dato1: numero(document.getElementById('info-goles').value),
-                dato4: numero(document.getElementById('info-asist').value),
-                dato2: numero(document.getElementById('info-am').value),
-                dato3: numero(document.getElementById('info-ro').value),
-                faltas: numero(document.getElementById('info-faltas').value),
-                paradas: numero(document.getElementById('info-paradas').value),
-                remates: numero(document.getElementById('info-remates').value),
-                remates_puerta: numero(document.getElementById('info-remates-puerta').value)
-            }, { onConflict: 'sujeto' });
-
-            if (error) return alert('Error: ' + error.message);
-            alert('Estadísticas actualizadas.');
-            await refrescar();
-        }
-
-        async function eliminarEstadistica() {
-            const nombre = document.getElementById('adm-select-stats').value;
-            if (!nombre) return alert('Selecciona un jugador.');
-            if (!confirm(`¿Borrar las estadísticas de ${nombre}?`)) return;
-
-            const { error } = await sb.from('estadisticas').delete().eq('sujeto', nombre);
-            if (error) return alert('Error: ' + error.message);
-            alert('Estadística eliminada.');
-            await refrescar();
-        }
-
-        async function modificarJugador() {
-            const nombre = document.getElementById('adm-select-jugador').value;
-            if (!nombre) return alert('Selecciona un jugador.');
-
-            const puntos = document.getElementById('adm-edit-puntos').value;
-            const creditos = document.getElementById('adm-edit-creditos').value;
-            const cambios = {};
-            if (puntos !== '') cambios.puntos = numero(puntos);
-            if (creditos !== '') cambios.creditos = numero(creditos);
-            if (Object.keys(cambios).length === 0) return alert('Introduce algún cambio.');
-
-            const { error } = await sb.from('jugadores').update(cambios).eq('nombre', nombre);
-            if (error) return alert('Error: ' + error.message);
-            alert('Jugador actualizado.');
-            await refrescar();
-        }
-
-        async function eliminarJugador() {
-            const nombre = document.getElementById('adm-select-jugador').value;
-            if (!nombre) return alert('Selecciona un jugador.');
-            if (!confirm(`¿Eliminar permanentemente a @${nombre}?`)) return;
-
-            const { error } = await sb.from('jugadores').delete().eq('nombre', nombre);
-            if (error) return alert('Error: ' + error.message);
-            alert('Jugador eliminado.');
-            await refrescar();
-        }
-
-        async function cargarDatosClasificacion() {
-            const equipo = document.getElementById('adm-select-clasif').value;
-            const ids = ['clasif-equipo','clasif-j','clasif-g','clasif-e','clasif-p','clasif-gf','clasif-gc','clasif-dg','clasif-pts'];
-
-            if (!equipo) {
-                ids.forEach(id => document.getElementById(id).value = '');
-                return;
-            }
-
-            const { data, error } = await sb.from('clasificacion_fase_de_grupos').select('*').eq('equipo', equipo).single();
-            if (error) return alert('Error: ' + error.message);
-
-            document.getElementById('clasif-equipo').value = data.equipo;
-            ['j','g','e','p','gf','gc','dg','pts'].forEach(campo => {
-                document.getElementById('clasif-' + campo).value = numero(data[campo]);
-            });
-        }
-
-        async function guardarClasificacion() {
-            const equipo = document.getElementById('clasif-equipo').value.trim();
-            if (!equipo) return alert('Introduce el nombre del equipo.');
-
-            const gf = numero(document.getElementById('clasif-gf').value);
-            const gc = numero(document.getElementById('clasif-gc').value);
-            const dgInput = document.getElementById('clasif-dg').value;
-            const datos = {
-                equipo,
-                j: numero(document.getElementById('clasif-j').value),
-                g: numero(document.getElementById('clasif-g').value),
-                e: numero(document.getElementById('clasif-e').value),
-                p: numero(document.getElementById('clasif-p').value),
-                gf,
-                gc,
-                dg: dgInput === '' ? gf - gc : numero(dgInput),
-                pts: numero(document.getElementById('clasif-pts').value)
-            };
-
-            const { error } = await sb.from('clasificacion_fase_de_grupos').upsert(datos, { onConflict: 'equipo' });
-            if (error) return alert('Error: ' + error.message);
-            alert('Clasificación actualizada.');
-            await refrescar();
-        }
-
-        async function eliminarClasificacion() {
-            const equipo = document.getElementById('adm-select-clasif').value;
-            if (!equipo) return alert('Selecciona un equipo.');
-            if (!confirm(`¿Borrar a ${equipo} de la clasificación?`)) return;
-
-            const { error } = await sb.from('clasificacion_fase_de_grupos').delete().eq('equipo', equipo);
-            if (error) return alert('Error: ' + error.message);
-            alert('Equipo eliminado.');
-            await refrescar();
-        }
-    </script>
+/** Solo repinta el estado seleccionado de las cuotas, sin rehacer las tablas. */
+function sincronizarCuotas(){
+  for (const btn of document.querySelectorAll('.odd-cell[data-id]'))
+    btn.classList.toggle('selected', estado.seleccion.has(Number(btn.dataset.id)));
+  actualizarBotonExacto();
+}
+
+function mercadoExacto(ge, gr){
+  return estado.mercados.find(m => m.tipo_evento === 'resultado_exacto'
+    && num(m.goles_equipo) === ge && num(m.goles_rival) === gr);
+}
+
+function actualizarBotonExacto(){
+  const boton = $('btn-exacto');
+  if (!boton) return;
+  const ge = num(valor('exacto-equipo')), gr = num(valor('exacto-rival'));
+  const m = mercadoExacto(ge, gr);
+  const elegido = m && estado.seleccion.has(Number(m.id));
+  boton.textContent = !m ? 'Marcador no disponible'
+    : elegido ? `Quitar ${ge}-${gr} del boleto`
+    : `Añadir ${ge}-${gr} · cuota ${cuota(m.cuota)}`;
+  boton.disabled = apuestasCerradas() || !m;
+}
+
+function renderBoleto(){
+  const lista = seleccionadas();
+  const stakeBox = $('stake-container'), resumen = $('boleto-resumen'), boton = $('btn-apostar');
+
+  if (!lista.length){
+    pintar('boleto-selecciones', '<p class="slip-empty">Pulsa una o varias cuotas para montar tu apuesta.</p>');
+    stakeBox.classList.add('hidden');
+    resumen.classList.add('hidden');
+    boton.disabled = true;
+    return;
+  }
+
+  pintar('boleto-selecciones', lista.map(m => `
+    <div class="slip-line">
+      <span>${escapar(m.descripcion)}</span>
+      <span><b>${cuota(m.cuota)}</b>
+        <button class="remove-selection" data-accion="quitar" data-id="${Number(m.id)}" aria-label="Quitar selección">×</button>
+      </span>
+    </div>`).join(''));
+
+  const maximo = Math.min(MAX_STAKE, estado.creditos);
+  estado.stake = maximo === 0 ? 0 : Math.min(Math.max(estado.stake, 1), maximo);
+
+  stakeBox.classList.remove('hidden');
+  pintar('stake-grid', Array.from({length:MAX_STAKE}, (_,i) => i+1).map(c => `
+    <button class="stake-btn${estado.stake === c ? ' active' : ''}" data-accion="stake" data-valor="${c}"
+      ${c > maximo ? 'disabled' : ''}>${c}</button>`).join(''));
+
+  resumen.classList.remove('hidden');
+  pintar('boleto-resumen', `
+    <div class="summary-row"><span>Selecciones</span><b>${lista.length}</b></div>
+    <div class="summary-row"><span>Cuota total</span><b>${cuota(cuotaBoleto(lista))}</b></div>
+    <div class="summary-row"><span>Créditos</span><b>${estado.stake}</b></div>
+    <div class="summary-row destacado"><span>Premio potencial</span><b>${premio(lista, estado.stake)} puntos</b></div>`);
+
+  boton.disabled = apuestasCerradas() || !estado.usuario || estado.stake < 1 || estado.creditos < estado.stake;
+  boton.textContent = !estado.usuario ? 'Accede para apostar'
+    : estado.creditos === 0 ? 'No te quedan créditos'
+    : apuestasCerradas() ? 'Apuestas cerradas' : 'Confirmar apuesta';
+}
+
+function renderMisApuestas(){
+  if (!estado.usuario)
+    return void pintar('mis-apuestas', '<p class="slip-empty">Accede como jugador para ver tus boletos.</p>');
+  if (!estado.apuestas.length)
+    return void pintar('mis-apuestas', '<p class="slip-empty">Todavía no has hecho ninguna apuesta.</p>');
+
+  pintar('mis-apuestas', estado.apuestas.map(a => `
+    <article class="bet-card">
+      <div class="bet-head">
+        <b>Cuota ${cuota(a.cuota_total)}</b>
+        <span class="status status-${escapar(a.estado)}">${escapar(a.estado)}</span>
+      </div>
+      ${(a.apuesta_selecciones||[]).map(s => `
+        <div class="slip-line">
+          <span>${escapar(s.descripcion)}</span>
+          <span><b>${cuota(s.cuota)}</b> ${s.resultado === true ? '✅' : s.resultado === false ? '❌' : ''}</span>
+        </div>`).join('')}
+      <div class="summary-row"><span>Apostado</span><b>${num(a.creditos_apostados)} créditos</b></div>
+      <div class="summary-row"><span>Premio</span><b>${num(a.premio_potencial)} puntos</b></div>
+    </article>`).join(''));
+}
+
+/* ============ Render admin ============ */
+function rellenarSelect(id, opciones, textoVacio){
+  const el = $(id);
+  const anterior = el.value;
+  const html = (textoVacio ? `<option value="">${textoVacio}</option>` : '') +
+    opciones.map(([v,t]) => `<option value="${escapar(v)}">${escapar(t)}</option>`).join('');
+  if (el.innerHTML !== html) el.innerHTML = html;
+  el.value = anterior;
+}
+
+function renderSelectoresAdmin(){
+  rellenarSelect('adm-select-stats',
+    estado.estadisticas.map(s => [s.sujeto, s.sujeto]), 'Nuevo jugador o editar existente');
+  rellenarSelect('adm-select-jugador',
+    estado.ranking.map(j => [j.nombre, `${j.nombre} (${num(j.puntos)} pts)`]), 'Selecciona un jugador');
+  rellenarSelect('adm-select-clasif',
+    estado.clasificacion.map(e => [e.equipo, `${e.equipo} (${num(e.pts)} pts)`]), 'Nuevo equipo o editar existente');
+}
+
+function renderAdminJornada(){
+  const j = estado.jornada;
+
+  if (!j){
+    pintar('admin-jornada-resumen', '<div class="notice notice-info">No hay ninguna jornada pendiente.</div>');
+    pintar('admin-resultados', '<div class="notice notice-info">Crea primero una jornada.</div>');
+    $('btn-guardar-resultados').disabled = true;
+    $('btn-liquidar').disabled = true;
+    estado.jugadoresRonda = [];
+    return;
+  }
+
+  pintar('admin-jornada-resumen', `
+    <div class="notice ${apuestasCerradas() ? 'notice-danger' : 'notice-success'}">
+      <b>${escapar(j.nombre)}</b><br>Rival: ${escapar(j.rival || 'Rival')}<br>
+      ${estado.mercados.length} cuotas generadas · Cierre: ${fecha(j.cierre_apuestas)}
+    </div>`);
+
+  estado.jugadoresRonda = [...new Set(
+    estado.mercados.filter(m => m.categoria === 'jugador' && m.jugador).map(m => m.jugador))];
+
+  const porJugador = new Map(estado.resultados.map(r => [r.jugador, r]));
+  const p = estado.resultadoPartido || {};
+
+  pintar('admin-resultados', `
+    <div class="result-row" style="background:#e0f2fe">
+      <strong>Detrónia vs ${escapar(j.rival || 'Rival')}</strong>
+      <div class="result-labels"><span>Goles DET</span><span>Goles rival</span><span>Tarj. DET</span><span>Tarj. rival</span></div>
+      <div class="result-inputs">
+        <input id="partido-ge" type="number" min="0" value="${num(p.goles_equipo)}">
+        <input id="partido-gr" type="number" min="0" value="${num(p.goles_rival)}">
+        <input id="partido-te" type="number" min="0" value="${num(p.tarjetas_equipo)}">
+        <input id="partido-tr" type="number" min="0" value="${num(p.tarjetas_rival)}">
+      </div>
+    </div>
+    ${estado.jugadoresRonda.map((jug,i) => {
+      const r = porJugador.get(jug) || {};
+      const bloque = (desde,hasta) => `
+        <div class="result-labels">${CAMPOS_RESULTADO.slice(desde,hasta).map(c => `<span>${c[1]}</span>`).join('')}</div>
+        <div class="result-inputs">${CAMPOS_RESULTADO.slice(desde,hasta).map(c =>
+          `<input id="res-${c[0]}-${i}" type="number" min="0" value="${num(r[c[0]])}">`).join('')}</div>`;
+      return `<div class="result-row"><strong>${escapar(jug)}</strong>${bloque(0,4)}${bloque(4,8)}</div>`;
+    }).join('')}`);
+
+  $('btn-guardar-resultados').disabled = j.estado === 'liquidada' || !estado.jugadoresRonda.length;
+  $('btn-liquidar').disabled = j.estado === 'liquidada' || !apuestasCerradas();
+}
+
+function etiquetaAdmin(m){
+  if (m.categoria === 'jugador')
+    return `<span class="admin-odd-player">${escapar(m.jugador||'')}</span>${escapar(etiquetaOpcion(m))}`;
+  if (m.tipo_evento === 'resultado_exacto')
+    return `Marcador ${num(m.goles_equipo)}-${num(m.goles_rival)}`;
+  return escapar(etiquetaOpcion(m));
+}
+
+function renderAdminCuotas(){
+  const boton = $('btn-guardar-cuotas');
+
+  if (!estado.jornada){
+    pintar('admin-cuotas', '<div class="notice notice-info">Crea primero una jornada.</div>');
+    boton.disabled = true; return;
+  }
+  if (!estado.mercados.length){
+    pintar('admin-cuotas', '<div class="notice notice-danger">Esta jornada no tiene mercados.</div>');
+    boton.disabled = true; return;
+  }
+
+  const bloqueado = estado.jornada.estado === 'liquidada' || apuestasCerradas();
+  boton.disabled = bloqueado;
+
+  const grupos = new Map();
+  for (const m of estado.mercados){
+    const clave = `${m.categoria||'partido'}|${m.tipo_evento||'otro'}`;
+    if (!grupos.has(clave)) grupos.set(clave, []);
+    grupos.get(clave).push(m);
+  }
+
+  pintar('admin-cuotas', [...grupos.values()].map(lista => {
+    const titulo = lista[0].categoria === 'partido'
+      ? (NOMBRES_PARTIDO[lista[0].tipo_evento] || 'Partido')
+      : (NOMBRES_JUGADOR[lista[0].tipo_evento] || 'Jugadores');
+    const orden = [...lista].sort((a,b) =>
+      String(a.jugador||'').localeCompare(String(b.jugador||''),'es') ||
+      String(a.opcion||'').localeCompare(String(b.opcion||''),'es'));
+
+    return `<div class="admin-odds-group${bloqueado ? ' admin-odds-disabled' : ''}">
+      <div class="admin-odds-title">${escapar(titulo)}</div>
+      ${orden.map(m => `
+        <div class="admin-odd-row">
+          <div class="admin-odd-name">${etiquetaAdmin(m)}</div>
+          <input class="admin-odd-input" type="number" min="1.01" max="1000" step="0.01"
+                 value="${Number(m.cuota||1).toFixed(2)}" data-mercado-id="${Number(m.id)}"
+                 ${bloqueado ? 'disabled' : ''}>
+        </div>`).join('')}
+    </div>`;
+  }).join(''));
+}
+
+/* ============ Acciones de jugador ============ */
+async function entrar(){
+  const nombre = normalizarUsuario(valor('username'));
+  if (!nombre) return aviso('Escribe tu usuario de Instagram.', 'warn');
+
+  const { error } = await sb.from('jugadores').upsert({ nombre }, { onConflict:'nombre' });
+  if (error) return aviso('No se pudo acceder: ' + error.message, 'error');
+
+  estado.usuario = nombre;
+  $('auth-ui').classList.add('hidden');
+  $('game-ui').classList.remove('hidden');
+  $('user-display').textContent = '@' + nombre;
+  await refrescar();
+  programarRefresco();
+}
+
+function accesoAdmin(){
+  if (prompt('Clave:') !== 'idemodetronia') return;
+  estado.esAdmin = true;
+  $('auth-ui').classList.add('hidden');
+  $('admin-ui').classList.remove('hidden');
+  $('game-ui').classList.remove('hidden');
+  $('user-display').textContent = 'Vista de administrador';
+  refrescar().then(programarRefresco);
+}
+
+async function confirmarApuesta(){
+  const lista = seleccionadas();
+  if (!estado.usuario) return aviso('Accede como jugador para apostar.', 'warn');
+  if (apuestasCerradas()) return aviso('Las apuestas están cerradas.', 'warn');
+  if (!lista.length) return aviso('Elige al menos una cuota.', 'warn');
+  if (estado.stake < 1 || estado.stake > estado.creditos) return aviso('No tienes esos créditos.', 'warn');
+
+  const texto = lista.map(m => `• ${m.descripcion} (${cuota(m.cuota)})`).join('\n');
+  const total = cuotaBoleto(lista);
+  if (!confirm(`Confirmar apuesta:\n\n${texto}\n\nCuota total: ${cuota(total)}\nCréditos: ${estado.stake}\nPremio potencial: ${premio(lista, estado.stake)} puntos`)) return;
+
+  const { error } = await sb.rpc('crear_apuesta', {
+    p_usuario: estado.usuario,
+    p_creditos: estado.stake,
+    p_mercado_ids: lista.map(m => Number(m.id))
+  });
+  if (error) return aviso('No se pudo registrar la apuesta: ' + error.message, 'error');
+
+  estado.seleccion.clear();
+  estado.stake = 1;
+  aviso('Apuesta registrada.');
+  await refrescar();
+}
+
+async function reclamar(){
+  const { error } = await sb.rpc('reclamar_creditos', { user_nom: estado.usuario });
+  if (error) return aviso('Todavía no está disponible o ya los has reclamado.', 'warn');
+
+  const overlay = $('video-overlay'), video = $('video-duende');
+  overlay.classList.add('visible');
+  video.currentTime = 0;
+  video.muted = false;
+  video.play().catch(() => { video.muted = true; video.play().catch(()=>{}); });
+
+  const cerrar = () => { overlay.classList.remove('visible'); video.pause(); };
+  video.onended = cerrar;
+  setTimeout(cerrar, 3000);
+
+  await refrescar();
+}
+
+/* ============ Acciones de admin ============ */
+async function crearJornada(){
+  const nombre = valor('adm-jornada-nombre').trim();
+  const rival  = valor('adm-rival').trim() || 'Rival';
+  const cierre = valor('adm-cierre-apuestas');
+
+  if (!nombre) return aviso('Ponle nombre a la jornada.', 'warn');
+  if (!cierre)  return aviso('Indica la fecha de cierre.', 'warn');
+  if (new Date(cierre) <= new Date()) return aviso('La fecha de cierre debe ser futura.', 'warn');
+  if (!confirm('Se generarán los mercados del partido y todos los de cada jugador.')) return;
+
+  const { error } = await sb.rpc('crear_jornada_con_mercados', {
+    p_nombre: nombre, p_cierre: new Date(cierre).toISOString(), p_rival: rival
+  });
+  if (error) return aviso('No se pudo crear la jornada: ' + error.message, 'error');
+
+  const recarga = await sb.rpc('habilitar_recarga_global');
+  aviso(recarga.error
+    ? 'Jornada creada, pero la recarga de créditos falló: ' + recarga.error.message
+    : 'Jornada creada, cuotas generadas y créditos habilitados.',
+    recarga.error ? 'warn' : 'ok');
+
+  ['adm-jornada-nombre','adm-rival','adm-cierre-apuestas'].forEach(id => ponerValor(id,''));
+  await refrescar();
+}
+
+async function habilitarCreditos(){
+  if (!confirm('¿Permitir que todos reclamen 5 créditos?')) return;
+  const { error } = await sb.rpc('habilitar_recarga_global');
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Ya pueden reclamar sus créditos.');
+  await refrescar();
+}
+
+/** Comprueba una sola vez si la jornada ya tiene apuestas. */
+async function jornadaTieneApuestas(){
+  const { data, error } = await sb.from('apuestas').select('id').eq('jornada_id', estado.jornada.id).limit(1);
+  if (error){ aviso('No se pudo comprobar las apuestas: ' + error.message, 'error'); return true; }
+  return Boolean(data?.length);
+}
+
+async function guardarCuotas(){
+  if (!estado.jornada || !estado.esAdmin) return;
+  if (estado.jornada.estado === 'liquidada' || apuestasCerradas())
+    return aviso('Las cuotas ya están cerradas.', 'warn');
+  if (await jornadaTieneApuestas())
+    return aviso('Ya hay apuestas en esta jornada: las cuotas no se pueden tocar.', 'warn');
+
+  const cambios = [];
+  for (const input of document.querySelectorAll('.admin-odd-input')){
+    const id = Number(input.dataset.mercadoId);
+    const c = Number(input.value);
+    if (!Number.isFinite(c) || c < 1.01 || c > 1000){
+      input.focus();
+      return aviso('Hay una cuota fuera de rango. Usa valores entre 1,01 y 1000.', 'warn');
+    }
+    const actual = estado.mercadosPorId.get(id);
+    if (actual && Number(actual.cuota).toFixed(2) !== c.toFixed(2))
+      cambios.push({ id, cuota: Number(c.toFixed(2)) });
+  }
+
+  if (!cambios.length) return aviso('No has cambiado ninguna cuota.', 'warn');
+  if (!confirm(`¿Guardar ${cambios.length} cuota(s) modificada(s)?`)) return;
+
+  const resultados = await Promise.all(cambios.map(c =>
+    sb.from('mercados').update({ cuota: c.cuota }).eq('id', c.id).eq('jornada_id', estado.jornada.id)));
+
+  const fallo = resultados.find(r => r.error);
+  if (fallo) return aviso('No se guardaron todas: ' + fallo.error.message, 'error');
+
+  for (const c of cambios){
+    const m = estado.mercadosPorId.get(c.id);
+    if (m) m.cuota = c.cuota;
+  }
+  cachePintado.delete('mercados-content');
+  cachePintado.delete('admin-cuotas');
+  renderAdminCuotas(); renderMercados(); renderBoleto();
+  aviso(`${cambios.length} cuota(s) actualizada(s).`);
+}
+
+async function guardarResultados(){
+  if (!estado.jornada) return;
+
+  const resultados = estado.jugadoresRonda.map((jugador, i) => {
+    const fila = { jugador };
+    for (const [campo] of CAMPOS_RESULTADO) fila[campo] = num(valor(`res-${campo}-${i}`));
+    return fila;
+  });
+
+  const { error } = await sb.rpc('guardar_resultados_jornada', {
+    p_jornada_id: estado.jornada.id,
+    p_resultado_partido: {
+      goles_equipo: num(valor('partido-ge')), goles_rival: num(valor('partido-gr')),
+      tarjetas_equipo: num(valor('partido-te')), tarjetas_rival: num(valor('partido-tr'))
+    },
+    p_resultados: resultados
+  });
+
+  if (error) return aviso('No se guardaron los resultados: ' + error.message, 'error');
+  aviso('Resultados guardados.');
+  await refrescar();
+}
+
+async function liquidar(){
+  if (!estado.jornada) return;
+  if (!apuestasCerradas()) return aviso('Todavía no ha llegado el cierre de apuestas.', 'warn');
+  if (!confirm('¿Liquidar todos los boletos, repartir puntos y sumar al histórico? No se puede deshacer.')) return;
+
+  const { data, error } = await sb.rpc('liquidar_jornada', { p_jornada_id: estado.jornada.id });
+  if (error) return aviso('No se pudo liquidar: ' + error.message, 'error');
+
+  const r = Array.isArray(data) ? data[0] : data;
+  aviso(`Jornada liquidada. Ganadas: ${num(r?.apuestas_ganadas)} · Puntos: ${num(r?.puntos_repartidos)}`);
+  await refrescar();
+}
+
+const CAMPOS_STATS = [
+  ['info-sujeto','sujeto'],['info-partidos','partidos'],['info-goles','dato1'],['info-asist','dato4'],
+  ['info-am','dato2'],['info-ro','dato3'],['info-faltas','faltas'],['info-paradas','paradas'],
+  ['info-remates','remates'],['info-remates-puerta','remates_puerta']
+];
+
+async function cargarEstadistica(){
+  const nombre = valor('adm-select-stats');
+  if (!nombre){
+    CAMPOS_STATS.forEach(([id]) => ponerValor(id,''));
+    ponerValor('info-posicion','campo');
+    return;
+  }
+  const d = estado.estadisticas.find(s => s.sujeto === nombre);
+  if (!d) return;
+  ponerValor('info-sujeto', d.sujeto);
+  ponerValor('info-posicion', d.posicion || 'campo');
+  CAMPOS_STATS.slice(1).forEach(([id,campo]) => ponerValor(id, num(d[campo])));
+}
+
+async function guardarEstadistica(){
+  const sujeto = valor('info-sujeto').trim();
+  if (!sujeto) return aviso('Escribe el nombre del jugador.', 'warn');
+
+  const fila = { sujeto, posicion: valor('info-posicion') };
+  CAMPOS_STATS.slice(1).forEach(([id,campo]) => fila[campo] = num(valor(id)));
+
+  const { error } = await sb.from('estadisticas').upsert(fila, { onConflict:'sujeto' });
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Estadísticas actualizadas.');
+  await refrescar();
+}
+
+async function borrarEstadistica(){
+  const nombre = valor('adm-select-stats');
+  if (!nombre) return aviso('Selecciona un jugador.', 'warn');
+  if (!confirm(`¿Borrar las estadísticas de ${nombre}?`)) return;
+  const { error } = await sb.from('estadisticas').delete().eq('sujeto', nombre);
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Estadística eliminada.');
+  await refrescar();
+}
+
+const CAMPOS_CLASIF = ['j','g','e','p','gf','gc','dg','pts'];
+
+function cargarClasificacion(){
+  const equipo = valor('adm-select-clasif');
+  if (!equipo){
+    ponerValor('clasif-equipo','');
+    CAMPOS_CLASIF.forEach(c => ponerValor('clasif-'+c,''));
+    return;
+  }
+  const d = estado.clasificacion.find(e => e.equipo === equipo);
+  if (!d) return;
+  ponerValor('clasif-equipo', d.equipo);
+  CAMPOS_CLASIF.forEach(c => ponerValor('clasif-'+c, num(d[c])));
+}
+
+async function guardarClasificacion(){
+  const equipo = valor('clasif-equipo').trim();
+  if (!equipo) return aviso('Escribe el nombre del equipo.', 'warn');
+
+  const gf = num(valor('clasif-gf')), gc = num(valor('clasif-gc'));
+  const dg = valor('clasif-dg');
+  const datos = { equipo, gf, gc, dg: dg === '' ? gf - gc : num(dg) };
+  ['j','g','e','p','pts'].forEach(c => datos[c] = num(valor('clasif-'+c)));
+
+  const { error } = await sb.from('clasificacion_fase_de_grupos').upsert(datos, { onConflict:'equipo' });
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Clasificación actualizada.');
+  await refrescar();
+}
+
+async function borrarClasificacion(){
+  const equipo = valor('adm-select-clasif');
+  if (!equipo) return aviso('Selecciona un equipo.', 'warn');
+  if (!confirm(`¿Borrar a ${equipo} de la clasificación?`)) return;
+  const { error } = await sb.from('clasificacion_fase_de_grupos').delete().eq('equipo', equipo);
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Equipo eliminado.');
+  await refrescar();
+}
+
+async function modificarJugador(){
+  const nombre = valor('adm-select-jugador');
+  if (!nombre) return aviso('Selecciona un jugador.', 'warn');
+
+  const cambios = {};
+  if (valor('adm-edit-puntos') !== '') cambios.puntos = num(valor('adm-edit-puntos'));
+  if (valor('adm-edit-creditos') !== '') cambios.creditos = num(valor('adm-edit-creditos'));
+  if (!Object.keys(cambios).length) return aviso('No has introducido ningún cambio.', 'warn');
+
+  const { error } = await sb.from('jugadores').update(cambios).eq('nombre', nombre);
+  if (error) return aviso('Error: ' + error.message, 'error');
+  ponerValor('adm-edit-puntos',''); ponerValor('adm-edit-creditos','');
+  aviso('Jugador actualizado.');
+  await refrescar();
+}
+
+async function eliminarJugador(){
+  const nombre = valor('adm-select-jugador');
+  if (!nombre) return aviso('Selecciona un jugador.', 'warn');
+  if (!confirm(`¿Eliminar para siempre a @${nombre}?`)) return;
+  const { error } = await sb.from('jugadores').delete().eq('nombre', nombre);
+  if (error) return aviso('Error: ' + error.message, 'error');
+  aviso('Jugador eliminado.');
+  await refrescar();
+}
+
+/* ============ Eventos (delegación única) ============ */
+const ACCIONES = {
+  entrar,
+  admin: accesoAdmin,
+  reclamar,
+  'confirmar-apuesta': confirmarApuesta,
+  mercado: el => alternarMercado(el.dataset.id),
+  quitar:  el => { estado.seleccion.delete(Number(el.dataset.id)); sincronizarCuotas(); renderBoleto(); },
+  stake:   el => { estado.stake = num(el.dataset.valor, 1); renderBoleto(); },
+  exacto:  () => {
+    const m = mercadoExacto(num(valor('exacto-equipo')), num(valor('exacto-rival')));
+    if (!m) return aviso('Ese marcador no está disponible.', 'warn');
+    alternarMercado(m.id);
+  },
+  'crear-jornada': crearJornada,
+  'habilitar-creditos': habilitarCreditos,
+  'guardar-cuotas': guardarCuotas,
+  'guardar-resultados': guardarResultados,
+  liquidar,
+  'guardar-estadistica': guardarEstadistica,
+  'borrar-estadistica': borrarEstadistica,
+  'guardar-clasificacion': guardarClasificacion,
+  'borrar-clasificacion': borrarClasificacion,
+  'modificar-jugador': modificarJugador,
+  'eliminar-jugador': eliminarJugador,
+  'cerrar-panel': () => location.reload()
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-accion]');
+  if (!el || el.tagName === 'SELECT') return;
+  const accion = ACCIONES[el.dataset.accion];
+  if (accion) accion(el);
+});
+
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'adm-select-stats')  return cargarEstadistica();
+  if (el.id === 'adm-select-clasif') return cargarClasificacion();
+  if (el.id === 'exacto-equipo' || el.id === 'exacto-rival') return actualizarBotonExacto();
+});
+
+$('username').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refrescar(); });
+
+setInterval(actualizarCuentaAtras, 1000);
+
+})();
+</script>
 </body>
 </html>
