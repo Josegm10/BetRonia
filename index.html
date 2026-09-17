@@ -1003,7 +1003,7 @@
         function etiquetaOpcionJugador(m) {
             if (m.opcion === 'si') return 'Sí';
             if (m.opcion === 'no') return 'No';
-            if (m.opcion === 'mas') return `Más de ${m.linea}`;
+            if (m.opcion === 'mas') return Number(m.linea) === 3.5 ? '4 o más' : `+${m.linea}`;
             if (m.opcion === 'menos') return `Menos de ${m.linea}`;
             return m.descripcion;
         }
@@ -1018,7 +1018,7 @@
             const tipo = m.tipo_evento;
             const portero = esPorteroJugador(m.jugador);
 
-            // Se elimina el mercado de remates simples.
+            // Se elimina por completo el mercado de remates simples.
             if (tipo === 'remates_jugador') return false;
 
             // Un portero solo puede tener mercado de paradas.
@@ -1027,25 +1027,44 @@
             // Los mercados de paradas son exclusivos de porteros.
             if (tipo === 'paradas_portero') return false;
 
+            // Los mercados numéricos solo ofrecen líneas de MÁS.
+            if (['goles_jugador', 'faltas_jugador', 'remates_puerta_jugador'].includes(tipo)) {
+                return m.opcion === 'mas' && [0.5, 1.5, 2.5, 3.5].includes(Number(m.linea));
+            }
+
             return true;
         }
 
         function renderMercadosJugadores(mercados) {
             const categorias = [
-                { tipo: 'jugador_marca', titulo: '⚽ ANOTARÁ', subtitulo: 'JUGADORES' },
-                { tipo: 'jugador_asiste', titulo: '🎯 ASISTIRÁ', subtitulo: 'JUGADORES' },
-                { tipo: 'goles_jugador', titulo: '⚽ NÚMERO DE GOLES', subtitulo: 'JUGADORES' },
-                { tipo: 'faltas_jugador', titulo: '🚩 NÚMERO DE FALTAS', subtitulo: 'JUGADORES' },
-                { tipo: 'paradas_portero', titulo: '🧤 NÚMERO DE PARADAS', subtitulo: 'PORTEROS' },
-                { tipo: 'jugador_tarjeta', titulo: '🟨 RECIBIRÁ TARJETA', subtitulo: 'JUGADORES' },
-                { tipo: 'remates_puerta_jugador', titulo: '🎯 REMATES A PUERTA', subtitulo: 'JUGADORES' }
+                { tipo: 'jugador_marca', titulo: '⚽ ANOTARÁ', subtitulo: 'JUGADORES', modo: 'boolean' },
+                { tipo: 'jugador_asiste', titulo: '🎯 ASISTIRÁ', subtitulo: 'JUGADORES', modo: 'boolean' },
+                { tipo: 'jugador_tarjeta', titulo: '🟨 RECIBIRÁ TARJETA', subtitulo: 'JUGADORES', modo: 'boolean' },
+                { tipo: 'goles_jugador', titulo: '⚽ NÚMERO DE GOLES', subtitulo: 'JUGADORES', modo: 'lineas' },
+                { tipo: 'faltas_jugador', titulo: '🚩 NÚMERO DE FALTAS', subtitulo: 'JUGADORES', modo: 'lineas' },
+                { tipo: 'remates_puerta_jugador', titulo: '🎯 REMATES A PUERTA', subtitulo: 'JUGADORES', modo: 'lineas' },
+                { tipo: 'paradas_portero', titulo: '🧤 NÚMERO DE PARADAS', subtitulo: 'PORTEROS', modo: 'lineas' }
             ];
 
             mercados = mercados.filter(mercadoJugadorPermitido);
-            const porTipo = tipo => mercados.filter(m => m.tipo_evento === tipo);
+
+            const botonCuota = m => {
+                if (!m) return '<td>—</td>';
+                const seleccionado = mercadosSeleccionados.has(Number(m.id));
+                const cerrada = apuestasCerradas();
+                return `<td>
+                    <button type="button"
+                            class="player-odd-btn ${seleccionado ? 'selected' : ''}"
+                            onclick="toggleMercado(${Number(m.id)})"
+                            ${cerrada ? 'disabled' : ''}
+                            title="${escapeHtml(m.descripcion)}">
+                        ${cuotaTexto(m.cuota)}
+                    </button>
+                </td>`;
+            };
 
             return categorias.map(cat => {
-                const lista = porTipo(cat.tipo);
+                const lista = mercados.filter(m => m.tipo_evento === cat.tipo);
                 if (!lista.length) return '';
 
                 const jugadores = new Map();
@@ -1054,77 +1073,38 @@
                     jugadores.get(m.jugador).push(m);
                 });
 
-                const filas = [...jugadores.entries()].map(([jugador, opciones]) => {
-                    opciones.sort((a,b) => Number(a.linea || 0) - Number(b.linea || 0) || String(a.opcion || '').localeCompare(String(b.opcion || '')));
-                    const botones = opciones.map(m => {
-                        const seleccionado = mercadosSeleccionados.has(Number(m.id));
-                        const cerrada = apuestasCerradas();
-                        return `
-                            <button type="button"
-                                    class="player-odd-btn ${seleccionado ? 'selected' : ''}"
-                                    onclick="toggleMercado(${Number(m.id)})"
-                                    ${cerrada ? 'disabled' : ''}
-                                    title="${escapeHtml(m.descripcion)}">
-                                ${cuotaTexto(m.cuota)}
-                            </button>`;
-                    }).join('');
-
-                    return `
-                        <tr>
-                            <td>
-                                <span class="player-stat-name">${escapeHtml(jugador)}</span>
-                            </td>
-                            ${opciones.map(m => {
-                                const seleccionado = mercadosSeleccionados.has(Number(m.id));
-                                const cerrada = apuestasCerradas();
-                                return `<td>
-                                    <button type="button"
-                                            class="player-odd-btn ${seleccionado ? 'selected' : ''}"
-                                            onclick="toggleMercado(${Number(m.id)})"
-                                            ${cerrada ? 'disabled' : ''}
-                                            title="${escapeHtml(m.descripcion)}">
-                                        ${cuotaTexto(m.cuota)}
-                                    </button>
-                                </td>`;
-                            }).join('')}
-                        </tr>`;
-                }).join('');
-
-                // Determinar columnas de forma estable para toda la categoría.
                 let columnas = [];
-                if (cat.tipo === 'jugador_marca' || cat.tipo === 'jugador_asiste' || cat.tipo === 'jugador_tarjeta') {
-                    const opciones = [...new Set(lista.map(m => m.opcion))];
-                    columnas = opciones.map(o => o === 'si' ? 'Sí' : o === 'no' ? 'No' : o);
+                if (cat.modo === 'boolean') {
+                    columnas = [
+                        { key: 'si', titulo: 'Sí' },
+                        { key: 'no', titulo: 'No' }
+                    ];
                 } else {
-                    const opciones = [...new Set(lista.map(m => `${m.opcion}|${m.linea}`))]
-                        .sort((a,b) => Number(a.split('|')[1]) - Number(b.split('|')[1]));
-                    columnas = opciones.map(x => {
-                        const [op, linea] = x.split('|');
-                        return op === 'mas' ? `Más de ${linea}` : `Menos de ${linea}`;
-                    });
+                    columnas = [
+                        { key: '0.5', titulo: '+0.5' },
+                        { key: '1.5', titulo: '+1.5' },
+                        { key: '2.5', titulo: '+2.5' },
+                        { key: '3.5', titulo: '4 o más' }
+                    ];
                 }
 
-                const jugadoresFilas = [...jugadores.entries()].map(([jugador, opciones]) => {
+                const filas = [...jugadores.entries()].map(([jugador, opciones]) => {
                     const celdas = columnas.map(col => {
-                        let mercado = null;
-                        if (col === 'Sí') mercado = opciones.find(m => m.opcion === 'si');
-                        else if (col === 'No') mercado = opciones.find(m => m.opcion === 'no');
-                        else if (col.startsWith('Más de ')) mercado = opciones.find(m => m.opcion === 'mas' && `Más de ${m.linea}` === col);
-                        else if (col.startsWith('Menos de ')) mercado = opciones.find(m => m.opcion === 'menos' && `Menos de ${m.linea}` === col);
-                        if (!mercado) return '<td>—</td>';
-                        const seleccionado = mercadosSeleccionados.has(Number(mercado.id));
-                        const cerrada = apuestasCerradas();
-                        return `<td>
-                            <button type="button"
-                                    class="player-odd-btn ${seleccionado ? 'selected' : ''}"
-                                    onclick="toggleMercado(${Number(mercado.id)})"
-                                    ${cerrada ? 'disabled' : ''}
-                                    title="${escapeHtml(mercado.descripcion)}">
-                                ${cuotaTexto(mercado.cuota)}
-                            </button>
-                        </td>`;
+                        let mercado;
+                        if (cat.modo === 'boolean') {
+                            mercado = opciones.find(m => m.opcion === col.key);
+                        } else {
+                            mercado = opciones.find(m =>
+                                m.opcion === 'mas' && Number(m.linea) === Number(col.key)
+                            );
+                        }
+                        return botonCuota(mercado);
                     }).join('');
-                    return `<tr><td><span class="player-stat-name">${escapeHtml(jugador)}</span></td>${celdas}</tr>`;
+
+                    return `<tr>
+                        <td><span class="player-stat-name">${escapeHtml(jugador)}</span></td>
+                        ${celdas}
+                    </tr>`;
                 }).join('');
 
                 return `
@@ -1138,10 +1118,10 @@
                                 <thead>
                                     <tr>
                                         <th>Jugador</th>
-                                        ${columnas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}
+                                        ${columnas.map(c => `<th>${escapeHtml(c.titulo)}</th>`).join('')}
                                     </tr>
                                 </thead>
-                                <tbody>${jugadoresFilas}</tbody>
+                                <tbody>${filas}</tbody>
                             </table>
                         </div>
                     </div>
@@ -1173,7 +1153,7 @@
             ];
 
             const exactoSeleccionado = mercadosElegidos().find(m => m.tipo_evento === 'resultado_exacto');
-            const opcionesGoles = [0,1,2,3,4,5].map(n => `<option value="${n}">${n}</option>`).join('');
+            
 
             let htmlPartido = `
                 <div class="market-section">
@@ -1190,9 +1170,9 @@
                         <span class="market-group-title">Resultado exacto</span>
                         <div class="exact-score-box">
                             <div class="exact-score-row">
-                                <select id="exacto-equipo" onchange="actualizarCuotaExacta()">${opcionesGoles}</select>
+                                <input id="exacto-equipo" type="number" min="0" max="10" value="0" oninput="actualizarCuotaExacta()">
                                 <b>-</b>
-                                <select id="exacto-rival" onchange="actualizarCuotaExacta()">${opcionesGoles}</select>
+                                <input id="exacto-rival" type="number" min="0" max="10" value="0" oninput="actualizarCuotaExacta()">
                             </div>
                             <button id="btn-exacto" onclick="agregarResultadoExacto()" ${apuestasCerradas() ? 'disabled' : ''}>
                                 AÑADIR RESULTADO EXACTO
@@ -1234,6 +1214,11 @@
 
             const ge = numero(selectEquipo.value);
             const gr = numero(selectRival.value);
+            if (ge < 0 || gr < 0 || ge > 10 || gr > 10) {
+                boton.innerText = 'MARCADOR NO VÁLIDO';
+                boton.disabled = true;
+                return;
+            }
             const mercado = mercadosActuales.find(m =>
                 m.tipo_evento === 'resultado_exacto' &&
                 numero(m.goles_equipo) === ge && numero(m.goles_rival) === gr
@@ -1249,6 +1234,9 @@
             if (apuestasCerradas()) return;
             const golesEquipo = numero(document.getElementById('exacto-equipo').value);
             const golesRival = numero(document.getElementById('exacto-rival').value);
+            if (golesEquipo < 0 || golesRival < 0 || golesEquipo > 10 || golesRival > 10) {
+                return alert('El marcador debe estar entre 0 y 10 goles por equipo.');
+            }
             const mercado = mercadosActuales.find(m =>
                 m.tipo_evento === 'resultado_exacto' &&
                 numero(m.goles_equipo) === golesEquipo &&
