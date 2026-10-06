@@ -940,6 +940,54 @@
             return mercadosActuales.find(m => Number(m.id) === Number(id));
         }
 
+        /*
+         * Cuota efectiva de una selección dentro de la combinada.
+         * Las cuotas que genera el administrador son la cuota base.
+         * Cuando se combinan mercados relacionados, ajustamos únicamente
+         * la cuota de la selección dependiente:
+         *   - Ambos equipos marcan = Sí  => mínimo 2 goles.
+         *   - Ambos equipos reciben tarjeta = Sí => mínimo 2 tarjetas.
+         *
+         * 0.5 y 1.5 pasan a 1.01 porque quedan prácticamente garantizadas.
+         * Las líneas superiores mantienen la cuota base pero con una reducción
+         * por correlación.
+         */
+        function cuotaEfectiva(mercado, seleccionadas = mercadosElegidos()) {
+            if (!mercado) return 1.01;
+
+            const base = Number(mercado.cuota);
+            if (!Number.isFinite(base) || base <= 0) return 1.01;
+
+            const lista = seleccionadas || [];
+            const ambosMarcanSi = lista.some(m =>
+                m.tipo_evento === 'ambos_marcan' && m.opcion === 'si'
+            );
+            const ambosTarjetaSi = lista.some(m =>
+                m.tipo_evento === 'ambos_tarjeta' && m.opcion === 'si'
+            );
+
+            let cuota = base;
+            const linea = Number(mercado.linea);
+
+            if (mercado.tipo_evento === 'total_goles' &&
+                mercado.opcion === 'mas' &&
+                ambosMarcanSi) {
+                if (linea <= 1.5) cuota = 1.01;
+                else if (linea <= 2.5) cuota = base * 0.70;
+                else cuota = base * 0.80;
+            }
+
+            if (mercado.tipo_evento === 'total_tarjetas' &&
+                mercado.opcion === 'mas' &&
+                ambosTarjetaSi) {
+                if (linea <= 1.5) cuota = 1.01;
+                else if (linea <= 2.5) cuota = base * 0.70;
+                else cuota = base * 0.80;
+            }
+
+            return Math.max(1.01, Number(cuota.toFixed(2)));
+        }
+
         function renderTarjetasMercado(mercados) {
             if (!mercados.length) return '';
             const cerradas = apuestasCerradas();
@@ -950,7 +998,7 @@
                     <div class="market-card ${seleccionado ? 'selected' : ''} ${cerradas ? 'disabled' : ''}"
                          onclick="toggleMercado(${Number(m.id)})">
                         <span>${m.tipo_evento === 'total_goles' || m.tipo_evento === 'total_tarjetas' ? escapeHtml(Number(m.linea) === 3.5 ? '4 o más' : `+${m.linea}`) : escapeHtml(m.descripcion)}</span>
-                        <span class="odd">${cuotaTexto(m.cuota)}</span>
+                        <span class="odd">${cuotaTexto(cuotaEfectiva(m))}</span>
                     </div>
                 `;
             }).join('')}</div>`;
@@ -1026,7 +1074,7 @@
                             onclick="toggleMercado(${Number(m.id)})"
                             ${cerrada ? 'disabled' : ''}
                             title="${escapeHtml(m.descripcion)}">
-                        ${cuotaTexto(m.cuota)}
+                        ${cuotaTexto(cuotaEfectiva(m))}
                     </button>
                 </td>`;
             };
@@ -1295,9 +1343,16 @@
         }
 
         function calcularCuotaBoleto(seleccionadas) {
-            const producto = seleccionadas.reduce((total, m) => total * Number(m.cuota), 1);
-            const ajuste = Math.max(0.65, 1 - 0.05 * (seleccionadas.length - 1));
-            return Math.min(producto * ajuste, 100);
+            /*
+             * La cuota de la combinada es el producto REAL de las cuotas
+             * efectivas de todas las selecciones. No se aplica ningún
+             * descuento artificial por número de selecciones.
+             */
+            const producto = seleccionadas.reduce(
+                (total, m) => total * cuotaEfectiva(m, seleccionadas),
+                1
+            );
+            return Math.min(Number(producto.toFixed(2)), 100);
         }
 
         function seleccionarStake(cantidad) {
@@ -1326,7 +1381,7 @@
             lista.innerHTML = seleccionadas.map((m, i) => `
                 <div class="slip-line">
                     <span><b>${i + 1}.</b> ${escapeHtml(m.descripcion)}</span>
-                    <span><b>${cuotaTexto(m.cuota)}</b> <button class="remove-selection" onclick="eliminarDelBoleto(${Number(m.id)})">×</button></span>
+                    <span><b>${cuotaTexto(cuotaEfectiva(m, seleccionadas))}</b> <button class="remove-selection" onclick="eliminarDelBoleto(${Number(m.id)})">×</button></span>
                 </div>
             `).join('');
 
@@ -1356,7 +1411,7 @@
 
             const cuotaTotal = calcularCuotaBoleto(seleccionadas);
             const premio = Math.max(1, Math.round(cuotaTotal * creditosApostar));
-            const texto = seleccionadas.map(m => `• ${m.descripcion} (${cuotaTexto(m.cuota)})`).join('\n');
+            const texto = seleccionadas.map(m => `• ${m.descripcion} (${cuotaTexto(cuotaEfectiva(m, seleccionadas))})`).join('\n');
 
             if (!confirm(`Confirmar apuesta:\n\n${texto}\n\nCuota total: ${cuotaTexto(cuotaTotal)}\nCréditos: ${creditosApostar}\nPremio potencial: ${premio} puntos`)) {
                 return;
