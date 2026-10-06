@@ -611,10 +611,11 @@
 
         <div id="boleto-ui" class="vote-box" style="background:#eefdf5;">
             <h3 style="margin-top:0;">🎟️ TU BOLETO</h3>
+            <div style="font-size:12px; color:#475569; margin-bottom:8px;">Selecciona tus mercados y verás inmediatamente cada elección, su cuota y la cuota total de la combinación. Apuesta fija de 5 créditos.</div>
             <div id="boleto-selecciones"></div>
-            <div id="stake-container" class="hidden">
-                <strong style="font-size:13px;">Créditos que apuestas</strong>
-                <div id="stake-grid" class="stake-grid"></div>
+            <div id="stake-container" style="margin:10px 0; padding:10px; background:#fff; border-radius:8px; border:1px solid #d1d5db;">
+                <strong style="font-size:13px;">Apuesta fija: 5 créditos</strong>
+                <div style="font-size:12px; color:#64748b; margin-top:4px;">Solo puedes realizar una apuesta de 5 créditos por jornada.</div>
             </div>
             <div id="boleto-resumen" class="summary-box hidden"></div>
             <button id="btn-apostar" onclick="confirmarApuesta()" class="btn-success" disabled>CONFIRMAR APUESTA</button>
@@ -674,7 +675,7 @@
         let apuestasUsuario = [];
         let creditosUsuario = 0;
         let mercadosSeleccionados = new Set();
-        let creditosApostar = 1;
+        let creditosApostar = 5;
         let countdownInterval = null;
         let adminJugadoresRonda = [];
         let estadisticasActuales = [];
@@ -960,7 +961,6 @@
                 jugador_marca: 'Marca al menos un gol',
                 jugador_asiste: 'Da al menos una asistencia',
                 goles_jugador: 'Número de goles',
-                faltas_jugador: 'Número de faltas',
                 paradas_portero: 'Número de paradas',
                 jugador_tarjeta: 'Recibe tarjeta',
                 remates_jugador: 'Número de remates',
@@ -988,7 +988,7 @@
             const portero = esPorteroJugador(m.jugador);
 
             // Se elimina por completo el mercado de remates simples.
-            if (tipo === 'remates_jugador') return false;
+            if (tipo === 'remates_jugador' || tipo === 'faltas_jugador') return false;
 
             // Un portero solo puede tener mercado de paradas.
             if (portero) return tipo === 'paradas_portero';
@@ -997,7 +997,7 @@
             if (tipo === 'paradas_portero') return false;
 
             // Los mercados numéricos solo ofrecen líneas de MÁS.
-            if (['goles_jugador', 'faltas_jugador', 'remates_puerta_jugador'].includes(tipo)) {
+            if (['goles_jugador', 'remates_puerta_jugador'].includes(tipo)) {
                 return m.opcion === 'mas' && [0.5, 1.5, 2.5, 3.5].includes(Number(m.linea));
             }
 
@@ -1010,7 +1010,6 @@
                 { tipo: 'jugador_asiste', titulo: '🎯 ASISTIRÁ', subtitulo: 'JUGADORES', modo: 'boolean' },
                 { tipo: 'jugador_tarjeta', titulo: '🟨 RECIBIRÁ TARJETA', subtitulo: 'JUGADORES', modo: 'boolean' },
                 { tipo: 'goles_jugador', titulo: '⚽ NÚMERO DE GOLES', subtitulo: 'JUGADORES', modo: 'lineas' },
-                { tipo: 'faltas_jugador', titulo: '🚩 NÚMERO DE FALTAS', subtitulo: 'JUGADORES', modo: 'lineas' },
                 { tipo: 'remates_puerta_jugador', titulo: '🎯 REMATES A PUERTA', subtitulo: 'JUGADORES', modo: 'lineas' },
                 { tipo: 'paradas_portero', titulo: '🧤 NÚMERO DE PARADAS', subtitulo: 'PORTEROS', modo: 'lineas' }
             ];
@@ -1290,6 +1289,11 @@
             return mercadosActuales.filter(m => mercadosSeleccionados.has(Number(m.id)));
         }
 
+        function yaTieneApuestaEnJornada() {
+            if (!jornadaActual || !miNombre) return false;
+            return apuestasUsuario.some(a => Number(a.jornada_id) === Number(jornadaActual.id));
+        }
+
         function calcularCuotaBoleto(seleccionadas) {
             const producto = seleccionadas.reduce((total, m) => total * Number(m.cuota), 1);
             const ajuste = Math.max(0.65, 1 - 0.05 * (seleccionadas.length - 1));
@@ -1297,58 +1301,48 @@
         }
 
         function seleccionarStake(cantidad) {
-            if (cantidad < 1 || cantidad > creditosUsuario) return;
-            creditosApostar = cantidad;
+            // La prueba de liga utiliza una única apuesta fija de 5 créditos.
+            creditosApostar = 5;
             renderBoleto();
         }
 
         function renderBoleto() {
             const seleccionadas = mercadosElegidos();
             const lista = document.getElementById('boleto-selecciones');
-            const stakeContainer = document.getElementById('stake-container');
-            const stakeGrid = document.getElementById('stake-grid');
             const resumen = document.getElementById('boleto-resumen');
             const boton = document.getElementById('btn-apostar');
+            const yaApostado = yaTieneApuestaEnJornada();
+
+            creditosApostar = 5;
 
             if (seleccionadas.length === 0) {
-                lista.innerHTML = '<p style="font-size:13px; color:#64748b;">Pulsa una o varias cuotas para crear tu apuesta.</p>';
-                stakeContainer.classList.add('hidden');
+                lista.innerHTML = '<p style="font-size:13px; color:#64748b;">Selecciona las cuotas que quieras combinar. Aquí aparecerán tu elección y la cuota obtenida.</p>';
                 resumen.classList.add('hidden');
                 boton.disabled = true;
+                boton.innerText = yaApostado ? 'YA HAS APOSTADO EN ESTA JORNADA' : 'CONFIRMAR APUESTA';
                 return;
             }
 
-            lista.innerHTML = seleccionadas.map(m => `
+            lista.innerHTML = seleccionadas.map((m, i) => `
                 <div class="slip-line">
-                    <span>${escapeHtml(m.descripcion)}</span>
+                    <span><b>${i + 1}.</b> ${escapeHtml(m.descripcion)}</span>
                     <span><b>${cuotaTexto(m.cuota)}</b> <button class="remove-selection" onclick="eliminarDelBoleto(${Number(m.id)})">×</button></span>
                 </div>
             `).join('');
 
-            stakeContainer.classList.remove('hidden');
-            const maxCreditos = Math.min(5, creditosUsuario);
-            if (maxCreditos > 0 && creditosApostar > maxCreditos) creditosApostar = maxCreditos;
-            if (maxCreditos === 0) creditosApostar = 0;
-
-            stakeGrid.innerHTML = [1,2,3,4,5].map(c => `
-                <button class="stake-btn ${creditosApostar === c ? 'active' : ''}"
-                        onclick="seleccionarStake(${c})"
-                        ${c > maxCreditos ? 'disabled' : ''}>${c}</button>
-            `).join('');
-
             const cuotaCalculada = calcularCuotaBoleto(seleccionadas);
-            const premio = creditosApostar > 0 ? Math.max(1, Math.round(cuotaCalculada * creditosApostar)) : 0;
+            const premio = Math.max(1, Math.round(cuotaCalculada * 5));
 
             resumen.classList.remove('hidden');
             resumen.innerHTML = `
                 <div class="summary-row"><span>Selecciones</span><b>${seleccionadas.length}</b></div>
-                <div class="summary-row"><span>Cuota total</span><b>${cuotaTexto(cuotaCalculada)}</b></div>
-                <div class="summary-row"><span>Créditos</span><b>${creditosApostar}</b></div>
+                <div class="summary-row"><span>Cuota total obtenida</span><b style="font-size:18px;">${cuotaTexto(cuotaCalculada)}</b></div>
+                <div class="summary-row"><span>Apuesta</span><b>5 créditos</b></div>
                 <div class="summary-row"><span>Premio potencial</span><b>${premio} puntos</b></div>
             `;
 
-            boton.disabled = apuestasCerradas() || creditosApostar < 1 || creditosUsuario < creditosApostar || !miNombre;
-            boton.innerText = creditosUsuario === 0 ? 'NO TIENES CRÉDITOS' : 'CONFIRMAR APUESTA';
+            boton.disabled = apuestasCerradas() || creditosUsuario < 5 || !miNombre || yaApostado;
+            boton.innerText = yaApostado ? 'YA HAS APOSTADO EN ESTA JORNADA' : (creditosUsuario < 5 ? 'NECESITAS 5 CRÉDITOS' : 'CONFIRMAR APUESTA · 5 CRÉDITOS');
         }
 
         async function confirmarApuesta() {
@@ -1356,7 +1350,9 @@
             if (!miNombre) return alert('Accede como jugador para apostar.');
             if (apuestasCerradas()) return alert('Las apuestas están cerradas.');
             if (seleccionadas.length === 0) return alert('Selecciona al menos una cuota.');
-            if (creditosApostar < 1 || creditosApostar > creditosUsuario) return alert('Créditos no válidos.');
+            if (yaTieneApuestaEnJornada()) return alert('Ya has realizado tu única apuesta de 5 créditos en esta jornada.');
+            if (creditosUsuario < 5) return alert('Necesitas tener los 5 créditos disponibles para realizar la apuesta.');
+            creditosApostar = 5;
 
             const cuotaTotal = calcularCuotaBoleto(seleccionadas);
             const premio = Math.max(1, Math.round(cuotaTotal * creditosApostar));
@@ -1375,8 +1371,8 @@
             if (error) return alert('No se pudo registrar la apuesta: ' + error.message);
 
             mercadosSeleccionados.clear();
-            creditosApostar = 1;
-            alert('¡Apuesta registrada!');
+            creditosApostar = 5;
+            alert('¡Apuesta registrada por 5 créditos!');
             await refrescar();
         }
 
