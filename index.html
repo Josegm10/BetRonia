@@ -573,6 +573,17 @@
             <button onclick="lanzarNuevaJornada()" style="background:#2563eb;">CREAR JORNADA Y GENERAR CUOTAS</button>
             <button onclick="habilitarCreditos()" style="background:#8b5cf6;">🔓 HABILITAR RECARGA DE CRÉDITOS</button>
             <div id="admin-jornada-resumen"></div>
+
+            <div id="admin-control-cierre" class="hidden" style="margin-top:12px; padding:12px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc;">
+                <strong style="font-size:13px;">Control de cierre de apuestas</strong>
+                <p style="font-size:12px; color:#64748b; margin:5px 0 8px;">Puedes corregir la fecha de cierre o cerrar las apuestas inmediatamente.</p>
+                <label style="font-size:12px; font-weight:bold; display:block;">Nueva fecha de cierre</label>
+                <input type="datetime-local" id="adm-nuevo-cierre-apuestas">
+                <div class="row" style="margin-top:8px;">
+                    <button id="btn-modificar-cierre" onclick="modificarCierreJornada()" style="background:#0ea5e9;">🕒 MODIFICAR CIERRE</button>
+                    <button id="btn-cerrar-ahora" onclick="cerrarApuestasAhora()" style="background:#dc2626;">⛔ CERRAR APUESTAS AHORA</button>
+                </div>
+            </div>
         </div>
 
 
@@ -769,6 +780,14 @@
         function fechaLocal(valor) {
             if (!valor) return '';
             return new Date(valor).toLocaleString('es-ES');
+        }
+
+        function fechaParaInput(valor) {
+            if (!valor) return '';
+            const d = new Date(valor);
+            if (Number.isNaN(d.getTime())) return '';
+            const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
         }
 
         async function entrar() {
@@ -1696,14 +1715,28 @@
             const botonGuardar = document.getElementById('btn-guardar-resultados');
             const botonLiquidar = document.getElementById('btn-liquidar');
 
+            const controlCierre = document.getElementById('admin-control-cierre');
+            const inputNuevoCierre = document.getElementById('adm-nuevo-cierre-apuestas');
+            const botonModificarCierre = document.getElementById('btn-modificar-cierre');
+            const botonCerrarAhora = document.getElementById('btn-cerrar-ahora');
+
             if (!jornadaActual) {
                 resumen.innerHTML = '<div class="notice notice-info">No hay jornada pendiente de liquidar.</div>';
                 resultados.innerHTML = '<div class="notice notice-info">Crea primero una jornada.</div>';
                 botonGuardar.disabled = true;
                 botonLiquidar.disabled = true;
+                if (controlCierre) controlCierre.classList.add('hidden');
                 adminJugadoresRonda = [];
                 return;
             }
+
+            if (controlCierre) controlCierre.classList.remove('hidden');
+            if (inputNuevoCierre && document.activeElement !== inputNuevoCierre) {
+                inputNuevoCierre.value = fechaParaInput(jornadaActual.cierre_apuestas);
+            }
+            const jornadaEditable = jornadaActual.estado === 'abierta';
+            if (botonModificarCierre) botonModificarCierre.disabled = !jornadaEditable;
+            if (botonCerrarAhora) botonCerrarAhora.disabled = jornadaActual.estado !== 'abierta';
 
             resumen.innerHTML = `
                 <div class="notice ${apuestasCerradas() ? 'notice-danger' : 'notice-success'}">
@@ -1894,60 +1927,17 @@
                 return alert('La cuota debe estar entre 1,01 y 1000.');
             }
 
-            const { data: apuestas, error: errorApuestas } = await sb
-                .from('apuestas')
-                .select('id')
-                .eq('jornada_id', jornadaActual.id)
-                .limit(1);
-
-            if (errorApuestas) return alert('No se pudo comprobar si existen apuestas: ' + errorApuestas.message);
-            if (apuestas && apuestas.length) {
-                return alert('No puedes modificar cuotas porque ya existe al menos una apuesta en esta jornada.');
-            }
-
-            const mercadoActual = mercadosActuales.find(m => Number(m.id) === Number(id));
-            let error;
-            if (mercadoActual?.tipo_evento === 'resultado_exacto') {
-                const res = await sb
-                    .from('mercados')
-                    .update({ cuota: Number(cuota.toFixed(2)) })
-                    .eq('jornada_id', jornadaActual.id)
-                    .eq('tipo_evento', 'resultado_exacto');
-                error = res.error;
-                mercadosActuales
-                    .filter(m => m.tipo_evento === 'resultado_exacto')
-                    .forEach(m => m.cuota = Number(cuota.toFixed(2)));
-            } else {
-                const cuotaBase = Number(cuota.toFixed(2));
-                const res = await sb
-                    .from('mercados')
-                    .update({ cuota: cuotaBase })
-                    .eq('id', Number(id))
-                    .eq('jornada_id', jornadaActual.id);
-                error = res.error;
-
-                if (!error && mercadoActual) {
-                    mercadoActual.cuota = cuotaBase;
-                    const contrario = mercadoContrario(mercadoActual);
-                    const cuotaOpp = cuotaContraria(cuotaBase);
-                    if (contrario && cuotaOpp !== null) {
-                        const resOpp = await sb
-                            .from('mercados')
-                            .update({ cuota: cuotaOpp })
-                            .eq('id', Number(contrario.id))
-                            .eq('jornada_id', jornadaActual.id);
-                        error = resOpp.error;
-                        if (!error) contrario.cuota = cuotaOpp;
-                    }
-                }
-            }
+            const { error } = await sb.rpc('actualizar_cuota_mercado', {
+                p_jornada_id: Number(jornadaActual.id),
+                p_mercado_id: Number(id),
+                p_cuota: Number(cuota.toFixed(2))
+            });
 
             if (error) return alert('No se pudo guardar la cuota: ' + error.message);
 
-            renderAdminCuotas();
-            renderMercados();
-            renderBoleto();
-            alert('Cuota actualizada correctamente.');
+            // Volvemos a leer desde Supabase para que admin y usuarios vean exactamente lo mismo.
+            await refrescar();
+            alert('Cuota actualizada correctamente en Supabase.');
         }
 
         async function guardarCuotasAdmin() {
@@ -1973,86 +1963,49 @@
             for (const input of inputs) {
                 const id = Number(input.dataset.mercadoId);
                 const cuota = Number(input.value);
-
                 if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
                     return alert(`La cuota del mercado ${id} no es válida. Usa un valor entre 1,01 y 1000.`);
                 }
-
-                cambios.push({
-                    id,
-                    cuota: Number(cuota.toFixed(2))
-                });
+                cambios.push({ id, cuota: Number(cuota.toFixed(2)) });
             }
 
             if (!cambios.length) return alert('No hay cuotas que guardar.');
             if (!confirm(`¿Guardar las ${cambios.length} cuotas mostradas?`)) return;
 
-            const exacto = cambios.find(c => mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento === 'resultado_exacto');
-            const normales = cambios.filter(c => mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento !== 'resultado_exacto');
-
-            // Guardamos cada mercado binario una sola vez. Su contrario se calcula automáticamente.
+            // Para mercados binarios guardamos un lado una sola vez; el RPC actualiza también el contrario.
             const idsAjustados = new Set();
-            const operaciones = [];
+            const peticiones = [];
 
-            for (const c of normales) {
+            for (const c of cambios) {
                 if (idsAjustados.has(c.id)) continue;
                 const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
                 if (!mercado) continue;
 
-                operaciones.push(
-                    sb.from('mercados')
-                        .update({ cuota: c.cuota })
-                        .eq('id', c.id)
-                        .eq('jornada_id', jornadaActual.id)
-                );
+                peticiones.push(sb.rpc('actualizar_cuota_mercado', {
+                    p_jornada_id: Number(jornadaActual.id),
+                    p_mercado_id: Number(c.id),
+                    p_cuota: Number(c.cuota)
+                }));
                 idsAjustados.add(c.id);
 
-                const contrario = mercadoContrario(mercado);
-                if (contrario) {
-                    const cambioContrario = cambios.find(x => Number(x.id) === Number(contrario.id));
-                    const cuotaOpp = cuotaContraria(c.cuota);
-                    if (cuotaOpp !== null) {
-                        operaciones.push(
-                            sb.from('mercados')
-                                .update({ cuota: cuotaOpp })
-                                .eq('id', contrario.id)
-                                .eq('jornada_id', jornadaActual.id)
-                        );
-                        idsAjustados.add(Number(contrario.id));
-                    }
+                if (mercado.tipo_evento === 'resultado_exacto') {
+                    mercadosActuales
+                        .filter(m => m.tipo_evento === 'resultado_exacto')
+                        .forEach(m => idsAjustados.add(Number(m.id)));
+                    continue;
                 }
+
+                const contrario = mercadoContrario(mercado);
+                if (contrario) idsAjustados.add(Number(contrario.id));
             }
 
-            if (exacto) {
-                operaciones.push(
-                    sb.from('mercados')
-                        .update({ cuota: exacto.cuota })
-                        .eq('jornada_id', jornadaActual.id)
-                        .eq('tipo_evento', 'resultado_exacto')
-                );
-            }
-
-            const resultados = await Promise.all(operaciones);
+            const resultados = await Promise.all(peticiones);
             const fallo = resultados.find(r => r.error);
             if (fallo) return alert('No se pudieron guardar todas las cuotas: ' + fallo.error.message);
 
-            if (exacto) {
-                mercadosActuales.filter(m => m.tipo_evento === 'resultado_exacto').forEach(m => m.cuota = exacto.cuota);
-            }
-
-            for (const c of normales) {
-                const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
-                if (!mercado) continue;
-                mercado.cuota = c.cuota;
-                const contrario = mercadoContrario(mercado);
-                const cuotaOpp = cuotaContraria(c.cuota);
-                if (contrario && cuotaOpp !== null) contrario.cuota = cuotaOpp;
-            }
-
-            renderAdminCuotas();
-            renderMercados();
-            renderBoleto();
-            alert('Todas las cuotas se han actualizado correctamente.');
+            // Importantísimo: no confiamos en la copia local; releemos las cuotas reales de Supabase.
+            await refrescar();
+            alert('Todas las cuotas se han actualizado correctamente en Supabase.');
         }
 
         async function lanzarNuevaJornada() {
@@ -2086,6 +2039,45 @@
             document.getElementById('adm-jornada-nombre').value = '';
             document.getElementById('adm-rival').value = '';
             document.getElementById('adm-cierre-apuestas').value = '';
+            await refrescar();
+        }
+
+        async function modificarCierreJornada() {
+            if (!jornadaActual) return alert('No hay ninguna jornada activa.');
+            if (jornadaActual.estado !== 'abierta') return alert('La jornada ya no está abierta.');
+
+            const input = document.getElementById('adm-nuevo-cierre-apuestas');
+            const valor = input?.value;
+            if (!valor) return alert('Introduce la nueva fecha y hora de cierre.');
+
+            const nuevoCierre = new Date(valor);
+            if (Number.isNaN(nuevoCierre.getTime())) return alert('La fecha de cierre no es válida.');
+            if (nuevoCierre <= new Date()) return alert('Para cerrar inmediatamente utiliza “CERRAR APUESTAS AHORA”.');
+
+            if (!confirm(`¿Cambiar el cierre de apuestas a ${nuevoCierre.toLocaleString('es-ES')}?`)) return;
+
+            const { error } = await sb.rpc('modificar_cierre_jornada', {
+                p_jornada_id: jornadaActual.id,
+                p_cierre: nuevoCierre.toISOString()
+            });
+
+            if (error) return alert('No se pudo modificar el cierre: ' + error.message);
+            alert('Fecha de cierre actualizada correctamente.');
+            await refrescar();
+        }
+
+        async function cerrarApuestasAhora() {
+            if (!jornadaActual) return alert('No hay ninguna jornada activa.');
+            if (jornadaActual.estado !== 'abierta') return alert('Las apuestas ya están cerradas.');
+
+            if (!confirm('¿Cerrar las apuestas AHORA? Desde este momento ningún jugador podrá enviar ni cambiar su apuesta.')) return;
+
+            const { error } = await sb.rpc('cerrar_apuestas_ahora', {
+                p_jornada_id: jornadaActual.id
+            });
+
+            if (error) return alert('No se pudieron cerrar las apuestas: ' + error.message);
+            alert('Apuestas cerradas correctamente. Ya puedes introducir resultados y liquidar cuando corresponda.');
             await refrescar();
         }
 
