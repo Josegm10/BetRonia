@@ -679,6 +679,8 @@
         let countdownInterval = null;
         let adminJugadoresRonda = [];
         let estadisticasActuales = [];
+        // Conserva el marcador que el usuario está escribiendo aunque la app se refresque.
+        let marcadorExactoBorrador = { equipo: 0, rival: 0 };
 
         function escapeHtml(valor) {
             return String(valor ?? '')
@@ -965,27 +967,43 @@
             const ambosTarjetaSi = lista.some(m =>
                 m.tipo_evento === 'ambos_tarjeta' && m.opcion === 'si'
             );
+            const jugadorMarcaSi = mercado.jugador && lista.some(m =>
+                m.tipo_evento === 'jugador_marca' &&
+                m.opcion === 'si' &&
+                m.jugador === mercado.jugador
+            );
 
             let cuota = base;
             const linea = Number(mercado.linea);
 
+            // Si ambos equipos marcan, +0.5 y +1.5 goles ya están incluidos en esa selección.
             if (mercado.tipo_evento === 'total_goles' &&
                 mercado.opcion === 'mas' &&
                 ambosMarcanSi) {
-                if (linea <= 1.5) cuota = 1.01;
+                if (linea <= 1.5) cuota = 1.00;
                 else if (linea <= 2.5) cuota = base * 0.70;
                 else cuota = base * 0.80;
             }
 
+            // Si ambos equipos reciben tarjeta, +0.5 y +1.5 tarjetas ya están incluidos.
             if (mercado.tipo_evento === 'total_tarjetas' &&
                 mercado.opcion === 'mas' &&
                 ambosTarjetaSi) {
-                if (linea <= 1.5) cuota = 1.01;
+                if (linea <= 1.5) cuota = 1.00;
                 else if (linea <= 2.5) cuota = base * 0.70;
                 else cuota = base * 0.80;
             }
 
-            return Math.max(1.01, Number(cuota.toFixed(2)));
+            // "Jugador marca: Sí" implica necesariamente +0.5 goles del mismo jugador.
+            // Por tanto +0.5 no añade multiplicador adicional a la combinada.
+            if (mercado.tipo_evento === 'goles_jugador' &&
+                mercado.opcion === 'mas' &&
+                linea === 0.5 &&
+                jugadorMarcaSi) {
+                cuota = 1.00;
+            }
+
+            return Math.max(1.00, Number(cuota.toFixed(2)));
         }
 
         function renderTarjetasMercado(mercados) {
@@ -1186,9 +1204,9 @@
                         <span class="market-group-title">Resultado exacto</span>
                         <div class="exact-score-box">
                             <div class="exact-score-row">
-                                <input id="exacto-equipo" type="number" min="0" max="10" value="0" oninput="actualizarCuotaExacta()">
+                                <input id="exacto-equipo" type="number" min="0" max="10" value="${marcadorExactoBorrador.equipo}" oninput="actualizarCuotaExacta()">
                                 <b>-</b>
-                                <input id="exacto-rival" type="number" min="0" max="10" value="0" oninput="actualizarCuotaExacta()">
+                                <input id="exacto-rival" type="number" min="0" max="10" value="${marcadorExactoBorrador.rival}" oninput="actualizarCuotaExacta()">
                             </div>
                             <button id="btn-exacto" onclick="agregarResultadoExacto()" ${apuestasCerradas() ? 'disabled' : ''}>
                                 AÑADIR RESULTADO EXACTO
@@ -1215,8 +1233,12 @@
             contenedor.innerHTML = htmlPartido + htmlJugadores;
 
             if (exactoSeleccionado) {
-                document.getElementById('exacto-equipo').value = String(exactoSeleccionado.goles_equipo);
-                document.getElementById('exacto-rival').value = String(exactoSeleccionado.goles_rival);
+                marcadorExactoBorrador = {
+                    equipo: numero(exactoSeleccionado.goles_equipo),
+                    rival: numero(exactoSeleccionado.goles_rival)
+                };
+                document.getElementById('exacto-equipo').value = String(marcadorExactoBorrador.equipo);
+                document.getElementById('exacto-rival').value = String(marcadorExactoBorrador.rival);
             }
 
             actualizarCuotaExacta();
@@ -1230,6 +1252,7 @@
 
             const ge = numero(selectEquipo.value);
             const gr = numero(selectRival.value);
+            marcadorExactoBorrador = { equipo: ge, rival: gr };
             if (ge < 0 || gr < 0 || ge > 10 || gr > 10) {
                 boton.innerText = 'MARCADOR NO VÁLIDO';
                 boton.disabled = true;
@@ -1352,7 +1375,7 @@
                 (total, m) => total * cuotaEfectiva(m, seleccionadas),
                 1
             );
-            return Math.min(Number(producto.toFixed(2)), 100);
+            return Number(producto.toFixed(2));
         }
 
         function seleccionarStake(cantidad) {
@@ -1657,6 +1680,30 @@
             }).join('');
         }
 
+        const TIPOS_BINARIOS = new Set([
+            'ambos_marcan', 'ambos_tarjeta',
+            'jugador_marca', 'jugador_asiste', 'jugador_tarjeta',
+            'gol', 'asistencia', 'amarilla'
+        ]);
+
+        function mercadoContrario(mercado) {
+            if (!mercado || !TIPOS_BINARIOS.has(mercado.tipo_evento) || !['si','no'].includes(mercado.opcion)) return null;
+            return mercadosActuales.find(m =>
+                Number(m.id) !== Number(mercado.id) &&
+                m.jornada_id === mercado.jornada_id &&
+                m.tipo_evento === mercado.tipo_evento &&
+                m.opcion === (mercado.opcion === 'si' ? 'no' : 'si') &&
+                String(m.categoria || '') === String(mercado.categoria || '') &&
+                (mercado.categoria === 'partido' || String(m.jugador || '') === String(mercado.jugador || ''))
+            ) || null;
+        }
+
+        function cuotaContraria(cuota) {
+            const q = Number(cuota);
+            if (!Number.isFinite(q) || q <= 1) return null;
+            return Number((q / (q - 1)).toFixed(2));
+        }
+
         async function guardarCuotaIndividual(id) {
             if (!jornadaActual || !esAdmin) return;
             if (jornadaActual.estado === 'liquidada' || apuestasCerradas()) {
@@ -1695,13 +1742,28 @@
                     .filter(m => m.tipo_evento === 'resultado_exacto')
                     .forEach(m => m.cuota = Number(cuota.toFixed(2)));
             } else {
+                const cuotaBase = Number(cuota.toFixed(2));
                 const res = await sb
                     .from('mercados')
-                    .update({ cuota: Number(cuota.toFixed(2)) })
+                    .update({ cuota: cuotaBase })
                     .eq('id', Number(id))
                     .eq('jornada_id', jornadaActual.id);
                 error = res.error;
-                if (mercadoActual) mercadoActual.cuota = Number(cuota.toFixed(2));
+
+                if (!error && mercadoActual) {
+                    mercadoActual.cuota = cuotaBase;
+                    const contrario = mercadoContrario(mercadoActual);
+                    const cuotaOpp = cuotaContraria(cuotaBase);
+                    if (contrario && cuotaOpp !== null) {
+                        const resOpp = await sb
+                            .from('mercados')
+                            .update({ cuota: cuotaOpp })
+                            .eq('id', Number(contrario.id))
+                            .eq('jornada_id', jornadaActual.id);
+                        error = resOpp.error;
+                        if (!error) contrario.cuota = cuotaOpp;
+                    }
+                }
             }
 
             if (error) return alert('No se pudo guardar la cuota: ' + error.message);
@@ -1750,33 +1812,66 @@
             if (!confirm(`¿Guardar las ${cambios.length} cuotas mostradas?`)) return;
 
             const exacto = cambios.find(c => mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento === 'resultado_exacto');
-            const normales = cambios.filter(c => !mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento || mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento !== 'resultado_exacto');
+            const normales = cambios.filter(c => mercadosActuales.find(m => Number(m.id) === c.id)?.tipo_evento !== 'resultado_exacto');
 
-            const resultados = await Promise.all([
-                ...normales.map(c =>
+            // Guardamos cada mercado binario una sola vez. Su contrario se calcula automáticamente.
+            const idsAjustados = new Set();
+            const operaciones = [];
+
+            for (const c of normales) {
+                if (idsAjustados.has(c.id)) continue;
+                const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
+                if (!mercado) continue;
+
+                operaciones.push(
                     sb.from('mercados')
                         .update({ cuota: c.cuota })
                         .eq('id', c.id)
                         .eq('jornada_id', jornadaActual.id)
-                ),
-                ...(exacto ? [
+                );
+                idsAjustados.add(c.id);
+
+                const contrario = mercadoContrario(mercado);
+                if (contrario) {
+                    const cambioContrario = cambios.find(x => Number(x.id) === Number(contrario.id));
+                    const cuotaOpp = cuotaContraria(c.cuota);
+                    if (cuotaOpp !== null) {
+                        operaciones.push(
+                            sb.from('mercados')
+                                .update({ cuota: cuotaOpp })
+                                .eq('id', contrario.id)
+                                .eq('jornada_id', jornadaActual.id)
+                        );
+                        idsAjustados.add(Number(contrario.id));
+                    }
+                }
+            }
+
+            if (exacto) {
+                operaciones.push(
                     sb.from('mercados')
                         .update({ cuota: exacto.cuota })
                         .eq('jornada_id', jornadaActual.id)
                         .eq('tipo_evento', 'resultado_exacto')
-                ] : [])
-            ]);
+                );
+            }
 
+            const resultados = await Promise.all(operaciones);
             const fallo = resultados.find(r => r.error);
             if (fallo) return alert('No se pudieron guardar todas las cuotas: ' + fallo.error.message);
 
             if (exacto) {
                 mercadosActuales.filter(m => m.tipo_evento === 'resultado_exacto').forEach(m => m.cuota = exacto.cuota);
             }
-            normales.forEach(c => {
+
+            for (const c of normales) {
                 const mercado = mercadosActuales.find(m => Number(m.id) === c.id);
-                if (mercado) mercado.cuota = c.cuota;
-            });
+                if (!mercado) continue;
+                mercado.cuota = c.cuota;
+                const contrario = mercadoContrario(mercado);
+                const cuotaOpp = cuotaContraria(c.cuota);
+                if (contrario && cuotaOpp !== null) contrario.cuota = cuotaOpp;
+            }
 
             renderAdminCuotas();
             renderMercados();
