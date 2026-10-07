@@ -949,6 +949,7 @@
          * la cuota de la selección dependiente:
          *   - Ambos equipos marcan = Sí  => mínimo 2 goles.
          *   - Ambos equipos reciben tarjeta = Sí => mínimo 2 tarjetas.
+         *   - Jugador marca = Sí => mínimo 1 remate a puerta del mismo jugador.
          *
          * 0.5 y 1.5 pasan a 1.01 porque quedan prácticamente garantizadas.
          * Las líneas superiores mantienen la cuota base pero con una reducción
@@ -1001,6 +1002,29 @@
                 linea === 0.5 &&
                 jugadorMarcaSi) {
                 cuota = 1.00;
+            }
+
+            // Un gol es necesariamente un remate a puerta.
+            // Si ya hemos elegido "Jugador marca: Sí", +0.5 remates a puerta
+            // queda totalmente incluido y no añade cuota. Para líneas superiores,
+            // desplazamos una línea: +1.5 usa la cuota base de +0.5, +2.5 la
+            // de +1.5 y 4 o más la de +2.5. Así la cuota baja de forma coherente
+            // con el remate a puerta que el gol ya garantiza.
+            if (mercado.tipo_evento === 'remates_puerta_jugador' &&
+                mercado.opcion === 'mas' &&
+                jugadorMarcaSi) {
+                if (linea === 0.5) {
+                    cuota = 1.00;
+                } else {
+                    const lineaAnterior = linea - 1.0;
+                    const mercadoAnterior = mercadosActuales.find(m =>
+                        m.tipo_evento === 'remates_puerta_jugador' &&
+                        m.opcion === 'mas' &&
+                        m.jugador === mercado.jugador &&
+                        Number(m.linea) === lineaAnterior
+                    );
+                    if (mercadoAnterior) cuota = Number(mercadoAnterior.cuota);
+                }
             }
 
             return Math.max(1.00, Number(cuota.toFixed(2)));
