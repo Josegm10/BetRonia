@@ -624,6 +624,13 @@
         <div class="inner-card">
             <h3 style="margin-top:0;">🧾 MIS APUESTAS</h3>
             <div id="mis-apuestas"></div>
+
+            <details id="historial-apuestas-box" style="margin-top:14px; border-top:1px solid #d1d5db; padding-top:12px;">
+                <summary style="cursor:pointer; font-weight:900; color:var(--primary); user-select:none;">
+                    📜 VER HISTORIAL DE APUESTAS <span id="historial-apuestas-contador"></span>
+                </summary>
+                <div id="historial-apuestas" style="margin-top:10px;"></div>
+            </details>
         </div>
 
         <div class="inner-card">
@@ -802,7 +809,7 @@
                     .select('id,usuario,jornada_id,creditos_apostados,cuota_total,premio_potencial,estado,created_at,apuesta_selecciones(descripcion,cuota,resultado)')
                     .eq('usuario', miNombre)
                     .order('created_at', { ascending: false })
-                    .limit(20);
+                    .limit(100);
                 apuestasUsuario = apuestasRes.data || [];
             } else {
                 apuestasUsuario = [];
@@ -1478,38 +1485,65 @@
             await refrescar();
         }
 
+        function tarjetaApuesta(a, esHistorial = false) {
+            const selecciones = a.apuesta_selecciones || [];
+            const estado = String(a.estado || 'pendiente').toLowerCase();
+            const fecha = a.created_at ? new Date(a.created_at).toLocaleString('es-ES', {
+                day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+            }) : '';
+            const puntos = estado === 'ganada' ? numero(a.premio_potencial) : 0;
+
+            return `
+                <div class="bet-card">
+                    <div class="bet-head">
+                        <div>
+                            <b>Jornada ${numero(a.jornada_id)} · Cuota ${cuotaTexto(a.cuota_total)}</b>
+                            ${fecha ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(fecha)}</div>` : ''}
+                        </div>
+                        <span class="status status-${escapeHtml(estado)}">${escapeHtml(estado)}</span>
+                    </div>
+                    ${selecciones.map(s => `
+                        <div class="slip-line">
+                            <span>${escapeHtml(s.descripcion)}</span>
+                            <span>${cuotaTexto(s.cuota)} ${s.resultado === true ? '✅' : s.resultado === false ? '❌' : ''}</span>
+                        </div>
+                    `).join('')}
+                    <div class="summary-row"><span>Apostado</span><b>${numero(a.creditos_apostados)} créditos</b></div>
+                    ${esHistorial
+                        ? `<div class="summary-row"><span>Puntos obtenidos</span><b>${puntos} puntos</b></div>`
+                        : `<div class="summary-row"><span>Premio potencial</span><b>${numero(a.premio_potencial)} puntos</b></div>`}
+                </div>
+            `;
+        }
+
         function renderMisApuestas() {
             const contenedor = document.getElementById('mis-apuestas');
+            const historial = document.getElementById('historial-apuestas');
+            const contador = document.getElementById('historial-apuestas-contador');
+            const cajaHistorial = document.getElementById('historial-apuestas-box');
 
             if (!miNombre) {
                 contenedor.innerHTML = '<p style="font-size:13px;">Accede como jugador para ver tus boletos.</p>';
+                if (historial) historial.innerHTML = '';
+                if (contador) contador.textContent = '';
+                if (cajaHistorial) cajaHistorial.classList.add('hidden');
                 return;
             }
 
-            if (apuestasUsuario.length === 0) {
-                contenedor.innerHTML = '<p style="font-size:13px; color:#64748b;">Todavía no has enviado ninguna apuesta.</p>';
-                return;
-            }
+            const activas = apuestasUsuario.filter(a => String(a.estado || '').toLowerCase() === 'pendiente');
+            const finalizadas = apuestasUsuario.filter(a => ['ganada', 'perdida'].includes(String(a.estado || '').toLowerCase()));
 
-            contenedor.innerHTML = apuestasUsuario.map(a => {
-                const selecciones = a.apuesta_selecciones || [];
-                return `
-                    <div class="bet-card">
-                        <div class="bet-head">
-                            <b>Cuota ${cuotaTexto(a.cuota_total)}</b>
-                            <span class="status status-${escapeHtml(a.estado)}">${escapeHtml(a.estado)}</span>
-                        </div>
-                        ${selecciones.map(s => `
-                            <div class="slip-line">
-                                <span>${escapeHtml(s.descripcion)}</span>
-                                <span>${cuotaTexto(s.cuota)} ${s.resultado === true ? '✅' : s.resultado === false ? '❌' : ''}</span>
-                            </div>
-                        `).join('')}
-                        <div class="summary-row"><span>Apostado</span><b>${numero(a.creditos_apostados)} créditos</b></div>
-                        <div class="summary-row"><span>Premio</span><b>${numero(a.premio_potencial)} puntos</b></div>
-                    </div>
-                `;
-            }).join('');
+            contenedor.innerHTML = activas.length
+                ? activas.map(a => tarjetaApuesta(a, false)).join('')
+                : '<p style="font-size:13px; color:#64748b;">No tienes apuestas pendientes.</p>';
+
+            if (cajaHistorial) cajaHistorial.classList.remove('hidden');
+            if (contador) contador.textContent = `(${finalizadas.length})`;
+            if (historial) {
+                historial.innerHTML = finalizadas.length
+                    ? finalizadas.map(a => tarjetaApuesta(a, true)).join('')
+                    : '<p style="font-size:13px; color:#64748b;">Todavía no tienes apuestas finalizadas.</p>';
+            }
         }
 
         async function reclamar() {
