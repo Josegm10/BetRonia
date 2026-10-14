@@ -570,6 +570,16 @@
             <input type="text" id="adm-rival" placeholder="Nombre del equipo rival">
             <label style="font-size:12px; font-weight:bold; display:block;">Cierre de apuestas</label>
             <input type="datetime-local" id="adm-cierre-apuestas">
+            <details id="adm-jugadores-checklist" style="margin:10px 0; padding:10px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc;">
+                <summary style="cursor:pointer; font-weight:bold; font-size:13px;">👥 JUGADORES QUE JUEGAN ESTA JORNADA</summary>
+                <p style="font-size:12px; color:#64748b; margin:7px 0;">Marca únicamente a los jugadores que van a disputar el partido. Solo se generarán cuotas para ellos.</p>
+                <div class="row" style="margin-bottom:8px;">
+                    <button type="button" onclick="seleccionarTodosJugadoresJornada(true)" style="background:#16a34a;">SELECCIONAR TODOS</button>
+                    <button type="button" onclick="seleccionarTodosJugadoresJornada(false)" style="background:#64748b;">NINGUNO</button>
+                </div>
+                <div id="adm-jugadores-jornada-lista" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:6px;"></div>
+                <div id="adm-jugadores-jornada-contador" style="font-size:12px; font-weight:bold; margin-top:8px; color:#334155;"></div>
+            </details>
             <button onclick="lanzarNuevaJornada()" style="background:#2563eb;">CREAR JORNADA Y GENERAR CUOTAS</button>
             <button onclick="habilitarCreditos()" style="background:#8b5cf6;">🔓 HABILITAR RECARGA DE CRÉDITOS</button>
             <div id="admin-jornada-resumen"></div>
@@ -1750,6 +1760,43 @@
             await refrescar();
         }
 
+        function jugadoresSeleccionadosJornada() {
+            return [...document.querySelectorAll('.adm-jugador-jornada-check:checked')].map(c => c.value);
+        }
+
+        function actualizarContadorJugadoresJornada() {
+            const total = document.querySelectorAll('.adm-jugador-jornada-check').length;
+            const marcados = jugadoresSeleccionadosJornada().length;
+            const contador = document.getElementById('adm-jugadores-jornada-contador');
+            if (contador) contador.textContent = `${marcados} de ${total} jugadores seleccionados`;
+        }
+
+        function seleccionarTodosJugadoresJornada(marcar) {
+            document.querySelectorAll('.adm-jugador-jornada-check').forEach(c => c.checked = marcar);
+            actualizarContadorJugadoresJornada();
+        }
+
+        function renderChecklistJugadoresJornada(st) {
+            const contenedor = document.getElementById('adm-jugadores-jornada-lista');
+            if (!contenedor) return;
+
+            const existentes = [...document.querySelectorAll('.adm-jugador-jornada-check')];
+            const habiaChecklist = existentes.length > 0;
+            const seleccionadosPrevios = new Set(existentes.filter(c => c.checked).map(c => c.value));
+
+            contenedor.innerHTML = st.map(s => {
+                const nombre = String(s.sujeto || '');
+                const checked = !habiaChecklist || seleccionadosPrevios.has(nombre);
+                const posicion = String(s.posicion || 'campo').toLowerCase() === 'portero' ? ' · 🧤 Portero' : '';
+                return `<label style="display:flex; align-items:center; gap:7px; padding:7px 8px; background:white; border:1px solid #e2e8f0; border-radius:8px; font-size:13px; cursor:pointer;">
+                    <input type="checkbox" class="adm-jugador-jornada-check" value="${escapeHtml(nombre)}" ${checked ? 'checked' : ''} onchange="actualizarContadorJugadoresJornada()" style="width:auto; margin:0;">
+                    <span>${escapeHtml(nombre)}${posicion}</span>
+                </label>`;
+            }).join('');
+
+            actualizarContadorJugadoresJornada();
+        }
+
         function renderSelectoresAdmin(st, rk, clasif) {
             const selectSt = document.getElementById('adm-select-stats');
             const valorSt = selectSt.value;
@@ -1768,6 +1815,8 @@
             selectClasif.innerHTML = '<option value="">-- Nuevo equipo / Editar existente --</option>' +
                 clasif.map(e => `<option value="${escapeHtml(e.equipo)}">${escapeHtml(e.equipo)} (${numero(e.pts)} pts)</option>`).join('');
             selectClasif.value = valorClasif;
+
+            renderChecklistJugadoresJornada(st);
         }
 
         function renderAdminJornada() {
@@ -2083,12 +2132,16 @@
             const cierre = new Date(cierreInput);
             if (cierre <= new Date()) return alert('La fecha de cierre debe ser futura.');
 
-            if (!confirm('Se generarán automáticamente los mercados del partido y todos los mercados disponibles de cada jugador.')) return;
+            const jugadores = jugadoresSeleccionadosJornada();
+            if (jugadores.length === 0) return alert('Selecciona al menos un jugador que vaya a disputar la jornada.');
+
+            if (!confirm(`Se generarán los mercados del partido y únicamente los de ${jugadores.length} jugador(es) seleccionado(s).`)) return;
 
             const { error } = await sb.rpc('crear_jornada_con_mercados', {
                 p_nombre: nombre,
                 p_cierre: cierre.toISOString(),
-                p_rival: rival
+                p_rival: rival,
+                p_jugadores: jugadores
             });
 
             if (error) return alert('Error al crear la jornada: ' + error.message);
