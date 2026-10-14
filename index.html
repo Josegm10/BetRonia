@@ -669,6 +669,12 @@
             </details>
         </div>
 
+        <div id="pronostico-exacto-ui" class="inner-card" style="background:#fff7ed; border-color:#fdba74;">
+            <h3 style="margin-top:0;">🎯 RESULTADO EXACTO · PREMIO FIJO 50 PUNTOS</h3>
+            <div style="font-size:12px; color:#7c2d12; margin-bottom:10px;">Este pronóstico es independiente de tu boleto: no consume créditos, no multiplica la cuota y puedes participar aunque no hagas ninguna apuesta.</div>
+            <div id="pronostico-exacto-content"></div>
+        </div>
+
         <div id="mercados-ui" class="inner-card">
             <h3 style="margin-top:0;">⚽ MERCADOS DE APUESTAS</h3>
             <div id="mercados-content"></div>
@@ -752,6 +758,7 @@
         let adminJugadoresRonda = [];
         let estadisticasActuales = [];
         let partidosHistoricos = [];
+        let pronosticoExactoActual = null;
         // Conserva el marcador que el usuario está escribiendo aunque la app se refresque.
         let marcadorExactoBorrador = { equipo: 0, rival: 0 };
 
@@ -874,10 +881,23 @@
                 mercadosActuales = consultasRes[0].data || [];
                 resultadosActuales = consultasRes[1].data || [];
                 resultadoPartidoActual = consultasRes[2].data || null;
+
+                if (miNombre) {
+                    const pronosticoRes = await sb.from('pronosticos_resultado_exacto')
+                        .select('*')
+                        .eq('jornada_id', jornadaActual.id)
+                        .eq('usuario', miNombre)
+                        .maybeSingle();
+                    pronosticoExactoActual = pronosticoRes.data || null;
+                    if (pronosticoRes.error) console.error(pronosticoRes.error);
+                } else {
+                    pronosticoExactoActual = null;
+                }
             } else {
                 mercadosActuales = [];
                 resultadosActuales = [];
                 resultadoPartidoActual = null;
+                pronosticoExactoActual = null;
                 mercadosSeleccionados.clear();
             }
 
@@ -915,6 +935,7 @@
             renderJornada();
             renderPartidoActual();
             renderResultadosPartidos();
+            renderPronosticoExacto();
             renderMercados();
             renderBoleto();
             renderMisApuestas();
@@ -1082,6 +1103,66 @@
                 : '<p style="font-size:13px; color:#64748b;">Todavía no hay partidos finalizados.</p>';
         }
 
+        function renderPronosticoExacto() {
+            const cont = document.getElementById('pronostico-exacto-content');
+            if (!cont) return;
+
+            if (!miNombre) {
+                cont.innerHTML = '<div class="notice notice-info">Accede como jugador para enviar tu resultado exacto.</div>';
+                return;
+            }
+            if (!jornadaActual) {
+                cont.innerHTML = '<div class="notice notice-info">El pronóstico se abrirá cuando haya una jornada activa.</div>';
+                return;
+            }
+
+            const cerrado = apuestasCerradas();
+            const ge = pronosticoExactoActual ? numero(pronosticoExactoActual.goles_equipo) : 0;
+            const gr = pronosticoExactoActual ? numero(pronosticoExactoActual.goles_rival) : 0;
+            const rival = escapeHtml(jornadaActual.rival || 'Rival');
+            const estado = pronosticoExactoActual
+                ? `<div style="font-size:12px;margin-top:8px;color:#7c2d12;"><b>Tu pronóstico guardado:</b> Detrónia ${ge}-${gr} ${rival}${pronosticoExactoActual.acertado === true ? ' · ✅ +50 puntos' : pronosticoExactoActual.acertado === false ? ' · ❌ 0 puntos' : ''}</div>`
+                : '<div style="font-size:12px;margin-top:8px;color:#7c2d12;">Aún no has enviado un pronóstico.</div>';
+
+            cont.innerHTML = `
+                <div class="exact-score-box">
+                    <div style="font-size:13px;font-weight:800;margin-bottom:8px;">Detrónia vs ${rival}</div>
+                    <div class="exact-score-row">
+                        <input id="pronostico-ge" type="number" min="0" max="20" value="${ge}" ${cerrado ? 'disabled' : ''}>
+                        <b>-</b>
+                        <input id="pronostico-gr" type="number" min="0" max="20" value="${gr}" ${cerrado ? 'disabled' : ''}>
+                    </div>
+                    <button onclick="guardarPronosticoExacto()" class="btn-success" ${cerrado ? 'disabled' : ''}>
+                        ${pronosticoExactoActual ? 'ACTUALIZAR PRONÓSTICO' : 'GUARDAR PRONÓSTICO'}
+                    </button>
+                    ${cerrado ? '<div style="font-size:12px;margin-top:7px;color:#b91c1c;font-weight:700;">El plazo está cerrado: el pronóstico ya no se puede modificar.</div>' : ''}
+                    ${estado}
+                </div>
+            `;
+        }
+
+        async function guardarPronosticoExacto() {
+            if (!miNombre || !jornadaActual) return;
+            if (apuestasCerradas()) return alert('El plazo ya está cerrado.');
+
+            const ge = numero(document.getElementById('pronostico-ge')?.value, -1);
+            const gr = numero(document.getElementById('pronostico-gr')?.value, -1);
+            if (ge < 0 || gr < 0 || ge > 20 || gr > 20) {
+                return alert('Introduce un marcador válido entre 0 y 20 goles por equipo.');
+            }
+
+            const { error } = await sb.rpc('guardar_pronostico_resultado_exacto', {
+                p_usuario: miNombre,
+                p_jornada_id: Number(jornadaActual.id),
+                p_goles_equipo: ge,
+                p_goles_rival: gr
+            });
+            if (error) return alert('No se pudo guardar el pronóstico: ' + error.message);
+
+            alert('Pronóstico guardado. Si aciertas el marcador exacto recibirás 50 puntos.');
+            await refrescar();
+        }
+
         function mercadoPorId(id) {
             return mercadosActuales.find(m => Number(m.id) === Number(id));
         }
@@ -1112,10 +1193,12 @@
             const ambosTarjetaSi = lista.some(m =>
                 m.tipo_evento === 'ambos_tarjeta' && m.opcion === 'si'
             );
+            // +0.5 goles y "Anotará: Sí" representan el mismo hecho: el jugador marca al menos una vez.
             const jugadorMarcaSi = mercado.jugador && lista.some(m =>
-                m.tipo_evento === 'jugador_marca' &&
-                m.opcion === 'si' &&
-                m.jugador === mercado.jugador
+                m.jugador === mercado.jugador && (
+                    (m.tipo_evento === 'jugador_marca' && m.opcion === 'si') ||
+                    (m.tipo_evento === 'goles_jugador' && m.opcion === 'mas' && Number(m.linea) === 0.5)
+                )
             );
 
             let cuota = base;
@@ -1217,7 +1300,10 @@
         }
 
         function mercadoJugadorPermitido(m) {
-            if (!m || m.categoria !== 'jugador') return true;
+            if (!m) return false;
+            // El resultado exacto ya no es un mercado del boleto: es un pronóstico independiente de 50 puntos.
+            if (m.tipo_evento === 'resultado_exacto') return false;
+            if (m.categoria !== 'jugador') return true;
             const tipo = m.tipo_evento;
             const portero = esPorteroJugador(m.jugador);
 
@@ -1354,8 +1440,6 @@
                 ['Total de tarjetas', partido.filter(m => m.tipo_evento === 'total_tarjetas' && m.opcion === 'mas' && [0.5,1.5,2.5,3.5].includes(Number(m.linea))).sort((a,b)=>Number(a.linea)-Number(b.linea))]
             ];
 
-            const exactoSeleccionado = mercadosElegidos().find(m => m.tipo_evento === 'resultado_exacto');
-            
 
             let htmlPartido = `
                 <div class="market-section">
@@ -1368,19 +1452,6 @@
                         </div>
                     ` : '').join('')}
 
-                    <div class="market-group">
-                        <span class="market-group-title">Resultado exacto</span>
-                        <div class="exact-score-box">
-                            <div class="exact-score-row">
-                                <input id="exacto-equipo" type="number" min="0" max="10" value="${marcadorExactoBorrador.equipo}" oninput="actualizarCuotaExacta()">
-                                <b>-</b>
-                                <input id="exacto-rival" type="number" min="0" max="10" value="${marcadorExactoBorrador.rival}" oninput="actualizarCuotaExacta()">
-                            </div>
-                            <button id="btn-exacto" onclick="agregarResultadoExacto()" ${apuestasCerradas() ? 'disabled' : ''}>
-                                AÑADIR RESULTADO EXACTO
-                            </button>
-                        </div>
-                    </div>
                 </div>
             `;
 
@@ -1400,16 +1471,6 @@
 
             contenedor.innerHTML = htmlPartido + htmlJugadores;
 
-            if (exactoSeleccionado) {
-                marcadorExactoBorrador = {
-                    equipo: numero(exactoSeleccionado.goles_equipo),
-                    rival: numero(exactoSeleccionado.goles_rival)
-                };
-                document.getElementById('exacto-equipo').value = String(marcadorExactoBorrador.equipo);
-                document.getElementById('exacto-rival').value = String(marcadorExactoBorrador.rival);
-            }
-
-            actualizarCuotaExacta();
         }
 
         function actualizarCuotaExacta() {
@@ -1525,7 +1586,7 @@
         }
 
         function mercadosElegidos() {
-            return mercadosActuales.filter(m => mercadosSeleccionados.has(Number(m.id)));
+            return mercadosActuales.filter(m => m.tipo_evento !== 'resultado_exacto' && mercadosSeleccionados.has(Number(m.id)));
         }
 
         function yaTieneApuestaEnJornada() {
@@ -1966,10 +2027,13 @@
                 if (!Number.isFinite(cuota) || cuota < 1.01 || cuota > 1000) {
                     return alert(`La cuota del mercado ${id} no es válida. Usa un valor entre 1,01 y 1000.`);
                 }
-                cambios.push({ id, cuota: Number(cuota.toFixed(2)) });
+                const actual = mercadosActuales.find(m => Number(m.id) === id);
+                if (actual && Number(actual.cuota).toFixed(2) !== Number(cuota).toFixed(2)) {
+                    cambios.push({ id, cuota: Number(cuota.toFixed(2)) });
+                }
             }
 
-            if (!cambios.length) return alert('No hay cuotas que guardar.');
+            if (!cambios.length) return alert('No has cambiado ninguna cuota.');
             if (!confirm(`¿Guardar las ${cambios.length} cuotas mostradas?`)) return;
 
             // Para mercados binarios guardamos un lado una sola vez; el RPC actualiza también el contrario.
@@ -2134,7 +2198,7 @@
             if (error) return alert('No se pudo liquidar: ' + error.message);
 
             const resultado = Array.isArray(data) ? data[0] : data;
-            alert(`Jornada liquidada.\nApuestas ganadas: ${numero(resultado?.apuestas_ganadas)}\nPuntos repartidos: ${numero(resultado?.puntos_repartidos)}`);
+            alert(`Jornada liquidada.\nApuestas ganadas: ${numero(resultado?.apuestas_ganadas)}\nPuntos repartidos por apuestas: ${numero(resultado?.puntos_repartidos)}\nLos aciertos de resultado exacto reciben además 50 puntos automáticamente.`);
             await refrescar();
         }
 
